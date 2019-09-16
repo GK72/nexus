@@ -5,7 +5,7 @@
 // **      Graphics library implementation     **
 // **                                          **
 // **********************************************
-// 
+//
 // Special thanks to OLC for source material and inspiration
 // https://onelonecoder.com/
 // https://www.youtube.com/javidx9
@@ -13,16 +13,17 @@
 
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <exception>
+#include <string>
 #include <thread>
-#include <atomic>
-
-#ifdef _MSC_BUILD
 #include <Windows.h>
-#endif
 
-#include "../glib/gmath.h"
+#include "glib/h/gmath.h"
+
+#define _g_NIE(msg) throw NotImplementedException(msg)
+#define _g_uNIE throw NotImplementedException("Unknown Exception")
 
 namespace glib {
 namespace gGfx {
@@ -36,12 +37,16 @@ class Line2D;
 
 class InvalidLineException : public std::runtime_error {
 public:
-    InvalidLineException(const Line2D* line) : std::runtime_error("Invalid Line") {}
+    InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
+};
 
+class NotImplementedException : public std::exception {
+public:
+    NotImplementedException(const char* msg) : std::exception(msg) {}
 };
 
 
-#define KEY_NUMBERS 256		
+#define KEY_NUMBERS 256
 #define MOUSE_BUTTONS 5
 
 enum DIRECTION_2D
@@ -221,7 +226,26 @@ private:
 };
 
 class Shape {
+    virtual std::string toString()  = 0;
+    virtual void draw()             = 0;
+    virtual float getArea()         = 0;
+    virtual float getPerimeter()    = 0;
+};
 
+class Triangle2D : public Shape {
+public:
+    Triangle2D(Point2D _a, Point2D _b, Point2D _c) : a(_a), b(_b), c(_c) {}
+
+    std::string toString();
+    virtual void draw();
+    virtual float getArea();
+    virtual float getPerimeter();
+
+private:
+    Point2D a;
+    Point2D b;
+    Point2D c;
+    const char* ws = "\t";
 };
 
 

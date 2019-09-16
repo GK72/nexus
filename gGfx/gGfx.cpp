@@ -6,6 +6,7 @@
 // **                                          **
 // **********************************************
 
+#include <math.h>
 #include "gGfx.h"
 
 namespace glib {
@@ -277,6 +278,35 @@ Line2D::Line2D(Point2D _p, Point2D _q)
     else {
         throw InvalidLineException(this);
     }
+}
+
+float Line2D::length()
+{
+    return std::sqrt(std::pow(p.x - q.x, 2) + std::pow(p.y - q.y, 2));
+}
+
+std::string Triangle2D::toString()
+{
+    return std::string(
+        "Point A: " + std::to_string(a.x) + ws + std::to_string(a.y) + '\n' +
+        "Point B: " + std::to_string(b.x) + ws + std::to_string(b.y) + '\n' +
+        "Point C: " + std::to_string(c.x) + ws + std::to_string(c.y)
+    );
+}
+
+void Triangle2D::draw()
+{
+    _g_NIE("draw");
+}
+
+float Triangle2D::getArea()
+{
+    _g_uNIE;
+}
+
+float Triangle2D::getPerimeter()
+{
+    _g_uNIE;
 }
 
 } // End of namespace gGfx

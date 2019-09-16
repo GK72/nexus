@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-09-04                       **
+// ** gkpro @ 2019-09-16                       **
 // **                                          **
 // **     Console application entry point      **
 // **       --- G-Library testing ---          **
@@ -38,8 +38,22 @@ int main()
     //e.run();
 
     glib::gGfx::Point2D a(2,2);
-    glib::gGfx::Point2D b(2,1);
+    glib::gGfx::Point2D b(2,4);
+    glib::gGfx::Point2D c(2,5);
     glib::gGfx::Line2D l(a,b);
+    glib::gGfx::Triangle2D tri(a, b, c);
+
+    std::cout << "Line length: " + std::to_string(l.length()) << '\n';
+    std::cout << tri.toString();
+    try
+    {
+        //tri.draw();
+        tri.getArea();
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << '\n' << e.what();
+    }
 
     std::cout << a.x;
 
