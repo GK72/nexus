@@ -309,44 +309,6 @@ template <class T> Matrix<T> Matrix<T>::getRow(gint r) {
     return row;
 }
 
-Point2D& Point2D::operator+=(const Point2D& rhs)
-{
-    x += rhs.x;
-    y += rhs.y;
-    return *this;
-}
-
-bool operator==(const Point2D& lhs, const Point2D& rhs)
-{
-    return lhs.x == rhs.x && lhs.y == rhs.y;
-}
-
-bool operator!= (const Point2D& lhs, const Point2D& rhs) {
-    return !(lhs == rhs);
-}
-
-Point2D operator+(const Point2D & lhs, const Point2D & rhs)
-{
-    return Point2D(lhs.x + rhs.x, lhs.y + rhs.y);
-}
-
-std::ostream& operator<< (std::ostream& out, const Point2D& rhs)
-{
-    std::cout << "x: " << rhs.x << '\n' << "y: " << rhs.y << '\n';
-    return out;
-}
-
-Line2D::Line2D(Point2D _p, Point2D _q)
-{
-    if (_p != _q) {
-        p = _p;
-        q = _q;
-    }
-    else {
-        throw InvalidLineException(this);
-    }
-}
-
 // ************************************************************************** //
 //                                Functions                                   //
 // ************************************************************************** //
@@ -364,8 +326,6 @@ template <class T> Matrix<T> sigmoid(Matrix<T>& x) {
     }
     return res;
 }
-
-
 
 
 

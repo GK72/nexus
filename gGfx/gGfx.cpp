@@ -1,3 +1,11 @@
+// **********************************************
+// ** gkpro @ 2019-09-16                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **      Graphics library implementation     **
+// **                                          **
+// **********************************************
+
 #include "gGfx.h"
 
 namespace glib {
@@ -193,7 +201,7 @@ void Engine::print(const char* ch)
     }
 }
 
-void Sprite::init(int w, int h)
+void Sprite::init(gint w, gint h)
 {
     width = w;
     height = h;
@@ -224,7 +232,47 @@ void Sprite::draw(const Engine& gfx, int x, int y) const
 
 }
 
+// ************************************************************************** //
+//                                 Geometry                                   //
+// ************************************************************************** //
 
+Point2D& Point2D::operator+=(const Point2D& rhs)
+{
+    x += rhs.x;
+    y += rhs.y;
+    return *this;
+}
+
+bool operator==(const Point2D& lhs, const Point2D& rhs)
+{
+    return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+bool operator!= (const Point2D& lhs, const Point2D& rhs) {
+    return !(lhs == rhs);
+}
+
+Point2D operator+(const Point2D & lhs, const Point2D & rhs)
+{
+    return Point2D(lhs.x + rhs.x, lhs.y + rhs.y);
+}
+
+std::ostream& operator<< (std::ostream& out, const Point2D& rhs)
+{
+    std::cout << "x: " << rhs.x << '\n' << "y: " << rhs.y << '\n';
+    return out;
+}
+
+Line2D::Line2D(Point2D _p, Point2D _q)
+{
+    if (_p != _q) {
+        p = _p;
+        q = _q;
+    }
+    else {
+        throw InvalidLineException(this);
+    }
+}
 
 } // End of namespace gGfx
 } // End of namespace glib

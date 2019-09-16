@@ -7,8 +7,8 @@
 // **********************************************
 
 #include "glib/h/gmath.h"
-//#include "libgs.h"              // DLL library
 #include "gGfx/gGfx.h"
+//#include "libgs.h"              // DLL library
 
 void ml_test();
 void datatable_test();
@@ -33,12 +33,10 @@ int main()
     eCon e(120, 30, 8, 16);
     //e.run();
 
-    glib::Point2D a(2,2);
-    glib::Point2D b(2,2);
-    glib::Line2D l(a,b);
+    glib::gGfx::Point2D a(2,2);
+    glib::gGfx::Point2D b(2,1);
+    glib::gGfx::Line2D l(a,b);
 
-    std::cout << l.p << '\n';
-    std::cout << l.q << '\n';
 
 	return 0;
 }

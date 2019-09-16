@@ -17,7 +17,7 @@ namespace glib {
 using gint = size_t;
 
 struct Point2D;
-struct Line2D;
+class Line2D;
 
 constexpr const char* error_unconformable = "Unconformable matrices";
 constexpr double e = 2.71828182845904523536;                // Euler's constant
@@ -27,11 +27,7 @@ constexpr double epsilon = 1E-04;
 //                               Exceptions                                   //
 // ************************************************************************** //
 
-class InvalidLineException : public std::exception {
-public:
-    InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
 
-};
 
 // ************************************************************************** //
 //                              Matrix class                                  //
@@ -132,36 +128,6 @@ private:
 
     // Private functions
 
-};
-
-// ************************************************************************** //
-//                                 Geometry                                   //
-// ************************************************************************** //
-
-struct Point2D
-{
-    float x;
-    float y;
-
-    Point2D() { x = 0, y = 0; }
-    Point2D(float _x, float _y) { x = _x; y = _y; }
-
-    friend bool operator== (const Point2D& lhs, const Point2D& rhs);
-    friend bool operator!= (const Point2D& lhs, const Point2D& rhs);
-    friend Point2D operator+ (const Point2D& lhs, const Point2D& rhs);
-    friend std::ostream& operator<< (std::ostream& out, const Point2D& rhs);
-
-    Point2D& operator+= (const Point2D& rhs);
-};
-
-struct Line2D
-{
-    Point2D p;
-    Point2D q;
-
-    Line2D(Point2D _p, Point2D _q);
-
-        
 };
 
 // ************************************************************************** //

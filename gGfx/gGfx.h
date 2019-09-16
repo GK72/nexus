@@ -1,14 +1,20 @@
-/* ==================================================================
-* Special thanks to OLC for source material and inspiration
-* https://onelonecoder.com/
-* https://www.youtube.com/javidx9
-* https://www.github.com/onelonecoder
-*
-*
-*/
+// **********************************************
+// ** gkpro @ 2019-09-16                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **      Graphics library implementation     **
+// **                                          **
+// **********************************************
+// 
+// Special thanks to OLC for source material and inspiration
+// https://onelonecoder.com/
+// https://www.youtube.com/javidx9
+// https://www.github.com/onelonecoder
 
 #pragma once
+
 #include <chrono>
+#include <exception>
 #include <thread>
 #include <atomic>
 #include <Windows.h>
@@ -16,6 +22,19 @@
 
 namespace glib {
 namespace gGfx {
+
+struct Point2D;
+class Line2D;
+
+// ************************************************************************** //
+//                               Exceptions                                   //
+// ************************************************************************** //
+
+class InvalidLineException : public std::exception {
+public:
+    InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
+
+};
 
 
 #define KEY_NUMBERS 256		
@@ -152,13 +171,49 @@ public:
 private:
     wchar_t* glyph = nullptr;
     short* colour = nullptr;
-    int width;
-    int height;
+    gint width;
+    gint height;
 
-    void init(int w, int h);
+    void init(gint w, gint h);
 
 };
 
+// ************************************************************************** //
+//                                 Geometry                                   //
+// ************************************************************************** //
+
+struct Point2D
+{
+    float x;
+    float y;
+
+    Point2D() { x = 0, y = 0; }
+    Point2D(float _x, float _y) { x = _x; y = _y; }
+
+    friend bool operator== (const Point2D& lhs, const Point2D& rhs);
+    friend bool operator!= (const Point2D& lhs, const Point2D& rhs);
+    friend Point2D operator+ (const Point2D& lhs, const Point2D& rhs);
+    friend std::ostream& operator<< (std::ostream& out, const Point2D& rhs);
+
+    Point2D& operator+= (const Point2D& rhs);
+};
+
+class Line2D
+{
+public:
+    Line2D(Point2D _p, Point2D _q);
+
+    float length();
+
+private:
+    Point2D p;
+    Point2D q;
+
+};
+
+class Shape {
+
+};
 
 
 } // End of namespace gGfx
