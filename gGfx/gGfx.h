@@ -13,12 +13,17 @@
 
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <exception>
+#include <string>
 #include <thread>
-#include <atomic>
 #include <Windows.h>
+
 #include "glib/h/gmath.h"
+
+#define _g_NIE(msg) throw NotImplementedException(msg)
+#define _g_uNIE throw NotImplementedException("Unknown Exception")
 
 namespace glib {
 namespace gGfx {
@@ -33,7 +38,11 @@ class Line2D;
 class InvalidLineException : public std::exception {
 public:
     InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
+};
 
+class NotImplementedException : public std::exception {
+public:
+    NotImplementedException(const char* msg) : std::exception(msg) {}
 };
 
 
@@ -212,7 +221,26 @@ private:
 };
 
 class Shape {
+    virtual std::string toString()  = 0;
+    virtual void draw()             = 0;
+    virtual float getArea()         = 0;
+    virtual float getPerimeter()    = 0;
+};
 
+class Triangle2D : public Shape {
+public:
+    Triangle2D(Point2D _a, Point2D _b, Point2D _c) : a(_a), b(_b), c(_c) {}
+
+    std::string toString();
+    virtual void draw();
+    virtual float getArea();
+    virtual float getPerimeter();
+
+private:
+    Point2D a;
+    Point2D b;
+    Point2D c;
+    const char* ws = "\t";
 };
 
 
