@@ -237,15 +237,29 @@ public:
     Triangle2D(Point2D _a, Point2D _b, Point2D _c) : a(_a), b(_b), c(_c) {}
 
     std::string toString();
-    virtual void draw();
-    virtual float getArea();
-    virtual float getPerimeter();
+    void draw();
+    float getArea();
+    float getPerimeter();
 
 private:
     Point2D a;
     Point2D b;
     Point2D c;
     const char* ws = "\t";
+};
+
+class Circle : public Shape {
+public:
+    Circle(Point2D center, float radius) : c(center), r(radius) {}
+
+    std::string toString();
+    void draw();
+    float getArea();
+    float getPerimeter();
+
+private:
+    Point2D c;
+    float r;
 };
 
 

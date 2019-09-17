@@ -55,9 +55,8 @@ int main()
         std::cout << '\n' << e.what();
     }
 
-    std::cout << a.x;
+    // test
 
 
 	return 0;
 }
-
