@@ -172,7 +172,7 @@ void Engine::run()
     std::thread t = std::thread(&Engine::MainThread, this);
     t.join();
 }
-void Engine::draw(const glib::Point2D& p, short color) const        { draw((int)p.x, (int)p.y, color); }
+void Engine::draw(const Point2D& p, short color) const              { draw((int)p.x, (int)p.y, color); }
 void Engine::draw(int x, int y, short color) const				    { draw(x, y, color, PIXEL_SOLID); }
 void Engine::draw(int x, int y, short color, wchar_t ch) const
 {

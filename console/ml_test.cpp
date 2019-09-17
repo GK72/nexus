@@ -11,9 +11,9 @@
 #include <iostream>
 #include <vector>
 
-#include "glib/h/gmath.h"
-#include "glib/h/ml.hpp"
-#include "glib/h/utility.h"
+#include "gmath.h"
+#include "ml.hpp"
+#include "utility.h"
 
 using vec = std::vector<int>;
 
