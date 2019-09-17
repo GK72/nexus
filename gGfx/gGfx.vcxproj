@@ -104,7 +104,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\OneDrive\Developing\cpp\libs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\gkpro\source\repos\libs\gGfx;C:\Users\gkpro\source\repos\libs\glib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
@@ -125,7 +125,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\OneDrive\Developing\cpp\libs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\gkpro\source\repos\libs\gGfx;C:\Users\gkpro\source\repos\libs\glib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -144,7 +144,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\OneDrive\Developing\cpp\libs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\gkpro\source\repos\libs\gGfx;C:\Users\gkpro\source\repos\libs\glib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -165,7 +165,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\OneDrive\Developing\cpp\libs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\gkpro\source\repos\libs\gGfx;C:\Users\gkpro\source\repos\libs\glib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

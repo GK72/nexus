@@ -37,10 +37,10 @@ class Line2D;
 
 class InvalidLineException : public std::runtime_error {
 public:
-    InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
+    InvalidLineException(const Line2D* line) : std::runtime_error("Invalid Line") {}
 };
 
-class NotImplementedException : public std::exception {
+class NotImplementedException : public std::runtime_error {
 public:
     NotImplementedException(const char* msg) : std::exception(msg) {}
 };
@@ -116,7 +116,7 @@ public:
     virtual ~Engine();
 
     void run();
-    void draw(const glib::Point2D& p, short color) const;
+    void draw(const Point2D& p, short color) const;
     void draw(int x, int y, short color) const;
     void draw(int x, int y, short color, wchar_t ch) const;
     void draw(const Sprite& sprite) const;
