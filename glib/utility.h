@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-09-04                       **
+// ** gkpro @ 2019-09-17                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **          Utility library header          **
@@ -24,12 +24,13 @@ template <class ...Ts> void print(Ts&&... args) {
 }
 
 template <class T> T swapEndian32(T& x) {
-    x = (x << 24) & 0xFF000000 |
-        (x <<  8) & 0x00FF0000 |
-        (x >>  8) & 0x0000FF00 |
-        (x >> 24) & 0x000000FF ;
-    return x;
+    return (x << 24) & 0xFF000000 |
+           (x <<  8) & 0x00FF0000 |
+           (x >>  8) & 0x0000FF00 |
+           (x >> 24) & 0x000000FF ;
 }
+
+std::string ipv6Formatter(std::string ipv6);
 
 // ************************************************************************** //
 //                           Performance measuring                            //
