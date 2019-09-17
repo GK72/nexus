@@ -12,6 +12,8 @@
 namespace glib {
 namespace gGfx {
 
+#ifdef _MSC_BUILD
+
 std::atomic<bool> Engine::atomActive = false;
 
 Engine::Engine(int width, int height, int fontWidth, int fontHeight)
@@ -202,6 +204,8 @@ void Engine::print(const char* ch)
     }
 }
 
+// ************************************************************************** //
+
 void Sprite::init(gint w, gint h)
 {
     width = w;
@@ -232,6 +236,7 @@ void Sprite::draw(const Engine& gfx, int x, int y) const
     }
 
 }
+#endif
 
 // ************************************************************************** //
 //                                 Geometry                                   //

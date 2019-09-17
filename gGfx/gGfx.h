@@ -18,12 +18,15 @@
 #include <exception>
 #include <string>
 #include <thread>
-#include <Windows.h>
 
-#include "glib/h/gmath.h"
+#ifdef _MSC_BUILD
+#include <Windows.h>
+#endif
 
 #define _g_NIE(msg) throw NotImplementedException(msg)
 #define _g_uNIE throw NotImplementedException("Unknown Exception")
+
+#include "../glib/gmath.h"
 
 namespace glib {
 namespace gGfx {
@@ -35,14 +38,13 @@ class Line2D;
 //                               Exceptions                                   //
 // ************************************************************************** //
 
-class InvalidLineException : public std::exception {
+class InvalidLineException : public std::runtime_error {
 public:
-    InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
-};
+    InvalidLineException(const Line2D* line) : std::runtime_error("Invalid Line") {}
 
 class NotImplementedException : public std::exception {
 public:
-    NotImplementedException(const char* msg) : std::exception(msg) {}
+    NotImplementedException(const char* msg) : std::runtime_error(msg) {}
 };
 
 
@@ -108,6 +110,7 @@ struct KeyState {
     bool isHeld;
 };
 
+#ifdef _MSC_BUILD
 class Engine
 {
 public:
@@ -169,6 +172,8 @@ private:
 
 };
 
+// ************************************************************************** //
+
 class Sprite {
 public:
     Sprite(int w, int h)	{ init(w, h); }
@@ -186,6 +191,8 @@ private:
     void init(gint w, gint h);
 
 };
+
+#endif
 
 // ************************************************************************** //
 //                                 Geometry                                   //

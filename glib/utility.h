@@ -11,6 +11,7 @@
 #include <chrono>
 #include <exception>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -185,9 +186,9 @@ private:
 //                                 Exceptions                                 //
 // ************************************************************************** //
 
-class IOErrorException : public std::exception {
+class IOErrorException : public std::runtime_error {
 public:
-    IOErrorException(const char* filename) : std::exception("IO Error") {}
+    IOErrorException(const char* filename) : std::runtime_error("IO Error") {}
 
 };
 
