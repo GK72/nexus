@@ -17,8 +17,12 @@
 #include <exception>
 #include <thread>
 #include <atomic>
+
+#ifdef _MSC_BUILD
 #include <Windows.h>
-#include "glib/h/gmath.h"
+#endif
+
+#include "../glib/gmath.h"
 
 namespace glib {
 namespace gGfx {
@@ -30,9 +34,9 @@ class Line2D;
 //                               Exceptions                                   //
 // ************************************************************************** //
 
-class InvalidLineException : public std::exception {
+class InvalidLineException : public std::runtime_error {
 public:
-    InvalidLineException(const Line2D* line) : std::exception("Invalid Line") {}
+    InvalidLineException(const Line2D* line) : std::runtime_error("Invalid Line") {}
 
 };
 
@@ -99,6 +103,7 @@ struct KeyState {
     bool isHeld;
 };
 
+#ifdef _MSC_BUILD
 class Engine
 {
 public:
@@ -160,6 +165,8 @@ private:
 
 };
 
+// ************************************************************************** //
+
 class Sprite {
 public:
     Sprite(int w, int h)	{ init(w, h); }
@@ -177,6 +184,8 @@ private:
     void init(gint w, gint h);
 
 };
+
+#endif
 
 // ************************************************************************** //
 //                                 Geometry                                   //

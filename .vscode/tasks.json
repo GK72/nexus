@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "windows": {
+        "options": {
+            "shell": {
+                "executable": "bash.exe",
+                "args": [
+                    "-c"
+                ]
+            }
+        }
+    },
+    "tasks": [
+        {
+            "label": "Build 'main' (WSL)",
+            "type": "shell",
+            // "command": "g++",
+            "command": "make",
+            "args": [
+                // "-std=c++17",
+                // "-g",
+                // "-o",
+                // "/mnt/c/dev/src/main.out",
+                // "main.cpp"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "/mnt/c/dev/build/glib"
+            }
+        },
+        {
+            "type": "shell",
+            "label": "g++ build active file",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "/usr/bin"
+            }
+        }
+    ]
+}
