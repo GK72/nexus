@@ -176,12 +176,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="datatable.h" />
-    <ClInclude Include="h\diagnostics.h" />
-    <ClInclude Include="h\gmath.h" />
-    <ClInclude Include="h\gmath_t.hpp" />
-    <ClInclude Include="h\ml.hpp" />
-    <ClInclude Include="h\utility.h" />
-    <ClInclude Include="h\utility_t.hpp" />
+    <ClInclude Include="diagnostics.h" />
+    <ClInclude Include="gmath.h" />
+    <ClInclude Include="gmath_t.hpp" />
+    <ClInclude Include="ml.hpp" />
+    <ClInclude Include="utility.h" />
+    <ClInclude Include="utility_t.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="datatable.cpp" />

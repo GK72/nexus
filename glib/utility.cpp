@@ -12,6 +12,37 @@
 
 namespace glib {
 
+std::string ipv6Formatter(std::string ipv6) {
+    size_t p = 0;
+    size_t q = 0;
+    std::vector<std::string> segments;
+    std::string out;
+
+    // Extracting segments
+    while ((q = ipv6.find(':', p)) != std::string::npos) {
+        segments.push_back(ipv6.substr(p, q - p));
+        p = q + 1;
+    }
+    segments.push_back(ipv6.substr(p));
+
+    // Removing leading zeroes
+    bool isPrevEmpty = false;
+    for (auto& s : segments) {
+        while (s.size() > 0 && s.at(0) == '0') {
+            s.erase(0, 1);
+        }
+        out += s;
+        if (s.size() > 0 || !isPrevEmpty) {
+            out += ':';
+        }
+        isPrevEmpty = s.size() == 0;
+    }
+    // Removing trailing colon
+    out.erase(out.size() - 1, 1);
+
+    return out;
+}
+
 
 template <class T> iterator<T>::iterator()                          { p = nullptr; }
 template <class T> iterator<T>::iterator(T* p)                      : p(p) {}
