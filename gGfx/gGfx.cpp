@@ -304,5 +304,25 @@ float Triangle2D::getPerimeter()
     _g_uNIE;
 }
 
+std::string Circle::toString()
+{
+    return std::string();
+}
+
+void Circle::draw()
+{
+    _g_uNIE;
+}
+
+float Circle::getArea()
+{
+    _g_uNIE;
+}
+
+float Circle::getPerimeter()
+{
+    _g_uNIE;
+}
+
 } // End of namespace gGfx
 } // End of namespace glib
