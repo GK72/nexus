@@ -78,9 +78,9 @@ public:
     friend Matrix operator* <>(const Matrix<T>& lhs, const T& rhs);
     friend Matrix operator* <>(const Matrix<T>& lhs, const Matrix<T>& rhs);
 
-    friend Matrix epow(const Matrix<T>& lhs, double exp);
-    friend Matrix elog(const Matrix<T>& lhs);
-    friend Matrix edot(const Matrix<T>& lhs, const Matrix<T>& rhs);
+    friend Matrix epow <>(const Matrix<T>& lhs, double exp);
+    friend Matrix elog <>(const Matrix<T>& lhs);
+    friend Matrix edot <>(const Matrix<T>& lhs, const Matrix<T>& rhs);
 
     // IO functions
 
