@@ -111,6 +111,17 @@ struct KeyState {
     bool isHeld;
 };
 
+class EngineGFX
+{
+public:
+    virtual void draw(int x, int y, short color, wchar_t ch) = 0;
+    virtual void run() = 0;
+
+protected:
+    virtual void init() = 0;
+    virtual void update(float elapsedTime) = 0;
+};
+
 #ifdef _MSC_BUILD
 class EngineConW : public EngineGFX
 {
