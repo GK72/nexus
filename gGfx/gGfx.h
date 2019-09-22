@@ -109,11 +109,11 @@ struct KeyState {
 };
 
 #ifdef _MSC_BUILD
-class Engine
+class EngineConW : public EngineGFX
 {
 public:
-    Engine(int width, int height, int fontWidth, int fontHeight);
-    virtual ~Engine();
+    EngineConW(int width, int height, int fontWidth, int fontHeight);
+    virtual ~EngineConW();
 
     void run();
     void draw(const Point2D& p, short color) const;
@@ -178,7 +178,7 @@ public:
     ~Sprite()				{ delete[] glyph; delete[] colour; }
 
     void setColour(COLOUR colour);
-    void draw(const Engine& gfx, int x, int y) const;
+    void draw(const EngineConW& gfx, int x, int y) const;
 
 private:
     wchar_t* glyph = nullptr;
