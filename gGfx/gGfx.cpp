@@ -236,6 +236,78 @@ void Sprite::draw(const EngineConW& gfx, int x, int y) const
     }
 
 }
+#else
+
+void EngineCurses::draw(int x, int y, short color, wchar_t ch)
+{
+    move(curPosX, curPosY);
+    delch();
+    insch(ch);
+}
+
+void EngineCurses::run()
+{
+    init();
+
+    auto ts = std::chrono::system_clock::now();
+    auto t1 = std::chrono::system_clock::now();
+    auto t2 = std::chrono::system_clock::now();
+
+    while (engineActive)
+    {
+        // Time handling
+        t2 = std::chrono::system_clock::now();
+        std::chrono::duration<float> diff = t2 - t1;
+        std::chrono::duration<float> diff_start = t2 - ts;
+
+        t1 = t2;
+        float elapsedTime = diff.count();
+        float totalTime = diff_start.count();
+
+        if (totalTime - (int)totalTime >= refreshRate) {
+            update(totalTime);
+        }
+    }
+
+    endwin();           // Curses: restore original window and leave
+}
+
+void EngineCurses::init()
+{
+    wnd = initscr();
+    cbreak();           // Curses: no waiting for Enter key
+    noecho();           // Curses: no echoing
+    clear();            // Curses: clear screen and set cursor pos to (0, 0)
+
+    cols = getmaxx(wnd);
+    rows = getmaxy(wnd);
+    curPosX = 0;
+    curPosY = 0;
+
+    engineActive = true;
+}
+
+void EngineCurses::update(float elapsedTime)
+{
+    //ch = getch();
+    // if (ch == 'q') {
+    //     engineActive = false;
+    // }
+
+    //draw(curPosX, curPosY, COLOR_WHITE, ch);
+    print(std::to_string(elapsedTime));
+    refresh();
+}
+
+void EngineCurses::print(const std::string& str)
+{
+    for (const auto& s : str) {
+        draw(curPosX, curPosY, COLOR_WHITE, s);
+        ++curPosY;
+    }
+    curPosY = 0;
+}
+
 #endif
 
 // ************************************************************************** //
