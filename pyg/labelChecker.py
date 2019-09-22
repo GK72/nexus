@@ -20,7 +20,13 @@ def readLabel(path):
 
 def search():
     regex = re.search(pattern, text, re.MULTILINE)
-    if regex:
+    
+    
+        lineNo = 0
+        for s in text[0:regex.start()]:
+            if s == '\n':
+                lineNo += 1
+        print('%03d-%03d-%03d: %s' % (lineNo + 1, regex.start(), regex.end(), regex[0]))
         print('%03d-%03d: %s' % (regex.start(), regex.end(), regex[0]))
     else:
         print('No match has been found.')
