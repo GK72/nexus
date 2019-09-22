@@ -192,6 +192,29 @@ private:
 
 #endif
 
+class EngineCurses : public EngineGFX
+{
+public:
+    void draw(int x, int y, short color, wchar_t ch);
+    void run();
+
+private:
+    void init();
+    void update(float elapsedTime);
+    void print(const std::string& str);
+
+    WINDOW* wnd;
+    int cols;
+    int rows;
+    int curPosX;
+    int curPosY;
+
+    bool engineActive;
+    char ch;
+
+    int refreshRate = 1;
+};
+
 // ************************************************************************** //
 //                                 Geometry                                   //
 // ************************************************************************** //
