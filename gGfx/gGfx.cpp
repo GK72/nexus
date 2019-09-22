@@ -14,9 +14,9 @@ namespace gGfx {
 
 #ifdef _MSC_BUILD
 
-std::atomic<bool> Engine::atomActive = false;
+std::atomic<bool> EngineConW::atomActive = false;
 
-Engine::Engine(int width, int height, int fontWidth, int fontHeight)
+EngineConW::EngineConW(int width, int height, int fontWidth, int fontHeight)
 {
     GetConsoleMode(hConsoleIn, &hConsoleOriginalIn);
 
@@ -54,13 +54,13 @@ Engine::Engine(int width, int height, int fontWidth, int fontHeight)
 }
 
 
-Engine::~Engine()
+EngineConW::~EngineConW()
 {
     delete[] screenBuffer;
     SetConsoleMode(hConsoleIn, hConsoleOriginalIn);
 }
 
-void Engine::MainThread()
+void EngineConW::MainThread()
 {
     init();
 
@@ -86,7 +86,7 @@ void Engine::MainThread()
     }
 }
 
-void Engine::eventHandlingConsole()
+void EngineConW::eventHandlingConsole()
 {
     INPUT_RECORD inBuf[32];
     DWORD events = 0;
@@ -122,7 +122,7 @@ void Engine::eventHandlingConsole()
         }
     }
 }
-void Engine::inputHandlingKeyboard()
+void EngineConW::inputHandlingKeyboard()
 {
     for (int i = 0; i < KEY_NUMBERS; ++i)
     {
@@ -148,7 +148,7 @@ void Engine::inputHandlingKeyboard()
         inputKeyStateOld[i] = inputKeyStateNew[i];
     }
 }
-void Engine::inputHandlingMouse()
+void EngineConW::inputHandlingMouse()
 {
     for (int m = 0; m < MOUSE_BUTTONS; ++m)
     {
@@ -166,27 +166,27 @@ void Engine::inputHandlingMouse()
         inputMouseStateOld[m] = inputMouseStateNew[m];
     }
 }
-void Engine::run()
+void EngineConW::run()
 {
     atomActive = true;
-    std::thread t = std::thread(&Engine::MainThread, this);
+    std::thread t = std::thread(&EngineConW::MainThread, this);
     t.join();
 }
-void Engine::draw(const Point2D& p, short color) const              { draw((int)p.x, (int)p.y, color); }
-void Engine::draw(int x, int y, short color) const				    { draw(x, y, color, PIXEL_SOLID); }
-void Engine::draw(int x, int y, short color, wchar_t ch) const
+void EngineConW::draw(const Point2D& p, short color) const              { draw((int)p.x, (int)p.y, color); }
+void EngineConW::draw(int x, int y, short color) const				    { draw(x, y, color, PIXEL_SOLID); }
+void EngineConW::draw(int x, int y, short color, wchar_t ch) const
 {
     screenBuffer[y * screenWidth + x].Char.UnicodeChar = ch;
     screenBuffer[y * screenWidth + x].Attributes = color;
 }
 
-void Engine::draw(const Sprite& sprite) const
+void EngineConW::draw(const Sprite& sprite) const
 {
     // TODO: Implement sprite draw method
     throw std::exception("Not yet implemented");
 }
 
-void Engine::printChar(const char ch)
+void EngineConW::printChar(const char ch)
 {
     draw(curPosX, curPosY, FG_WHITE, ch);
     if (++curPosX >= screenWidth) {
@@ -195,7 +195,7 @@ void Engine::printChar(const char ch)
     }
 }
 
-void Engine::print(const char* ch)
+void EngineConW::print(const char* ch)
 {
     int i = 0;
     while (ch[i] != '\0') {
@@ -227,7 +227,7 @@ void Sprite::setColour(COLOUR c)
     }
 }
 
-void Sprite::draw(const Engine& gfx, int x, int y) const
+void Sprite::draw(const EngineConW& gfx, int x, int y) const
 {
     for (int i = 0; i < width; ++i) {
         for (int j = 0; j < height; ++j) {
