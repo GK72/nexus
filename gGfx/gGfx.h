@@ -19,8 +19,9 @@
 #include <string>
 #include <thread>
 #include <Windows.h>
-
-#include "glib/h/gmath.h"
+#else
+#include "curses.h"
+#endif
 
 #define _g_NIE(msg) throw NotImplementedException(msg)
 #define _g_uNIE throw NotImplementedException("Unknown Exception")
