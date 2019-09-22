@@ -21,6 +21,8 @@
 
 #ifdef _MSC_BUILD
 #include <Windows.h>
+#else
+#include "curses.h"
 #endif
 
 #define _g_NIE(msg) throw NotImplementedException(msg)
