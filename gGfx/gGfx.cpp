@@ -236,7 +236,8 @@ void Sprite::draw(const EngineConW& gfx, int x, int y) const
     }
 
 }
-#else
+
+#elif defined(__linux__)
 
 void EngineCurses::draw(int x, int y, short color, wchar_t ch)
 {

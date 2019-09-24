@@ -19,7 +19,7 @@
 #include <string>
 #include <thread>
 #include <Windows.h>
-#else
+#elif __linux__
 #include "curses.h"
 #endif
 
@@ -112,7 +112,7 @@ struct KeyState {
 class EngineGFX
 {
 public:
-    virtual void draw(int x, int y, short color, wchar_t ch) = 0;
+    virtual void draw(int x, int y, short color, wchar_t ch) const = 0;
     virtual void run() = 0;
 
 protected:
@@ -202,7 +202,7 @@ private:
 
 };
 
-#endif
+#elif defined(__linux__)
 
 class EngineCurses : public EngineGFX
 {
@@ -226,6 +226,8 @@ private:
 
     int refreshRate = 1;
 };
+
+#endif
 
 // ************************************************************************** //
 //                                 Geometry                                   //
