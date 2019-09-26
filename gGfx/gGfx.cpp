@@ -178,12 +178,21 @@ void EngineConW::inputHandlingMouse()
         inputMouseStateOld[m] = inputMouseStateNew[m];
     }
 }
-void EngineConW::draw(const Point2D& p, short color) const              { draw((int)p.x, (int)p.y, color); }
-void EngineConW::draw(int x, int y, short color) const				    { draw(x, y, color, PIXEL_SOLID); }
+
 void EngineConW::draw(int x, int y, short color, wchar_t ch) const
 {
     screenBuffer[y * screenWidth + x].Char.UnicodeChar = ch;
     screenBuffer[y * screenWidth + x].Attributes = color;
+}
+
+void EngineConW::draw(int x, int y, short color) const
+{
+    draw(x, y, color, PIXEL_SOLID);
+}
+
+void EngineConW::draw(const Point2D& p, short color) const
+{
+    draw((int)p.x, (int)p.y, color);
 }
 
 void EngineConW::draw(const Sprite& sprite) const
