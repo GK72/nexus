@@ -60,6 +60,13 @@ EngineConW::~EngineConW()
     SetConsoleMode(hConsoleIn, hConsoleOriginalIn);
 }
 
+void EngineConW::run()
+{
+    atomActive = true;
+    std::thread t(&EngineConW::MainThread, this);
+    t.join();
+}
+
 void EngineConW::MainThread()
 {
     init();
@@ -69,9 +76,14 @@ void EngineConW::MainThread()
 
     while (atomActive)
     {
+        //std::unique_lock<std::mutex> lk(mx);
+        //cv.wait(lk, []{ return ; });
+
         // Time handling
+        t2 = std::chrono::system_clock::now();
         std::chrono::duration<float> diff = t2 - t1;
         t1 = t2;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         float elapsedTime = diff.count();
 
         inputHandlingKeyboard();
@@ -165,12 +177,6 @@ void EngineConW::inputHandlingMouse()
         }
         inputMouseStateOld[m] = inputMouseStateNew[m];
     }
-}
-void EngineConW::run()
-{
-    atomActive = true;
-    std::thread t = std::thread(&EngineConW::MainThread, this);
-    t.join();
 }
 void EngineConW::draw(const Point2D& p, short color) const              { draw((int)p.x, (int)p.y, color); }
 void EngineConW::draw(int x, int y, short color) const				    { draw(x, y, color, PIXEL_SOLID); }

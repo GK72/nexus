@@ -16,6 +16,7 @@
 #include <atomic>
 #include <chrono>
 #include <exception>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -139,6 +140,9 @@ public:
     void printChar(const char ch);
     void print(const char *ch);
 
+    void setCurPosX(short x) { curPosX = x; }
+    void setCurPosY(short y) { curPosY = y; }
+
     // Getter methods
 
     KeyState getKey(int keyID) const { return inputKey[keyID]; }
@@ -153,6 +157,8 @@ protected:
 
 private:
     static std::atomic<bool> atomActive;
+    static std::mutex mx;
+    static std::condition_variable cv;
 
     short screenWidth;
     short screenHeight;
