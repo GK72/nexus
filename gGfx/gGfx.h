@@ -129,9 +129,9 @@ public:
     virtual ~EngineConW();
 
     void run();
-    void draw(const Point2D& p, short color) const;
-    void draw(int x, int y, short color) const;
     void draw(int x, int y, short color, wchar_t ch) const;
+    void draw(int x, int y, short color) const;
+    void draw(const Point2D& p, short color) const;
     void draw(const Sprite& sprite) const;
     void printChar(const char ch);
     void print(const char *ch);
@@ -150,6 +150,8 @@ public:
 protected:
     virtual void init() = 0;
     virtual void update(float elapsedTime) = 0;
+
+    CHAR_INFO* screenBuffer;
 
 private:
     static std::atomic<bool> atomActive;
@@ -175,7 +177,6 @@ private:
     HANDLE hConsoleOut;
     HANDLE hConsoleIn;
     DWORD hConsoleOriginalIn;
-    CHAR_INFO* screenBuffer;
     SMALL_RECT windowRect;
     CONSOLE_CURSOR_INFO consoleCursor;
     bool isConsoleInFocus;
