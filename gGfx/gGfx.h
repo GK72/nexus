@@ -13,16 +13,7 @@
 
 #pragma once
 
-#include <atomic>
-#include <chrono>
-#include <exception>
-#include <mutex>
-#include <string>
-#include <thread>
-#include <Windows.h>
-#elif __linux__
-#include "curses.h"
-#endif
+#include "pch.h"
 
 #define _g_NIE(msg) throw NotImplementedException(msg)
 #define _g_uNIE throw NotImplementedException("Unknown Exception")
@@ -118,6 +109,7 @@ public:
 
 protected:
     virtual void init() = 0;
+    virtual int  input() = 0;
     virtual void update(float elapsedTime) = 0;
 };
 
@@ -133,30 +125,35 @@ public:
     void draw(int x, int y, short color) const;
     void draw(const Point2D& p, short color) const;
     void draw(const Sprite& sprite) const;
-    void printChar(const char ch);
-    void print(const char *ch);
 
-    void setCurPosX(short x) { curPosX = x; }
-    void setCurPosY(short y) { curPosY = y; }
+    void print(std::string str);
+    void printn(std::string str);
+    void printn();
+    void printr(std::string str);
+
+    void setCurPosY(short y)                    { curPosY = y; }
+    void setCurPosX(short x)                    { curPosX = x; }
 
     // Getter methods
 
-    KeyState getKey(int keyID) const { return inputKey[keyID]; }
+    KeyState getKey(int keyID) const            { return inputKey[keyID]; }
     KeyState getMouseButton(int buttonID) const { return inputMouseButtons[buttonID]; }
-    int getMouseX() const { return mousePosX; }
-    int getMouseY()	const { return mousePosY; }
-    bool IsFocused() const { return isConsoleInFocus; }
+    int getMouseX() const                       { return mousePosX; }
+    int getMouseY()	const                       { return mousePosY; }
+    bool IsFocused() const                      { return isConsoleInFocus; }
 
 protected:
     virtual void init() = 0;
+    virtual int  input() = 0;
     virtual void update(float elapsedTime) = 0;
 
     CHAR_INFO* screenBuffer;
 
 private:
     static std::atomic<bool> atomActive;
-    static std::mutex mx;
-    static std::condition_variable cv;
+    std::mutex mx;
+    std::condition_variable cv;
+    bool hasInputEvent = true;                  // Because the first frame needs to be rendered
 
     short screenWidth;
     short screenHeight;
@@ -182,7 +179,8 @@ private:
     bool isConsoleInFocus;
 
     // Private methods
-    void MainThread();
+    void InputThread();
+    void DisplayThread();
     void eventHandlingConsole();
     void inputHandlingKeyboard();
     void inputHandlingMouse();

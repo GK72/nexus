@@ -10,10 +10,11 @@ public:
     EngineGTT();
 
     void init() override;
+    int  input() override;
     void update(float elapsedTime) override;
 
 private:
-
+    std::string outstr;
 };
 
 

@@ -12,6 +12,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gGfx", "gGfx\gGfx.vcxproj", "{79406968-F2D9-4DD8-B66F-68DDDEC63008}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rpg", "rpg\rpg.vcxproj", "{CEBEE701-E2A7-416F-97D0-B02B11923B34}"
+	ProjectSection(ProjectDependencies) = postProject
+		{79406968-F2D9-4DD8-B66F-68DDDEC63008} = {79406968-F2D9-4DD8-B66F-68DDDEC63008}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

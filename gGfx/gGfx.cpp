@@ -6,7 +6,7 @@
 // **                                          **
 // **********************************************
 
-#include <math.h>
+#include "pch.h"
 #include "gGfx.h"
 
 namespace glib {
@@ -62,33 +62,49 @@ EngineConW::~EngineConW()
 
 void EngineConW::run()
 {
+    init();
     atomActive = true;
-    std::thread t(&EngineConW::MainThread, this);
-    t.join();
+    std::thread input(&EngineConW::InputThread, this);
+    std::thread display(&EngineConW::DisplayThread, this);
+    input.join();
+    display.join();
 }
 
-void EngineConW::MainThread()
+void EngineConW::InputThread()
 {
-    init();
+    while (atomActive)
+    {
+        std::unique_lock<std::mutex> lk(mx);
 
+        inputHandlingKeyboard();
+        eventHandlingConsole();
+        inputHandlingMouse();
+        if (input()) {
+            hasInputEvent = true;
+        }
+
+        lk.unlock();
+        cv.notify_one();
+    }
+}
+
+void EngineConW::DisplayThread()
+{
     auto t1 = std::chrono::system_clock::now();
     auto t2 = std::chrono::system_clock::now();
 
     while (atomActive)
     {
-        //std::unique_lock<std::mutex> lk(mx);
-        //cv.wait(lk, []{ return ; });
+        std::unique_lock<std::mutex> lk(mx);
+        cv.wait(lk, [this]{ return hasInputEvent; });
+        hasInputEvent = false;
+        lk.unlock();
 
         // Time handling
         t2 = std::chrono::system_clock::now();
         std::chrono::duration<float> diff = t2 - t1;
         t1 = t2;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
         float elapsedTime = diff.count();
-
-        inputHandlingKeyboard();
-        eventHandlingConsole();
-        inputHandlingMouse();
 
         // Refresh screen
         memset(screenBuffer, 0, sizeof(CHAR_INFO) * pixels);
@@ -201,23 +217,41 @@ void EngineConW::draw(const Sprite& sprite) const
     throw std::exception("Not yet implemented");
 }
 
-void EngineConW::printChar(const char ch)
+void EngineConW::print(std::string str)
 {
-    draw(curPosX, curPosY, FG_WHITE, ch);
-    if (++curPosX >= screenWidth) {
-        curPosX = 0;
-        ++curPosY;
+    for (const auto& s : str) {
+        draw(curPosX, curPosY, FG_WHITE, s);
+        if (++curPosX >= screenWidth) {
+            curPosX = 0;
+            ++curPosY;
+        }
     }
 }
 
-void EngineConW::print(const char* ch)
+void EngineConW::printn(std::string str)
 {
-    int i = 0;
-    while (ch[i] != '\0') {
-        printChar(ch[i]);
-        ++i;
-    }
+    print(str);
+    ++curPosY;
+    curPosX = 0;
 }
+
+void EngineConW::printn()
+{
+    ++curPosY;
+    curPosX = 0;
+}
+
+void EngineConW::printr(std::string str)
+{
+    short origCurPosX = curPosX;
+    short origCurPosY = curPosY;
+
+    print(str);
+
+    curPosX = origCurPosX;
+    curPosY = origCurPosY;
+}
+
 
 // ************************************************************************** //
 
