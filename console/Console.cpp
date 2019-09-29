@@ -18,10 +18,6 @@
 
 int main()
 {
-#ifdef __linux__
-    glib::gGfx::EngineGFX* gfx = new glib::gGfx::EngineCurses();
-#elif defined(_MSC_BUILD)
-    glib::gGfx::EngineGFX* gfx = new glib::rpg::EngineGTT();
-#endif
-    gfx->run();
+    glib::gGfx::EngineGFX* game = new glib::rpg::EngineGTT();
+    game->run();
 }

@@ -181,7 +181,6 @@
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="datatable_test.cpp" />
-    <ClCompile Include="CFrame.cpp" />
     <ClCompile Include="ml_test.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -191,9 +190,6 @@
     <ProjectReference Include="..\rpg\rpg.vcxproj">
       <Project>{cebee701-e2a7-416f-97d0-b02b11923b34}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFrame.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

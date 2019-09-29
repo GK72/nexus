@@ -24,13 +24,5 @@
     <ClCompile Include="datatable_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CFrame.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFrame.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
