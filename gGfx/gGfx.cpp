@@ -74,17 +74,19 @@ void EngineConW::InputThread()
 {
     while (atomActive)
     {
-        std::unique_lock<std::mutex> lk(mx);
+        //std::unique_lock<std::mutex> lk(mx);
 
+        WaitForSingleObject(hConsoleIn, INFINITE);
         inputHandlingKeyboard();
         eventHandlingConsole();
         inputHandlingMouse();
+
         if (input()) {
             hasInputEvent = true;
         }
 
-        lk.unlock();
-        cv.notify_one();
+        //lk.unlock();
+        //cv.notify_one();
     }
 }
 
@@ -95,10 +97,10 @@ void EngineConW::DisplayThread()
 
     while (atomActive)
     {
-        std::unique_lock<std::mutex> lk(mx);
+        /*std::unique_lock<std::mutex> lk(mx);
         cv.wait(lk, [this]{ return hasInputEvent; });
         hasInputEvent = false;
-        lk.unlock();
+        lk.unlock();*/
 
         // Time handling
         t2 = std::chrono::system_clock::now();
@@ -118,6 +120,7 @@ void EngineConW::eventHandlingConsole()
 {
     INPUT_RECORD inBuf[32];
     DWORD events = 0;
+
     GetNumberOfConsoleInputEvents(hConsoleIn, &events);
     if (events > 0) ReadConsoleInput(hConsoleIn, inBuf, events, &events);
 
