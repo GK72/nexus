@@ -178,9 +178,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="frames.cpp" />
     <ClCompile Include="gGfx.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="frames.h" />
     <ClInclude Include="gGfx.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

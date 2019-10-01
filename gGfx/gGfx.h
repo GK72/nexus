@@ -120,8 +120,6 @@ public:
     virtual void run() = 0;
 
     virtual void draw(int x, int y, short color, wchar_t ch) const = 0;
-    virtual void draw(int x, int y, short color) const = 0;
-    virtual void draw(const Point2D& p, short color) const = 0;
     virtual void draw(const Sprite& sprite) const = 0;
 
     virtual void print(std::string str) = 0;
@@ -141,7 +139,7 @@ public:
     virtual bool IsFocused() const = 0;
 
 protected:
-    Engine* engine;
+    Engine* engine = nullptr;
 
 };
 
@@ -154,10 +152,9 @@ public:
 
     void run();
     void draw(int x, int y, short color, wchar_t ch) const;
-    void draw(int x, int y, short color) const;
-    void draw(const Point2D& p, short color) const;
     void draw(const Sprite& sprite) const;
 
+    void print(char ch);
     void print(std::string str);
     void printn(std::string str);
     void printn();
@@ -207,6 +204,7 @@ private:
     bool isConsoleInFocus;
 
     // Private methods
+
     void InputThread();
     void DisplayThread();
     void eventHandlingConsole();

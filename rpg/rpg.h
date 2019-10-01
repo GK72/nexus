@@ -1,8 +1,11 @@
 #pragma once
 #include "gGfx.h"
+#include "frames.h"
 
 namespace glib {
 namespace rpg {
+
+using glib::gGfx::Point2D;
 
 class Game : public glib::gGfx::Engine
 {

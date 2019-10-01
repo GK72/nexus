@@ -206,30 +206,29 @@ void EngineConW::draw(int x, int y, short color, wchar_t ch) const
     screenBuffer[y * screenWidth + x].Attributes = color;
 }
 
-void EngineConW::draw(int x, int y, short color) const
-{
-    draw(x, y, color, PIXEL_SOLID);
-}
-
-void EngineConW::draw(const Point2D& p, short color) const
-{
-    draw((int)p.x, (int)p.y, color);
-}
-
 void EngineConW::draw(const Sprite& sprite) const
 {
     // TODO: Implement sprite draw method
     throw std::exception("Not yet implemented");
 }
 
+void EngineConW::print(char ch)
+{
+    if (++curPosX >= screenWidth) {
+        curPosX = 0;
+        ++curPosY;
+    }
+    draw(curPosX, curPosY, FG_WHITE, ch);
+}
+
 void EngineConW::print(std::string str)
 {
     for (const auto& s : str) {
-        draw(curPosX, curPosY, FG_WHITE, s);
         if (++curPosX >= screenWidth) {
             curPosX = 0;
             ++curPosY;
         }
+        draw(curPosX, curPosY, FG_WHITE, s);
     }
 }
 
@@ -285,7 +284,7 @@ void Sprite::draw(const EngineConW& gfx, int x, int y) const
 {
     for (int i = 0; i < width; ++i) {
         for (int j = 0; j < height; ++j) {
-            gfx.draw(x + i, y + j, colour[j * width + i]);
+            gfx.draw(x + i, y + j, colour[j * width + i], PIXEL_SOLID);
         }
     }
 
