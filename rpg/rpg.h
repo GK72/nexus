@@ -4,16 +4,19 @@
 namespace glib {
 namespace rpg {
 
-class EngineGTT : public glib::gGfx::EngineConW
+class Game : public glib::gGfx::Engine
 {
 public:
-    EngineGTT();
+    Game();
+    void run();
 
-    void init() override;
-    int  input() override;
-    void update(float elapsedTime) override;
+protected:
+    void init();
+    int inputHandling();
+    void update(float elapsedTime);
 
 private:
+    glib::gGfx::EngineGFX* gfx;
     std::string outstr;
 };
 

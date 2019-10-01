@@ -18,6 +18,7 @@
 
 int main()
 {
-    glib::gGfx::EngineGFX* game = new glib::rpg::EngineGTT();
+    glib::rpg::Game* game = new glib::rpg::Game();
     game->run();
+
 }
