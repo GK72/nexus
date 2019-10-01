@@ -16,8 +16,10 @@ namespace gGfx {
 
 std::atomic<bool> EngineConW::atomActive = false;
 
-EngineConW::EngineConW(int width, int height, int fontWidth, int fontHeight)
+EngineConW::EngineConW(Engine* _engine, int width, int height, int fontWidth, int fontHeight)
+    //: engine(engine)
 {
+    engine = _engine;
     GetConsoleMode(hConsoleIn, &hConsoleOriginalIn);
 
     hConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
@@ -62,11 +64,11 @@ EngineConW::~EngineConW()
 
 void EngineConW::run()
 {
-    init();
+    engine->init();
     atomActive = true;
-    std::thread input(&EngineConW::InputThread, this);
+    std::thread inputHandling(&EngineConW::InputThread, this);
     std::thread display(&EngineConW::DisplayThread, this);
-    input.join();
+    inputHandling.join();
     display.join();
 }
 
@@ -81,7 +83,7 @@ void EngineConW::InputThread()
         eventHandlingConsole();
         inputHandlingMouse();
 
-        if (input()) {
+        if (engine->inputHandling()) {
             hasInputEvent = true;
         }
 
@@ -110,7 +112,7 @@ void EngineConW::DisplayThread()
 
         // Refresh screen
         memset(screenBuffer, 0, sizeof(CHAR_INFO) * pixels);
-        update(elapsedTime);
+        engine->update(elapsedTime);
 
         WriteConsoleOutput(hConsoleOut, screenBuffer, { screenWidth, screenHeight }, { 0, 0 }, &windowRect);
     }

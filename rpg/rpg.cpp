@@ -11,25 +11,34 @@
 
 namespace glib {
 namespace rpg {
-EngineGTT::EngineGTT() : EngineConW(150, 40, 7, 14)
+Game::Game()
+{
+#ifdef _MSC_BUILD
+    gfx = new glib::gGfx::EngineConW(this, 150, 40, 7, 14);
+#else
+    gfx = new glib::gGfx::EngineCurses(150, 40, 7, 14);
+#endif
+}
+
+void Game::run()
+{
+    gfx->run();
+}
+
+void Game::init()
 {
 
 }
 
-void EngineGTT::init()
-{
-
-}
-
-int EngineGTT::input()
+int Game::inputHandling()
 {
     int inputEventNo = 0;
-    if (getKey(VK_SPACE).isPressed) {
+    if (gfx->getKey(VK_SPACE).isPressed) {
         outstr = "SPACE was pressed";
         ++inputEventNo;
     }
 
-    if (getKey(VK_RETURN).isPressed) {
+    if (gfx->getKey(VK_RETURN).isPressed) {
         outstr = "RETURN was pressed";
         ++inputEventNo;
     }
@@ -39,18 +48,17 @@ int EngineGTT::input()
 
 
 
-void EngineGTT::update(float elapsedTime)
+void Game::update(float elapsedTime)
 {
-    setCurPosX(0);
-    setCurPosY(0);
+    gfx->setCurPosX(0);
+    gfx->setCurPosY(0);
 
-    printn("Testing...");
-    printn("=======================================");
-    printn(std::to_string(elapsedTime));
-    printn();
-    printn(outstr);
-    // TODO: Condition Variable
-    // https://ncona.com/2019/04/using-condition-variables-in-cpp/
+    gfx->printn("Testing...");
+    
+    gfx->printn("=======================================");
+    gfx->printn(std::to_string(elapsedTime));
+    gfx->printn();
+    gfx->printn(outstr);
 }
 
 

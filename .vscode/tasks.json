@@ -28,7 +28,8 @@
                 "isDefault": true
             },
             "options": {
-                "cwd": "/mnt/c/dev/build/glib"
+                // "cwd": "/mnt/c/dev/build/glib"
+                "cwd" : "/mnt/c/Users/gkpro/source/repos/libs/glib"
             }
         },
         {

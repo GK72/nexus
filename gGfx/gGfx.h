@@ -103,23 +103,53 @@ struct KeyState {
     bool isHeld;
 };
 
-class EngineGFX
+class Engine
 {
 public:
-    virtual void draw(int x, int y, short color, wchar_t ch) const = 0;
+    virtual void init() = 0;
+    virtual int  inputHandling() = 0;
+    virtual void update(float elapsedTime) = 0;
+
+};
+
+class EngineGFX 
+{
+public:
+    EngineGFX() {}
+    EngineGFX(Engine* engine) : engine(engine) {}
     virtual void run() = 0;
 
+    virtual void draw(int x, int y, short color, wchar_t ch) const = 0;
+    virtual void draw(int x, int y, short color) const = 0;
+    virtual void draw(const Point2D& p, short color) const = 0;
+    virtual void draw(const Sprite& sprite) const = 0;
+
+    virtual void print(std::string str) = 0;
+    virtual void printn(std::string str) = 0;
+    virtual void printn() = 0;
+    virtual void printr(std::string str) = 0;
+
+    virtual void setCurPosY(short y) = 0;
+    virtual void setCurPosX(short x) = 0;
+
+    // Getter methods
+
+    virtual KeyState getKey(int keyID) const = 0;
+    virtual KeyState getMouseButton(int buttonID) const = 0;
+    virtual int getMouseX() const = 0;
+    virtual int getMouseY()	const = 0;
+    virtual bool IsFocused() const = 0;
+
 protected:
-    virtual void init() = 0;
-    virtual int  input() = 0;
-    virtual void update(float elapsedTime) = 0;
+    Engine* engine;
+
 };
 
 #ifdef _MSC_BUILD
 class EngineConW : public EngineGFX
 {
 public:
-    EngineConW(int width, int height, int fontWidth, int fontHeight);
+    EngineConW(Engine* engine, int width, int height, int fontWidth, int fontHeight);
     virtual ~EngineConW();
 
     void run();
@@ -145,10 +175,6 @@ public:
     bool IsFocused() const                      { return isConsoleInFocus; }
 
 protected:
-    virtual void init() = 0;
-    virtual int  input() = 0;
-    virtual void update(float elapsedTime) = 0;
-
     CHAR_INFO* screenBuffer;
 
 private:
