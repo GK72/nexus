@@ -59,6 +59,16 @@ void Game::update(float elapsedTime)
     gfx->printn(std::to_string(elapsedTime));
     gfx->printn();
     gfx->printn(outstr);
+
+    Point2D a(10,10);
+    Point2D b(30,10);
+
+    // TODO: Do not create new object in every frame
+    glib::gGfx::Frame* frame = new glib::gGfx::FrameBasic(gfx, a, b);
+
+    glib::gGfx::FrameContent* c = new glib::gGfx::FrameContentText(frame, std::string("This is a long test string to test word wrap in frame."));
+    frame->setContent(c);
+    frame->draw();
 }
 
 

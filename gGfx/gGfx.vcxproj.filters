@@ -18,12 +18,18 @@
     <ClCompile Include="gGfx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="frames.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gGfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="frames.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
