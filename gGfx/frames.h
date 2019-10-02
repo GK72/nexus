@@ -67,8 +67,8 @@ private:
     Point2D _extent;
     wchar_t _borderType = '#';
 
-    FrameContent* _content;
-    EngineGFX* _gfx;
+    FrameContent* _content = nullptr;
+    EngineGFX* _gfx = nullptr;
 
 };
 
