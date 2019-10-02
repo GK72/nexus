@@ -21,6 +21,11 @@ protected:
 private:
     glib::gGfx::EngineGFX* gfx;
     std::string outstr;
+
+    glib::gGfx::Frame* frame = nullptr;
+    glib::gGfx::FrameContent* c = nullptr;
+
+    // TODO: collection of objects to draw
 };
 
 

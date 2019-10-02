@@ -1,12 +1,6 @@
 #include "pch.h"
 #include "frames.h"
 
-//void glib::gGfx::FrameContentText::set(Frame* frame, std::string str)
-//{
-//    _frame = frame;
-//    _str = str;
-//}
-
 glib::gGfx::FrameContentText::FrameContentText(Frame* frame, std::string str)
 {
     _frame = frame;
@@ -19,19 +13,19 @@ void glib::gGfx::FrameContentText::draw()
     size_t length_y = _frame->getSize().y;
     std::string tmp;
     size_t begin = 0;
-    size_t str_length = length_x;
-    size_t lines = _str.length() / length_x;
-
-    _frame->getEngine()->setCurPosX(_frame->getTopLeft().x + 1);
-    _frame->getEngine()->setCurPosY(_frame->getTopLeft().y + 1);
+    size_t str_length = length_x - 1;
+    size_t lines = std::ceil(_str.length() / (float)length_x);
 
     for (size_t i = 0; i < lines; ++i) {
+        // TODO: don't display the whitespace at the end of line -> delete it
+        _frame->getEngine()->setCurPosX(_frame->getTopLeft().x);
+        _frame->getEngine()->setCurPosY(_frame->getTopLeft().y + i + 1);
         begin = i * length_x;
         tmp = _str.substr(begin, str_length);
+
         _frame->getEngine()->print(tmp);
-        _frame->getEngine()->printn();
-        // TODO: Only the first line showing (and it needs to be shifted one char left)
     }
+
 }
 
 glib::gGfx::FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point2D& extent)
