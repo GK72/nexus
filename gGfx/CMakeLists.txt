@@ -1,1 +1,1 @@
-add_library (gGfx gGfx.cpp)
+add_library (gGfx gGfx.cpp frames.cpp)
