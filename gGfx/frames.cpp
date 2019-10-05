@@ -16,6 +16,11 @@ FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point
     _extent = extent;
 }
 
+FrameBasic::~FrameBasic()
+{
+    if (_content) delete _content;
+}
+
 void FrameBasic::draw()
 {
     // Drawing horizontal lines
@@ -72,6 +77,7 @@ FrameContentText::FrameContentText(Frame* frame, std::string str)
     _formatter = new LinebreakSimple(this);
     _width = (size_t)frame->getSize().x - 1 - _padding * 2;
     _height = (size_t)frame->getSize().y - 1;
+    frame->setContent(this);
 }
 
 FrameContentText::~FrameContentText()
@@ -117,6 +123,17 @@ void LinebreakSimple::format()
     }
 
     _frameContent->setLinebreaks(linebreaks);
+}
+
+
+Frame* FrameBuilder::createFrame()
+{
+    Point2D p(0, 5);
+    Point2D q(50, 15);
+    Frame* frame = new FrameBasic(_engine, p, q);
+    new FrameContentText(frame, std::string("Frame Builder test"));
+
+    return frame;
 }
 
 } // End of namespace gGfx

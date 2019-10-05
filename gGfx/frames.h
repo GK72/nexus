@@ -16,6 +16,8 @@ public:
 
 class Frame {
 public:
+    virtual ~Frame() {}
+
     virtual void close() = 0;
     virtual void draw() = 0;
     virtual void resize() = 0;
@@ -53,6 +55,7 @@ public:
 class FrameBasic : public Frame {
 public:
     FrameBasic(EngineGFX* gfx, const Point2D& topleft, const Point2D& extent);
+    ~FrameBasic();
 
     void draw() override;
     void move() override;
@@ -110,6 +113,17 @@ public:
 
 private:
     FrameContent* _frameContent;
+};
+
+
+class FrameBuilder {
+public:
+    FrameBuilder(EngineGFX* engine) : _engine(engine) {}
+    Frame* createFrame();
+
+private:
+    EngineGFX* _engine;
+
 };
 
 

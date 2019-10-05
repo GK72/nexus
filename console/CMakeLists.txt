@@ -3,7 +3,6 @@ add_executable (gLib Console.cpp)
 target_link_libraries (gLib LINK_PUBLIC rpg)
 target_link_libraries (gLib LINK_PUBLIC gmath)
 target_link_libraries (gLib LINK_PUBLIC gGfx)
-target_link_libraries (gLib LINK_PUBLIC utility)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_link_libraries (gLib LINK_PUBLIC curses)

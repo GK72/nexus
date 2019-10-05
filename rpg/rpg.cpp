@@ -11,6 +11,8 @@
 
 namespace glib {
 namespace rpg {
+
+
 Game::Game()
 {
 #ifdef _MSC_BUILD
@@ -20,6 +22,12 @@ Game::Game()
 #endif
 }
 
+Game::~Game()
+{
+    delete gfx;
+    if (frame) delete frame;
+}
+
 void Game::run()
 {
     gfx->run();
@@ -27,10 +35,8 @@ void Game::run()
 
 void Game::init()
 {
-    Point2D a(10,10);
-    Point2D b(30,10);
-    frame = new glib::gGfx::FrameBasic(gfx, a, b);
-    c = new glib::gGfx::FrameContentText(frame, std::string("This is a test with a long long long string. And another."));
+    glib::gGfx::FrameBuilder framebuilder(gfx);
+    frame = framebuilder.createFrame();
 }
 
 int Game::inputHandling()
@@ -62,7 +68,6 @@ void Game::update(float elapsedTime)
     gfx->printn();
     gfx->printn(outstr);
 
-    frame->setContent(c);
     frame->draw();
 }
 

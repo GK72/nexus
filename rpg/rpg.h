@@ -11,6 +11,7 @@ class Game : public glib::gGfx::Engine
 {
 public:
     Game();
+    ~Game();
     void run();
 
 protected:
@@ -23,7 +24,6 @@ private:
     std::string outstr;
 
     glib::gGfx::Frame* frame = nullptr;
-    glib::gGfx::FrameContent* c = nullptr;
 
     // TODO: collection of objects to draw
 };
