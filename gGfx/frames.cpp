@@ -1,34 +1,13 @@
 #include "pch.h"
 #include "frames.h"
 
-glib::gGfx::FrameContentText::FrameContentText(Frame* frame, std::string str)
-{
-    _frame = frame;
-    _str = str;
-}
+namespace glib {
+namespace gGfx {
 
-void glib::gGfx::FrameContentText::draw()
-{
-    size_t length_x = _frame->getSize().x;
-    size_t length_y = _frame->getSize().y;
-    std::string tmp;
-    size_t begin = 0;
-    size_t str_length = length_x - 1;
-    size_t lines = std::ceil(_str.length() / (float)length_x);
 
-    for (size_t i = 0; i < lines; ++i) {
-        // TODO: don't display the whitespace at the end of line -> delete it
-        _frame->getEngine()->setCurPosX(_frame->getTopLeft().x);
-        _frame->getEngine()->setCurPosY(_frame->getTopLeft().y + i + 1);
-        begin = i * length_x;
-        tmp = _str.substr(begin, str_length);
+int Frame::_id = 0;
 
-        _frame->getEngine()->print(tmp);
-    }
-
-}
-
-glib::gGfx::FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point2D& extent)
+FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point2D& extent)
 {
     _gfx = engineGfx;
     _topleft = topleft;
@@ -37,7 +16,7 @@ glib::gGfx::FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft,
     _extent = extent;
 }
 
-void glib::gGfx::FrameBasic::draw()
+void FrameBasic::draw()
 {
     // Drawing horizontal lines
     size_t x = (size_t)_extent.x;
@@ -62,22 +41,83 @@ void glib::gGfx::FrameBasic::draw()
     */
 }
 
-void glib::gGfx::FrameBasic::move()
+void FrameBasic::move()
 {
     _g_uNIE;
 }
 
-void glib::gGfx::FrameBasic::resize()
+void FrameBasic::resize()
 {
     _g_uNIE;
 }
 
-void glib::gGfx::FrameBasic::setTitle()
+void FrameBasic::close()
 {
     _g_uNIE;
 }
 
-void glib::gGfx::FrameBasic::setContent(FrameContent* content)
+void FrameBasic::setTitle()
+{
+    _g_uNIE;
+}
+
+void FrameBasic::setContent(FrameContent* content)
 {
     _content = content;
 }
+
+FrameContentText::FrameContentText(Frame* frame, std::string str)
+        : _frame(frame), _str(str)
+{
+    _formatter = new LinebreakSimple(this);
+    _width = (size_t)frame->getSize().x - 1 - _padding * 2;
+    _height = (size_t)frame->getSize().y - 1;
+}
+
+FrameContentText::~FrameContentText()
+{
+    delete _formatter;
+}
+
+void FrameContentText::draw()
+{
+    format();
+    EngineGFX* g = _frame->getEngine();
+    size_t lines = _linebreaks.size();
+    std::string line;
+    size_t begin = 0;
+    size_t str_length = 0;
+
+    for (size_t i = 0; i < lines; ++i) {
+        g->setCurPosX(_frame->getTopLeft().x + _padding);
+        g->setCurPosY(_frame->getTopLeft().y + i + 1);
+
+        str_length = _linebreaks.at(i) - begin;
+        line = _str.substr(begin, str_length);
+        g->print(line);
+        begin = _linebreaks.at(i);
+    }
+}
+
+void FrameContentText::format()
+{
+    _formatter->format();
+}
+
+
+void LinebreakSimple::format()
+{
+    size_t width = _frameContent->getWidth();
+    size_t strwidth = _frameContent->getContent().size();
+    size_t count = strwidth / width + 1;
+    std::vector<int> linebreaks;
+
+    for (size_t i = 0; i < count; ++i) {
+        linebreaks.push_back(width * (i + 1));
+    }
+
+    _frameContent->setLinebreaks(linebreaks);
+}
+
+} // End of namespace gGfx
+} // End of namespace glib
