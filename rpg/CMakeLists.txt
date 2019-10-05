@@ -1,1 +1,3 @@
-add_library (rpg rpg.cpp)
+add_library (rpg
+	rpg.cpp rpg.h
+)
