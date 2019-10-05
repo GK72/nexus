@@ -30,7 +30,7 @@ void Game::init()
     Point2D a(10,10);
     Point2D b(30,10);
     frame = new glib::gGfx::FrameBasic(gfx, a, b);
-    c = new glib::gGfx::FrameContentText(frame, std::string("This is a test."));
+    c = new glib::gGfx::FrameContentText(frame, std::string("This is a test with a long long long string. And another."));
 }
 
 int Game::inputHandling()

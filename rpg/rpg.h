@@ -1,6 +1,6 @@
 #pragma once
-#include "gGfx.h"
-#include "frames.h"
+#include "../gGfx/gGfx.h"
+#include "../gGfx/frames.h"
 
 namespace glib {
 namespace rpg {
