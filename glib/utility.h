@@ -17,7 +17,7 @@
 
 namespace glib {
 
-using pDim = std::vector<size_t>;                   // For passing dimensions as parameter
+using pDim = std::vector<gint>;                   // For passing dimensions as parameter
 
 template <class ...Ts> void print(Ts&&... args) {
     (std::cout << ... << args) << '\n';
@@ -38,8 +38,8 @@ std::string ipv6Formatter(std::string ipv6);
 
 template <class T> struct vectorloop_postfixInc {
     void operator()(T& c) {
-        size_t size = c.size();
-        for (size_t i = 0; i != size; i++) {
+        gint size = c.size();
+        for (gint i = 0; i != size; i++) {
             c[i] = ~c[i];
         }
     }
@@ -47,8 +47,8 @@ template <class T> struct vectorloop_postfixInc {
 
 template <class T> struct vectorloop_prefixInc {
     void operator()(T& c) {
-        size_t size = c.size();
-        for (size_t i = 0; i != size; ++i) {
+        gint size = c.size();
+        for (gint i = 0; i != size; ++i) {
             c[i] = ~c[i];
         }
     }
@@ -56,7 +56,7 @@ template <class T> struct vectorloop_prefixInc {
 
 template <class T> struct vectorloop_iterator {
     void operator()(T& c) {
-        size_t size = c.size();
+        gint size = c.size();
         for (auto it = c.begin(); it != c.end(); ++it) {
             *it = ~*it;
         }
@@ -65,7 +65,7 @@ template <class T> struct vectorloop_iterator {
 
 template <class T> struct vectorautoloop {
     void operator()(T& c) {
-        size_t size = c.size();
+        gint size = c.size();
         for (auto &e : c) {
             e = ~e;
         }
@@ -74,7 +74,7 @@ template <class T> struct vectorautoloop {
 
 template <class T> struct vectorforeach {
     void operator()(T& c) {
-        size_t size = c.size();
+        gint size = c.size();
         std::for_each(c.begin(), c.end(), [](auto& e){e = ~e;});
     }
 };
@@ -85,9 +85,9 @@ template <class T> struct vectorforeach {
 template <class Time = std::chrono::microseconds
     ,class Container
     ,class Function>
-    std::vector<Time> measure(Function func, Container &cont, size_t runcount = 1) {
+    std::vector<Time> measure(Function func, Container &cont, gint runcount = 1) {
     std::vector<Time> timeresults;
-    for (size_t i = 0; i < runcount; ++i) {
+    for (gint i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
         func(cont);
         auto t2 = std::chrono::high_resolution_clock::now();
@@ -101,9 +101,9 @@ template <class Time = std::chrono::microseconds
 // Function can be a functor (function object), a named function or a lambda
 template <class Time = std::chrono::microseconds
     ,class Function>
-    std::vector<Time> measure(Function func, size_t runcount = 1) {
+    std::vector<Time> measure(Function func, gint runcount = 1) {
     std::vector<Time> timeresults;
-    for (size_t i = 0; i < runcount; ++i) {
+    for (gint i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
         func();
         auto t2 = std::chrono::high_resolution_clock::now();
@@ -116,7 +116,7 @@ template <class Time = std::chrono::microseconds
 template <class Time = std::chrono::microseconds>
 std::string getMeasureStats(std::vector<Time> &&vec, std::string &&label) {
     std::string str;
-    size_t size = vec.size();
+    gint size = vec.size();
     Time min = vec[0];
     Time max = vec[0];
     Time avg = Time{ 0 };
@@ -172,15 +172,15 @@ template <class T> struct iterator
 struct index
 {
 public:
-    index(const std::vector<size_t>& dims);
-    size_t at(const std::vector<size_t>& vec) const;
-    size_t at(size_t x, size_t y) const;
+    index(const std::vector<gint>& dims);
+    gint at(const std::vector<gint>& vec) const;
+    gint at(gint x, gint y) const;
 
 private:
-    std::vector<size_t> dims;
-    mutable size_t _global = 0;
-    size_t _tile = 0;
-    size_t _local = 0;
+    std::vector<gint> dims;
+    mutable gint _global = 0;
+    gint _tile = 0;
+    gint _local = 0;
 };
 
 // ************************************************************************** //
@@ -199,7 +199,7 @@ public:
 
 
 // compile-time endianness swap based on http://stackoverflow.com/a/36937049 
-//template<class T, std::size_t... N>
+//template<class T, std::gint... N>
 //constexpr T bswap_impl(T i, std::index_sequence<N...>) {
 //  return (((i >> N*CHAR_BIT & std::uint8_t(-1)) << (sizeof(T)-1-N)*CHAR_BIT) | ...);
 //}

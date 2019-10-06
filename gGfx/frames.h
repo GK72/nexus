@@ -46,7 +46,7 @@ public:
     virtual void draw() = 0;
     virtual void format() = 0;
     virtual std::string getContent() = 0;
-    virtual size_t getWidth() = 0;
+    virtual gint getWidth() = 0;
     virtual void setLinebreaks(std::vector<int> linebreaks) = 0;
 
 };
@@ -75,7 +75,7 @@ private:
     Point2D _topleft;
     Point2D _btmright;
     Point2D _extent;
-    wchar_t _borderType = '#';
+    wchar_t _borderType = '+';
 
     FrameContent* _content = nullptr;
     EngineGFX* _gfx = nullptr;
@@ -91,7 +91,7 @@ public:
     void format() override;
     
     std::string getContent() override   { return _str; }
-    size_t getWidth() override          { return _width; }
+    gint getWidth() override          { return _width; }
 
     void setLinebreaks(std::vector<int> linebreaks) { _linebreaks = linebreaks; }
 
@@ -99,9 +99,9 @@ private:
     Frame* _frame = nullptr;
     Formatter* _formatter;
     std::string _str;
-    size_t _width;
-    size_t _height;
-    size_t _padding = 1;
+    gint _width;
+    gint _height;
+    gint _padding = 1;
     std::vector<int> _linebreaks;
 };
 

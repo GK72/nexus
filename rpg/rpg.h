@@ -10,7 +10,7 @@ using glib::gGfx::Point2D;
 class Game : public glib::gGfx::Engine
 {
 public:
-    Game();
+    Game(gint width, gint height, gint fontWidth, gint fontHeight);
     ~Game();
     void run();
 
