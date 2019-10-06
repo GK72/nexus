@@ -95,8 +95,8 @@ void FrameContentText::draw()
     gint str_length = 0;
 
     for (gint i = 0; i < lines; ++i) {
-        g->setCurPosX(_frame->getTopLeft().x + _padding);
-        g->setCurPosY(_frame->getTopLeft().y + i + 1);
+        g->setCurPosX(_frame->getTopLeft().x + _frame->getBorderSize() + _padding);
+        g->setCurPosY(_frame->getTopLeft().y + _frame->getBorderSize() + i);
 
         str_length = _linebreaks.at(i) - begin;
         line = _str.substr(begin, str_length);

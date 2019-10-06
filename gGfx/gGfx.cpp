@@ -214,21 +214,23 @@ void EngineConW::draw(const Sprite& sprite) const
 
 void EngineConW::print(char ch)
 {
-    if (++curPosX >= screenWidth) {
+    if (curPosX >= screenWidth) {
         curPosX = 0;
         ++curPosY;
     }
-    draw(curPosX, curPosY, FG_WHITE, ch);
+    draw(curPosX, curPosY, FG_GREY, ch);
+    ++curPosX;
 }
 
 void EngineConW::print(std::string str)
 {
     for (const auto& s : str) {
-        if (++curPosX >= screenWidth) {
+        if (curPosX >= screenWidth) {
             curPosX = 0;
             ++curPosY;
         }
-        draw(curPosX, curPosY, FG_WHITE, s);
+        draw(curPosX, curPosY, FG_GREY, s);
+        ++curPosX;
     }
 }
 
