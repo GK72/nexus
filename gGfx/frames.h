@@ -28,6 +28,7 @@ public:
 
     virtual int getID() { return _id; }
     virtual std::string getTitle() = 0;
+    virtual gint getBorderSize() = 0;
     virtual Point2D getSize() = 0;
     virtual Point2D getTopLeft() = 0;
     virtual EngineGFX* getEngine() = 0;
@@ -67,6 +68,7 @@ public:
 
     std::string getTitle() override     { return _title; }
     EngineGFX* getEngine() override     { return _gfx; }
+    gint getBorderSize() override       { return _borderSize; }
     Point2D getSize() override          { return _extent; }
     Point2D getTopLeft() override       { return _topleft; }
 
@@ -76,6 +78,7 @@ private:
     Point2D _btmright;
     Point2D _extent;
     wchar_t _borderType = '+';
+    gint _borderSize = 1;
 
     FrameContent* _content = nullptr;
     EngineGFX* _gfx = nullptr;
