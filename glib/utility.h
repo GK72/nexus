@@ -17,6 +17,8 @@
 
 namespace glib {
 
+using gint = size_t;
+
 using pDim = std::vector<gint>;                   // For passing dimensions as parameter
 
 template <class ...Ts> void print(Ts&&... args) {
