@@ -24,14 +24,14 @@ FrameBasic::~FrameBasic()
 void FrameBasic::draw()
 {
     // Drawing horizontal lines
-    size_t x = (size_t)_extent.x;
-    for (size_t i = 0; i <= x; ++i) {
+    gint x = (gint)_extent.x;
+    for (gint i = 0; i <= x; ++i) {
         _gfx->draw((int)(_topleft.x + i), (int)_topleft.y, FG_GREY, _borderType);
         _gfx->draw((int)(_btmright.x - i), (int)_btmright.y, FG_GREY, _borderType);
     }
     // Drawing vertical lines
-    size_t y = (size_t)_extent.y;
-    for (size_t i = 0; i <= y; ++i) {
+    gint y = (gint)_extent.y;
+    for (gint i = 0; i <= y; ++i) {
         _gfx->draw((int)_topleft.x, (int)(_topleft.y + i), FG_GREY, _borderType);
         _gfx->draw((int)_btmright.x, (int)(_btmright.y - i), FG_GREY, _borderType);
     }
@@ -75,8 +75,8 @@ FrameContentText::FrameContentText(Frame* frame, std::string str)
         : _frame(frame), _str(str)
 {
     _formatter = new LinebreakSimple(this);
-    _width = (size_t)frame->getSize().x - 1 - _padding * 2;
-    _height = (size_t)frame->getSize().y - 1;
+    _width = (gint)frame->getSize().x - 1 - _padding * 2;
+    _height = (gint)frame->getSize().y - 1;
     frame->setContent(this);
 }
 
@@ -89,12 +89,12 @@ void FrameContentText::draw()
 {
     format();
     EngineGFX* g = _frame->getEngine();
-    size_t lines = _linebreaks.size();
+    gint lines = _linebreaks.size();
     std::string line;
-    size_t begin = 0;
-    size_t str_length = 0;
+    gint begin = 0;
+    gint str_length = 0;
 
-    for (size_t i = 0; i < lines; ++i) {
+    for (gint i = 0; i < lines; ++i) {
         g->setCurPosX(_frame->getTopLeft().x + _padding);
         g->setCurPosY(_frame->getTopLeft().y + i + 1);
 
@@ -113,12 +113,12 @@ void FrameContentText::format()
 
 void LinebreakSimple::format()
 {
-    size_t width = _frameContent->getWidth();
-    size_t strwidth = _frameContent->getContent().size();
-    size_t count = strwidth / width + 1;
+    gint width = _frameContent->getWidth();
+    gint strwidth = _frameContent->getContent().size();
+    gint count = strwidth / width + 1;
     std::vector<int> linebreaks;
 
-    for (size_t i = 0; i < count; ++i) {
+    for (gint i = 0; i < count; ++i) {
         linebreaks.push_back(width * (i + 1));
     }
 

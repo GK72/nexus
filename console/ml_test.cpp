@@ -28,7 +28,7 @@ void ml_test()
         glib::Matrix<double> x2 = x.getRow(0).tr();
         glib::Matrix<double> y2 = y.getRow(0);
         glib::ml::nnConfig nc;
-        nc.layerSizes = std::vector<size_t>{x2.getN(), 5, 5, 10};
+        nc.layerSizes = std::vector<gint>{x2.getN(), 5, 5, 10};
 
         glib::ml::NN nn(nc);
         nn.initNet();

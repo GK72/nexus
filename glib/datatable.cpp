@@ -24,7 +24,7 @@ public:
         std::string elem;
         std::stringstream ss;
         std::ifstream inf(fullpath);
-        size_t col = 0;
+        gint col = 0;
 
         // Reading first line, populating map with vectors - number of columns
         // One column = one vector

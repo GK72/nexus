@@ -13,8 +13,8 @@
 namespace glib {
 
 std::string ipv6Formatter(std::string ipv6) {
-    size_t p = 0;
-    size_t q = 0;
+    gint p = 0;
+    gint q = 0;
     std::vector<std::string> segments;
     std::string out;
 
@@ -56,19 +56,19 @@ template <class T> iterator<T> iterator<T>::operator++(int)
     return t;
 }
 
-index::index(const std::vector<size_t>& dim) : dims(dim) {}
+index::index(const std::vector<gint>& dim) : dims(dim) {}
 
-size_t index::at(const std::vector<size_t>& vec) const {
+gint index::at(const std::vector<gint>& vec) const {
     _global = vec[vec.size() - 1];
-    size_t dm = 1;
-    for (size_t i = vec.size(); i > 1; --i) {
+    gint dm = 1;
+    for (gint i = vec.size(); i > 1; --i) {
         dm *= dims[i-1];
         _global = vec[i-2] * dm + _global;
     }
     return _global;
 }
 
-size_t index::at(size_t x, size_t y) const { return x * dims[1] + y; }
+gint index::at(gint x, gint y) const { return x * dims[1] + y; }
 
 
 } //End of namespace glib

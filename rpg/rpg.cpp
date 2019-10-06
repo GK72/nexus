@@ -13,10 +13,10 @@ namespace glib {
 namespace rpg {
 
 
-Game::Game()
+Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
 {
 #ifdef _MSC_BUILD
-    gfx = new glib::gGfx::EngineConW(this, 150, 40, 7, 14);
+    gfx = new glib::gGfx::EngineConW(this, width, height, fontWidth, fontHeight);
 #else
     gfx = new glib::gGfx::EngineCurses(150, 40, 7, 14);
 #endif
