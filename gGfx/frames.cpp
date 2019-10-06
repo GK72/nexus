@@ -77,6 +77,7 @@ void FrameBasic::setTitle()
 
 void FrameBasic::setContent(FrameContent* content)
 {
+    if (_content) delete _content;
     _content = content;
 }
 
@@ -109,6 +110,7 @@ void FrameContentText::draw()
 
         str_length = _linebreaks.at(i) - begin;
         line = _str.substr(begin, str_length);
+        line.erase(std::remove(line.begin(), line.end(), '\n'));
         g->print(line);
         begin = _linebreaks.at(i);
     }
@@ -123,12 +125,28 @@ void FrameContentText::format()
 void LinebreakSimple::format()
 {
     gint width = _frameContent->getWidth();
-    gint strwidth = _frameContent->getContent().size();
-    gint count = strwidth / width + 1;
-    std::vector<int> linebreaks;
+    std::string str = _frameContent->getContent();
+    gint strwidth = str.size();
+    std::vector<gint> linebreaks;
 
-    for (gint i = 0; i < count; ++i) {
-        linebreaks.push_back(width * (i + 1));
+    // Interpret \n as linebreak
+    for (gint i = 0; i < strwidth; ++i) {
+        if (str[i] == '\n' && i != strwidth) {
+            linebreaks.push_back(i);
+        }
+    }
+
+    // End string with linebreak
+    linebreaks.push_back(strwidth);
+
+    // Get the length between linebreaks and continue breaking lines if needed
+    gint lines = linebreaks.size();
+    gint pos = 0;
+    for (gint i = 0; i < lines; ++i) {
+        while (linebreaks.at(i) - pos > width) {
+            linebreaks.push_back(width + pos);
+            pos = linebreaks.at(i) - pos;
+        }
     }
 
     _frameContent->setLinebreaks(linebreaks);
@@ -145,7 +163,7 @@ Frame* FrameBuilder::createFrame(std::string title, Point2D extent, Point2D topl
 {
     _lastFramePos = Point2D(topleft.x + extent.x + _padding, topleft.y + extent.y + _padding);
     Frame* frame = new FrameBasic(_engine, topleft, extent, title, '#');
-    new FrameContentText(frame, std::string("Frame Builder test"));
+    new FrameContentText(frame, std::string("..."));
 
     ++_frameCount;
     return frame;

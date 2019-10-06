@@ -48,7 +48,7 @@ public:
     virtual void format() = 0;
     virtual std::string getContent() const = 0;
     virtual gint getWidth() const = 0;
-    virtual void setLinebreaks(std::vector<int> linebreaks) = 0;
+    virtual void setLinebreaks(std::vector<gint> linebreaks) = 0;
 
 };
 
@@ -99,7 +99,7 @@ public:
     std::string getContent() const override     { return _str; }
     gint getWidth() const override              { return _width; }
 
-    void setLinebreaks(std::vector<int> linebreaks) { _linebreaks = linebreaks; }
+    void setLinebreaks(std::vector<gint> linebreaks) { _linebreaks = linebreaks; }
 
 private:
     Frame* _frame = nullptr;
@@ -108,7 +108,7 @@ private:
     gint _width;
     gint _height;
     gint _padding = 1;
-    std::vector<int> _linebreaks;
+    std::vector<gint> _linebreaks;
 };
 
 

@@ -24,6 +24,7 @@ Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
 
 Game::~Game()
 {
+    delete hero;
     delete gfx;
     if (frame) delete frame;
 }
@@ -35,9 +36,12 @@ void Game::run()
 
 void Game::init()
 {
+    hero = new Hero("Aida");
     glib::gGfx::FrameBuilder framebuilder(gfx);
     frames.push_back(framebuilder.createFrame("Main", Point2D(32, 8)));
     frames.push_back(framebuilder.createFrame("Map", Point2D(32, 16), Point2D(50, 0)));
+
+    new glib::gGfx::FrameContentText(frames[0], hero->toString());
 }
 
 int Game::inputHandling()
@@ -51,12 +55,28 @@ int Game::inputHandling()
     return inputEventNo;
 }
 
-
 void Game::update(float elapsedTime)
 {
     for (const auto& e : frames) {
         e->draw();
     }
+}
+
+
+Hero::Hero(std::string name)
+{
+    _name = name;
+    _heroLevel = 1;
+    _experience = 0;
+}
+
+std::string Hero::toString() const
+{
+    return std::string(
+        "Name : " + _name + '\n' +
+        "Level: " + std::to_string(_heroLevel) + '\n' +
+        "Exp  : " + std::to_string(_experience)
+    );
 }
 
 
