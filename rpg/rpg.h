@@ -24,6 +24,7 @@ private:
     std::string outstr;
 
     glib::gGfx::Frame* frame = nullptr;
+    std::vector<glib::gGfx::Frame*> frames;
 
     // TODO: collection of objects to draw
 };

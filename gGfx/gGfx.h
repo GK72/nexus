@@ -132,6 +132,8 @@ public:
 
     virtual KeyState getKey(int keyID) const = 0;
     virtual KeyState getMouseButton(int buttonID) const = 0;
+    virtual short getScreenWidth() const = 0;
+    virtual short getScreenHeight() const = 0;
     virtual int getMouseX() const = 0;
     virtual int getMouseY()	const = 0;
     virtual bool IsFocused() const = 0;
@@ -165,6 +167,8 @@ public:
 
     KeyState getKey(int keyID) const            { return inputKey[keyID]; }
     KeyState getMouseButton(int buttonID) const { return inputMouseButtons[buttonID]; }
+    short getScreenWidth() const                { return screenWidth; }
+    short getScreenHeight() const               { return screenHeight; }
     int getMouseX() const                       { return mousePosX; }
     int getMouseY()	const                       { return mousePosY; }
     bool IsFocused() const                      { return isConsoleInFocus; }
