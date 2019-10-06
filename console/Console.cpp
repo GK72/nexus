@@ -18,7 +18,7 @@
 
 int main()
 {
-    glib::rpg::Game* game = new glib::rpg::Game();
+    glib::rpg::Game* game = new glib::rpg::Game(192, 108, 7, 14);
     game->run();
 
 }
