@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "gGfx.h"
 
@@ -26,12 +26,12 @@ public:
     virtual void setTitle() = 0;
     virtual void setContent(FrameContent* content) = 0;
 
-    virtual int getID() { return _id; }
-    virtual std::string getTitle() = 0;
-    virtual gint getBorderSize() = 0;
-    virtual Point2D getSize() = 0;
-    virtual Point2D getTopLeft() = 0;
-    virtual EngineGFX* getEngine() = 0;
+    virtual int getID() const               { return _id; }
+    virtual std::string getTitle() const    = 0;
+    virtual gint getBorderSize() const      = 0;
+    virtual Point2D getSize() const         = 0; 
+    virtual Point2D getTopLeft() const      = 0;
+    virtual EngineGFX* getEngine() const    = 0;
 
 protected:
     Frame() { generateID(); }
@@ -46,8 +46,8 @@ class FrameContent {
 public:
     virtual void draw() = 0;
     virtual void format() = 0;
-    virtual std::string getContent() = 0;
-    virtual gint getWidth() = 0;
+    virtual std::string getContent() const = 0;
+    virtual gint getWidth() const = 0;
     virtual void setLinebreaks(std::vector<int> linebreaks) = 0;
 
 };
@@ -55,7 +55,7 @@ public:
 
 class FrameBasic : public Frame {
 public:
-    FrameBasic(EngineGFX* gfx, const Point2D& topleft, const Point2D& extent);
+    FrameBasic(EngineGFX* gfx, const Point2D& topleft, const Point2D& extent, std::string title, wchar_t borderType);
     ~FrameBasic();
 
     void draw() override;
@@ -66,18 +66,21 @@ public:
     void setTitle() override;
     void setContent(FrameContent* content);
 
-    std::string getTitle() override     { return _title; }
-    EngineGFX* getEngine() override     { return _gfx; }
-    gint getBorderSize() override       { return _borderSize; }
-    Point2D getSize() override          { return _extent; }
-    Point2D getTopLeft() override       { return _topleft; }
+    std::string getTitle() const override   { return _title; }
+    EngineGFX* getEngine() const override   { return _gfx; }
+    gint getBorderSize() const override     { return _borderSize; }
+    Point2D getSize() const override        { return _extent; }
+    Point2D getTopLeft() const override     { return _topleft; }
 
 private:
     std::string _title;
+    gint titleLength;
+    gint titlePosX;
+
     Point2D _topleft;
     Point2D _btmright;
     Point2D _extent;
-    wchar_t _borderType = '+';
+    wchar_t _borderType;
     gint _borderSize = 1;
 
     FrameContent* _content = nullptr;
@@ -93,8 +96,8 @@ public:
     void draw() override;
     void format() override;
     
-    std::string getContent() override   { return _str; }
-    gint getWidth() override          { return _width; }
+    std::string getContent() const override     { return _str; }
+    gint getWidth() const override              { return _width; }
 
     void setLinebreaks(std::vector<int> linebreaks) { _linebreaks = linebreaks; }
 
@@ -121,11 +124,24 @@ private:
 
 class FrameBuilder {
 public:
-    FrameBuilder(EngineGFX* engine) : _engine(engine) {}
-    Frame* createFrame();
+    FrameBuilder(EngineGFX* engine);
+    Frame* createFrame(std::string title, Point2D extent, Point2D topleft);
+    Frame* createFrame(std::string title, Point2D extent);
+    Frame* createFrame(std::string title);
 
 private:
     EngineGFX* _engine;
+    gint _frameCount;
+
+    Point2D _lastFramePos;
+    gint _padding = 2;
+
+    struct dimensionLimits {
+        gint minWidth  = 16;
+        gint minHeight = 8;
+        gint maxWidth  = 64;
+        gint maxHeight = 32;
+    } frameDimensionLimits;
 
 };
 

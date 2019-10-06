@@ -7,13 +7,17 @@ namespace gGfx {
 
 int Frame::_id = 0;
 
-FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point2D& extent)
+FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point2D& extent, std::string title, wchar_t borderType = ' ')
 {
     _gfx = engineGfx;
     _topleft = topleft;
     _btmright.x = topleft.x + extent.x;
     _btmright.y = topleft.y + extent.y;
     _extent = extent;
+    _title = title;
+    _borderType = borderType;
+    titleLength = _title.size();
+    titlePosX = (gint)_topleft.x + (gint)_extent.x / 2 - titleLength / 2;
 }
 
 FrameBasic::~FrameBasic()
@@ -24,17 +28,22 @@ FrameBasic::~FrameBasic()
 void FrameBasic::draw()
 {
     // Drawing horizontal lines
-    gint x = (gint)_extent.x;
+    gint x = (gint)_extent.x < _gfx->getScreenWidth() ? (gint)_extent.x : _gfx->getScreenWidth();
     for (gint i = 0; i <= x; ++i) {
-        _gfx->draw((int)(_topleft.x + i), (int)_topleft.y, FG_GREY, _borderType);
-        _gfx->draw((int)(_btmright.x - i), (int)_btmright.y, FG_GREY, _borderType);
+        _gfx->draw((gint)(_topleft.x + i), (gint)_topleft.y, FG_GREY, _borderType);
+        _gfx->draw((gint)(_btmright.x - i), (gint)_btmright.y, FG_GREY, _borderType);
     }
     // Drawing vertical lines
-    gint y = (gint)_extent.y;
+    gint y = (gint)_extent.y < _gfx->getScreenHeight() ? (gint)_extent.y : _gfx->getScreenHeight();
     for (gint i = 0; i <= y; ++i) {
-        _gfx->draw((int)_topleft.x, (int)(_topleft.y + i), FG_GREY, _borderType);
-        _gfx->draw((int)_btmright.x, (int)(_btmright.y - i), FG_GREY, _borderType);
+        _gfx->draw((gint)_topleft.x, (gint)(_topleft.y + i), FG_GREY, _borderType);
+        _gfx->draw((gint)_btmright.x, (gint)(_btmright.y - i), FG_GREY, _borderType);
     }
+
+    // Drawing title
+    _gfx->setCurPosX(titlePosX);
+    _gfx->setCurPosY(_topleft.y);
+    _gfx->print(" " + _title + " ");
 
     _content->draw();
 
@@ -126,15 +135,37 @@ void LinebreakSimple::format()
 }
 
 
-Frame* FrameBuilder::createFrame()
+FrameBuilder::FrameBuilder(EngineGFX* engine) : _engine(engine)
 {
-    Point2D p(0, 5);
-    Point2D q(50, 15);
-    Frame* frame = new FrameBasic(_engine, p, q);
+    _lastFramePos = Point2D(0, 0);
+    _frameCount = 0;
+}
+
+Frame* FrameBuilder::createFrame(std::string title, Point2D extent, Point2D topleft)
+{
+    _lastFramePos = Point2D(topleft.x + extent.x + _padding, topleft.y + extent.y + _padding);
+    Frame* frame = new FrameBasic(_engine, topleft, extent, title, '#');
     new FrameContentText(frame, std::string("Frame Builder test"));
 
+    ++_frameCount;
     return frame;
+
 }
+
+Frame* FrameBuilder::createFrame(std::string title, Point2D extent)
+{
+    Point2D p(_lastFramePos.x, 0);
+    return createFrame(title, extent, p);
+}
+
+Frame* FrameBuilder::createFrame(std::string title)
+{
+    Point2D p(_lastFramePos.x, 0);
+    Point2D e(frameDimensionLimits.minWidth, frameDimensionLimits.minHeight);
+    return createFrame(title, e, p);
+}
+
+
 
 } // End of namespace gGfx
 } // End of namespace glib

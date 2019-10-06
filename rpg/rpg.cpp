@@ -16,7 +16,7 @@ namespace rpg {
 Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
 {
 #ifdef _MSC_BUILD
-    gfx = new glib::gGfx::EngineConW(this, width, height, fontWidth, fontHeight);
+    gfx = new glib::gGfx::EngineConW(this, (int)width, (int)height, (int)fontWidth, (int)fontHeight);
 #else
     gfx = new glib::gGfx::EngineCurses(150, 40, 7, 14);
 #endif
@@ -36,7 +36,8 @@ void Game::run()
 void Game::init()
 {
     glib::gGfx::FrameBuilder framebuilder(gfx);
-    frame = framebuilder.createFrame();
+    frames.push_back(framebuilder.createFrame("Main", Point2D(32, 8)));
+    frames.push_back(framebuilder.createFrame("Map", Point2D(32, 16), Point2D(50, 0)));
 }
 
 int Game::inputHandling()
@@ -47,28 +48,15 @@ int Game::inputHandling()
         ++inputEventNo;
     }
 
-    if (gfx->getKey(VK_RETURN).isPressed) {
-        outstr = "RETURN was pressed";
-        ++inputEventNo;
-    }
-
     return inputEventNo;
 }
 
 
 void Game::update(float elapsedTime)
 {
-    gfx->setCurPosX(0);
-    gfx->setCurPosY(0);
-
-    gfx->printn("Testing...");
-    
-    gfx->printn("=======================================");
-    gfx->printn(std::to_string(elapsedTime));
-    gfx->printn();
-    gfx->printn(outstr);
-
-    frame->draw();
+    for (const auto& e : frames) {
+        e->draw();
+    }
 }
 
 
