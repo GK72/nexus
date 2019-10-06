@@ -7,8 +7,21 @@ namespace rpg {
 
 using glib::gGfx::Point2D;
 
-class Game : public glib::gGfx::Engine
-{
+
+class Hero {
+public:
+    Hero(std::string name);
+
+    std::string toString() const;
+
+private:
+    std::string _name;
+    gint _experience;
+    gint _heroLevel;
+};
+
+
+class Game : public glib::gGfx::Engine {
 public:
     Game(gint width, gint height, gint fontWidth, gint fontHeight);
     ~Game();
@@ -25,8 +38,8 @@ private:
 
     glib::gGfx::Frame* frame = nullptr;
     std::vector<glib::gGfx::Frame*> frames;
-
-    // TODO: collection of objects to draw
+    
+    Hero* hero = nullptr;
 };
 
 
