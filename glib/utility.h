@@ -34,6 +34,37 @@ template <class T> T swapEndian32(T& x) {
 
 std::string ipv6Formatter(std::string ipv6);
 
+
+
+struct Event {
+    Event(std::string str) : msg(str) {}
+    std::string msg;
+};
+
+class Subscriber;
+
+class Publisher {
+public:
+    virtual void attach(Subscriber* sub) = 0;
+    virtual void detach(Subscriber* sub) = 0;
+    virtual void notify(Event& evt) = 0;
+
+protected:
+    Publisher() {}
+    std::vector<Subscriber*> _subs;
+
+private:
+};
+
+class Subscriber {
+public:
+    virtual ~Subscriber() {}                      // in subclass: { _sub->detach(this); }
+    virtual void trigger(Event& evt) = 0;
+
+protected:
+    Subscriber() {}
+};
+
 // ************************************************************************** //
 //                           Performance measuring                            //
 // ************************************************************************** //

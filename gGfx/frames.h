@@ -25,8 +25,10 @@ public:
 
     virtual void setTitle() = 0;
     virtual void setContent(FrameContent* content) = 0;
+    virtual void setContent(std::string content_name) = 0;
 
     virtual int getID() const               { return _id; }
+    virtual FrameContent* getContent()      = 0;
     virtual std::string getTitle() const    = 0;
     virtual gint getBorderSize() const      = 0;
     virtual Point2D getSize() const         = 0; 
@@ -48,6 +50,8 @@ public:
     virtual void format() = 0;
     virtual std::string getContent() const = 0;
     virtual gint getWidth() const = 0;
+
+    virtual void setContent(std::string content) = 0;
     virtual void setLinebreaks(std::vector<gint> linebreaks) = 0;
 
 };
@@ -65,8 +69,10 @@ public:
 
     void setTitle() override;
     void setContent(FrameContent* content);
+    void setContent(std::string content_name);
 
     std::string getTitle() const override   { return _title; }
+    FrameContent* getContent()              { return _content; }
     EngineGFX* getEngine() const override   { return _gfx; }
     gint getBorderSize() const override     { return _borderSize; }
     Point2D getSize() const override        { return _extent; }
@@ -96,10 +102,11 @@ public:
     void draw() override;
     void format() override;
     
-    std::string getContent() const override     { return _str; }
-    gint getWidth() const override              { return _width; }
+    std::string getContent() const override             { return _str; }
+    gint getWidth() const override                      { return _width; }
 
-    void setLinebreaks(std::vector<gint> linebreaks) { _linebreaks = linebreaks; }
+    void setContent(std::string content)                { _str = content; }
+    void setLinebreaks(std::vector<gint> linebreaks)    { _linebreaks = linebreaks; }
 
 private:
     Frame* _frame = nullptr;

@@ -9,16 +9,20 @@
 #include "pch.h"
 #include "gGfx.h"
 
+std::atomic<bool> atomActive;
+//std::mutex mx;
+std::condition_variable cv;
+
 namespace glib {
 namespace gGfx {
 
 #ifdef _MSC_BUILD
 
-std::atomic<bool> EngineConW::atomActive = false;
 
 EngineConW::EngineConW(Engine* _engine, int width, int height, int fontWidth, int fontHeight)
     //: engine(engine)
 {
+    atomActive = false;
     engine = _engine;
     GetConsoleMode(hConsoleIn, &hConsoleOriginalIn);
 

@@ -177,9 +177,6 @@ protected:
     CHAR_INFO* screenBuffer;
 
 private:
-    static std::atomic<bool> atomActive;
-    std::mutex mx;
-    std::condition_variable cv;
     bool hasInputEvent = true;                  // Because the first frame needs to be rendered
 
     short screenWidth;

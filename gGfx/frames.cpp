@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "frames.h"
 
+extern std::mutex mx;
+
 namespace glib {
 namespace gGfx {
 
@@ -81,6 +83,11 @@ void FrameBasic::setContent(FrameContent* content)
     _content = content;
 }
 
+void FrameBasic::setContent(std::string content_name)
+{
+    _content->setContent(content_name);
+}
+
 FrameContentText::FrameContentText(Frame* frame, std::string str)
         : _frame(frame), _str(str)
 {
@@ -97,6 +104,7 @@ FrameContentText::~FrameContentText()
 
 void FrameContentText::draw()
 {
+    std::lock_guard<std::mutex> lk(mx);
     format();
     EngineGFX* g = _frame->getEngine();
     gint lines = _linebreaks.size();
