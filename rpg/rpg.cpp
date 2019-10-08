@@ -41,17 +41,83 @@ void Game::init()
     mt = std::mt19937(rd());
     hero = new Hero(this, "Aida");
     glib::gGfx::FrameBuilder framebuilder(gfx);
-    frames["Main"] = framebuilder.createFrame("Main", Point2D(32, 8));
-    frames["Map"] = framebuilder.createFrame("Map", Point2D(32, 16), Point2D(50, 0));
 
-    new glib::gGfx::FrameContentText(frames["Main"], hero->toString() + "\nAttack: ");
+    // TODO: auto frame position
+    // - set frame number, size them equally
+    frames["Menu"] = framebuilder.createFrame("Menu", Point2D(46, 16));
+    frames["HeroStat"] = framebuilder.createFrame("Hero Stat", Point2D(32, 16), Point2D(50, 0));
+    frames["EventLog"] = framebuilder.createFrame("Event Log", Point2D(32, 16), Point2D(50, 19));
+
+    // TODO: wrap these in builder
+    new glib::gGfx::FrameContentText(frames["Menu"], "Menu ...");
+    menu = new glib::gGfx::Menu();
+    menu->addItem(new glib::gGfx::MenuItem("Attack", new CmdAttack(hero)));
+    menu->addItem(new glib::gGfx::MenuItem("Quit", new CmdQuitApp()));
+
+    // Menu toString
+    std::string menuStr;
+    for (auto& e : menu->getItems()) {
+        menuStr += e->toString() + '\n';
+    }
+    frames["Menu"]->setContent(menuStr);
+
+
+    new glib::gGfx::FrameContentText(frames["HeroStat"], hero->toString());
+    new glib::gGfx::FrameContentText(frames["EventLog"], "");
 }
 
 int Game::inputHandling()
 {
     inputEventNo = 0;
-    if (gfx->getKey(VK_SPACE).isPressed) {
-        hero->attack();
+
+    // TODO: send event to display the new selection
+    //       and handle elsewhere the printing
+    if (gfx->getKey(VK_RETURN).isPressed) {
+        menu->execute();
+        ++inputEventNo;
+    }
+    if (gfx->getKey(VK_UP).isPressed) {
+        menu->setSelection(
+            menu->getSelection() == 0
+                ? 0
+                : menu->getSelection() - 1);
+
+        std::string menuStr;
+        gint i = 0;
+        for (auto& e : menu->getItems()) {
+            menuStr += e->toString();
+            if (menu->getSelection() == i) {
+                menuStr += " #\n";
+            }
+            else {
+                menuStr += "\n";
+            }
+            ++i;
+        }
+        frames["Menu"]->setContent(menuStr);
+
+        ++inputEventNo;
+    }
+    if (gfx->getKey(VK_DOWN).isPressed) {
+        menu->setSelection(
+            menu->getSelection() == menu->getItems().size() - 1
+                ? menu->getSelection()
+                : menu->getSelection() + 1);
+
+        std::string menuStr;
+        gint i = 0;
+        for (auto& e : menu->getItems()) {
+            menuStr += e->toString();
+            if (menu->getSelection() == i) {
+                menuStr += " #\n";
+            }
+            else {
+                menuStr += "\n";
+            }
+            ++i;
+        }
+        frames["Menu"]->setContent(menuStr);
+
         ++inputEventNo;
     }
 
@@ -60,8 +126,6 @@ int Game::inputHandling()
 
 void Game::update(float elapsedTime)
 {
-    // Fetch event message and dispatch it
-
     for (const auto& e : frames) {
         e.second->draw();
     }
@@ -69,7 +133,9 @@ void Game::update(float elapsedTime)
 
 void Game::trigger(Event& evt)
 {
-    frames["Main"]->setContent(hero->toString() + "\nAttack: " + evt.msg);
+    hero->setExperience(hero->getExperience() + std::stoi(evt.msg));
+    frames["HeroStat"]->setContent(hero->toString());
+    frames["EventLog"]->setContent("Last attack: " + evt.msg);
 }
 
 
@@ -90,9 +156,11 @@ Hero::Hero(Game* engine, std::string name)
 std::string Hero::toString() const
 {
     return std::string(
-        "Name : " + _name + '\n' +
-        "Level: " + std::to_string(_heroLevel) + '\n' +
-        "Exp  : " + std::to_string(_experience)
+        "Name       : " + _name + '\n' +
+        "Level      : " + std::to_string(_heroLevel) + '\n' +
+        "Exp        : " + std::to_string(_experience) + '\n' +
+        "Min damage : " + std::to_string(_damageMin) + '\n' +
+        "Max damage : " + std::to_string(_damageMax)
     );
 }
 
@@ -109,7 +177,15 @@ int Hero::attack()
     return dmg;
 }
 
+CmdAttack::CmdAttack(Hero* hero)
+{
+    _obj = hero;
+}
 
+void CmdAttack::execute()
+{
+    _obj->attack();
+}
 
 } // End of namespace rpg
 } // End of namespace glib

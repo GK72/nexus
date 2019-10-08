@@ -132,7 +132,7 @@ void FrameContentText::format()
 
 void LinebreakSimple::format()
 {
-    gint width = _frameContent->getWidth();
+    gint frame_width = _frameContent->getWidth();
     std::string str = _frameContent->getContent();
     gint strwidth = str.size();
     std::vector<gint> linebreaks;
@@ -144,18 +144,21 @@ void LinebreakSimple::format()
         }
     }
 
-    // End string with linebreak
-    linebreaks.push_back(strwidth);
-
     // Get the length between linebreaks and continue breaking lines if needed
     gint lines = linebreaks.size();
-    gint pos = 0;
+    gint prev_break = 0;
+    gint distance = 0;
     for (gint i = 0; i < lines; ++i) {
-        while (linebreaks.at(i) - pos > width) {
-            linebreaks.push_back(width + pos);
-            pos = linebreaks.at(i) - pos;
+        distance = linebreaks.at(i) - prev_break;
+        while (distance > frame_width) {
+            linebreaks.push_back(prev_break + frame_width);
+            distance -= frame_width;
         }
+        prev_break = linebreaks.at(i);
     }
+
+    // End string with linebreak
+    linebreaks.push_back(strwidth);
 
     _frameContent->setLinebreaks(linebreaks);
 }
@@ -189,6 +192,41 @@ Frame* FrameBuilder::createFrame(std::string title)
     Point2D p(_lastFramePos.x, 0);
     Point2D e(frameDimensionLimits.minWidth, frameDimensionLimits.minHeight);
     return createFrame(title, e, p);
+}
+
+Menu::Menu()
+{
+    _selection = 0;
+}
+
+Menu::~Menu()
+{
+    for (auto& e : _items) delete e;
+}
+
+void Menu::addItem(MenuItem* item)
+{
+    _items.push_back(item);
+}
+
+void Menu::execute()
+{
+    _items.at(_selection)->execute();
+}
+
+void Menu::setSelection(gint s)
+{
+    _selection = s;
+}
+
+gint Menu::getSelection()
+{
+    return _selection;
+}
+
+std::vector<MenuItem*> Menu::getItems()
+{
+    return _items;
 }
 
 

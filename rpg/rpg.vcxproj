@@ -24,6 +24,9 @@
   <ItemGroup>
     <ClInclude Include="rpg.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="RPG.cd" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{CEBEE701-E2A7-416F-97D0-B02B11923B34}</ProjectGuid>

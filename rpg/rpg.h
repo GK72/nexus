@@ -5,6 +5,8 @@
 #include "../gGfx/gGfx.h"
 #include "../gGfx/frames.h"
 
+extern std::atomic<bool> atomActive;
+
 namespace glib {
 namespace rpg {
 
@@ -34,6 +36,7 @@ private:
 
     int inputEventNo = 0;
 
+    glib::gGfx::Menu* menu;
     glib::gGfx::Frame* frame = nullptr;
     std::map<std::string, glib::gGfx::Frame*> frames;
     
@@ -50,6 +53,8 @@ public:
     void notify(Event& evt) override            { for (auto& e : _subs) e->trigger(evt); }
 
     std::string toString() const;
+    int getExperience()                         { return _experience; }
+    void setExperience(int exp)                 { _experience = exp; }
 
     void move(glib::gGfx::DIRECTION_2D direction);
     int attack();
@@ -68,6 +73,20 @@ private:
     int _damageMax;
 };
 
+class CmdQuitApp : public glib::gGfx::Command {
+public:
+    CmdQuitApp()                { execute(); }
+    void execute() override     { atomActive = false; }
+};
+
+class CmdAttack : public glib::gGfx::Command {
+public:
+    CmdAttack(Hero* hero);
+    void execute() override;
+
+private:
+    Hero* _obj;
+};
 
 
 } // End of namespace rpg
