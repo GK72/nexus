@@ -5,14 +5,26 @@
 namespace glib {
 namespace gGfx {
 
+// Forward declarations
+
 class FrameContent;
+class MenuItem;
+
+// Interfaces
+
+class Command {
+public:
+    Command() {}
+    virtual void execute() = 0;
+};
 
 class Formatter {
 public:
     virtual void format() = 0;
 
+protected:
+    Formatter() {}
 };
-
 
 class Frame {
 public:
@@ -43,7 +55,6 @@ protected:
 
 };
 
-
 class FrameContent {
 public:
     virtual void draw() = 0;
@@ -54,8 +65,12 @@ public:
     virtual void setContent(std::string content) = 0;
     virtual void setLinebreaks(std::vector<gint> linebreaks) = 0;
 
+protected:
+    FrameContent() {}
 };
 
+
+// Implementations
 
 class FrameBasic : public Frame {
 public:
@@ -152,6 +167,36 @@ private:
 
 };
 
+
+
+class Menu {
+public:
+    Menu();
+    ~Menu();
+
+    void addItem(MenuItem* item);
+    void execute();
+    void setSelection(gint s) ;
+    gint getSelection();
+    std::vector<MenuItem*> getItems();
+
+private:
+    std::vector<MenuItem*> _items;
+    gint _selection;
+
+};
+
+class MenuItem {
+public:
+    MenuItem(std::string name, Command* command) : _name(name), _command(command) {}
+    void execute()          { _command->execute(); }
+    std::string toString()  { return _name; }
+
+private:
+    std::string _name;
+    Command* _command;
+
+};
 
 
 } // End of namespace gGfx

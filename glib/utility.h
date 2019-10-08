@@ -35,9 +35,8 @@ template <class T> T swapEndian32(T& x) {
 std::string ipv6Formatter(std::string ipv6);
 
 
-
 struct Event {
-    Event(std::string str) : msg(str) {}
+    Event(const std::string& str) : msg(str) {}
     std::string msg;
 };
 
