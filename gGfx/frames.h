@@ -53,6 +53,7 @@ public:
     virtual void resize() = 0;
     virtual void move() = 0;
 
+    virtual void markForUpdate() = 0;
     virtual void setTitle() = 0;
     virtual void setContent(FrameContent* content) = 0;
     virtual void setContent(std::string content_name) = 0;
@@ -77,11 +78,13 @@ class FrameContent {
 public:
     virtual void draw() = 0;
     virtual void format() = 0;
-    virtual std::string getContent() const = 0;
-    virtual gint getWidth() const = 0;
 
+    virtual void markForUpdate() = 0;
     virtual void setContent(std::string content) = 0;
     virtual void setLinebreaks(std::vector<gint> linebreaks) = 0;
+
+    virtual std::string getContent() const = 0;
+    virtual gint getWidth() const = 0;
 
 protected:
     FrameContent() {}
@@ -101,6 +104,7 @@ public:
     void resize() override;
     void close() override;
 
+    void markForUpdate() override           { _content->markForUpdate(); }
     void setTitle() override;
     void setContent(FrameContent* content) override;
     void setContent(std::string content_name) override;
@@ -136,13 +140,15 @@ public:
     void draw() override;
     void format() override;
     
-    std::string getContent() const override                     { return _str; }
-    gint getWidth() const override                              { return _width; }
-
+    void markForUpdate() override                               { _outdated = true; }
     void setContent(std::string content) override               { _str = content; }
     void setLinebreaks(std::vector<gint> linebreaks) override   { _linebreaks = linebreaks; }
 
+    std::string getContent() const override                     { return _str; }
+    gint getWidth() const override                              { return _width; }
+
 private:
+    bool _outdated = true;
     Frame* _frame = nullptr;
     Formatter* _formatter;
     std::string _str;
@@ -150,6 +156,16 @@ private:
     gint _height;
     gint _padding = 1;
     std::vector<gint> _linebreaks;
+
+    // Temporary variables for inner methods
+    EngineGFX* __gfx;
+    std::string __str_line;
+    gint __str_lines;
+    gint __str_begin;
+    gint __str_length;
+
+    void refresh();
+    void print();
 };
 
 
@@ -202,7 +218,7 @@ public:
 
 private:
     std::vector<MenuItem*> _items;
-    gint _selection;
+    gint _selection = 0;
 
 };
 
