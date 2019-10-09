@@ -11,6 +11,13 @@ namespace glib {
 namespace rpg {
 
 using glib::gGfx::Point2D;
+using glib::UI::Command;
+using glib::UI::Frame;
+using glib::UI::FrameBuilder;
+using glib::UI::FrameContent;
+using glib::UI::FrameContentText;
+using glib::UI::Menu;
+using glib::UI::MenuItem;
 
 
 class Hero;
@@ -36,9 +43,9 @@ private:
 
     int inputEventNo = 0;
 
-    glib::gGfx::Menu* menu;
-    glib::gGfx::Frame* frame = nullptr;
-    std::map<std::string, glib::gGfx::Frame*> frames;
+    Menu* menu = nullptr;
+    Frame* frame = nullptr;
+    std::map<std::string, Frame*> frames;
     
     Hero* hero = nullptr;
 };
@@ -47,10 +54,6 @@ private:
 class Hero : public Publisher {
 public:
     Hero(Game* engine, std::string name);
-
-    void attach(Subscriber* sub) override       { _subs.push_back(sub); }
-    void detach(Subscriber* sub) override       { _subs.erase(std::find(_subs.begin(), _subs.end(), sub)); }
-    void notify(Event& evt) override            { for (auto& e : _subs) e->trigger(evt); }
 
     std::string toString() const;
     int getExperience()                         { return _experience; }
@@ -73,13 +76,13 @@ private:
     int _damageMax;
 };
 
-class CmdQuitApp : public glib::gGfx::Command {
+class CmdQuitApp : public Command {
 public:
     CmdQuitApp()                { execute(); }
     void execute() override     { atomActive = false; }
 };
 
-class CmdAttack : public glib::gGfx::Command {
+class CmdAttack : public Command {
 public:
     CmdAttack(Hero* hero);
     void execute() override;

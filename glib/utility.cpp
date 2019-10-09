@@ -43,6 +43,17 @@ std::string ipv6Formatter(std::string ipv6) {
     return out;
 }
 
+void Publisher::attach(Subscriber* sub) {
+    _subs.push_back(sub);
+}
+
+void Publisher::detach(Subscriber* sub) {
+    _subs.erase(std::find(_subs.begin(), _subs.end(), sub));
+}
+
+void Publisher::notify(Event& evt) {
+    for (auto& e : _subs) e->trigger(evt);
+}
 
 template <class T> iterator<T>::iterator()                          { p = nullptr; }
 template <class T> iterator<T>::iterator(T* p)                      : p(p) {}

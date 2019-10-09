@@ -1,9 +1,27 @@
-﻿#pragma once
+﻿// **********************************************
+// ** gkpro @ 2019-10-09                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **          User Interface header           **
+// **                                          **
+// ** Commands                                 **
+// ** Frames                                   **
+// ** Menu                                     **
+// **                                          **
+// **********************************************
+
+#pragma once
 
 #include "gGfx.h"
 
 namespace glib {
-namespace gGfx {
+namespace UI {
+
+using glib::NotImplementedException;
+using glib::gGfx::COLOUR;
+using glib::gGfx::EngineGFX;
+using glib::gGfx::Point2D;
+
 
 // Forward declarations
 
@@ -74,7 +92,8 @@ protected:
 
 class FrameBasic : public Frame {
 public:
-    FrameBasic(EngineGFX* gfx, const Point2D& topleft, const Point2D& extent, std::string title, wchar_t borderType);
+    FrameBasic(EngineGFX* gfx, const Point2D& topleft, const Point2D& extent
+              ,std::string title, wchar_t borderType);
     ~FrameBasic();
 
     void draw() override;
@@ -83,8 +102,8 @@ public:
     void close() override;
 
     void setTitle() override;
-    void setContent(FrameContent* content);
-    void setContent(std::string content_name);
+    void setContent(FrameContent* content) override;
+    void setContent(std::string content_name) override;
 
     std::string getTitle() const override   { return _title; }
     FrameContent* getContent()              { return _content; }
@@ -117,11 +136,11 @@ public:
     void draw() override;
     void format() override;
     
-    std::string getContent() const override             { return _str; }
-    gint getWidth() const override                      { return _width; }
+    std::string getContent() const override                     { return _str; }
+    gint getWidth() const override                              { return _width; }
 
-    void setContent(std::string content)                { _str = content; }
-    void setLinebreaks(std::vector<gint> linebreaks)    { _linebreaks = linebreaks; }
+    void setContent(std::string content) override               { _str = content; }
+    void setLinebreaks(std::vector<gint> linebreaks) override   { _linebreaks = linebreaks; }
 
 private:
     Frame* _frame = nullptr;
@@ -175,6 +194,7 @@ public:
     ~Menu();
 
     void addItem(MenuItem* item);
+    void draw(Frame* frame);
     void execute();
     void setSelection(gint s) ;
     gint getSelection();

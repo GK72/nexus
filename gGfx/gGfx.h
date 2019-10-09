@@ -15,9 +15,6 @@
 
 #include "pch.h"
 
-#define _g_NIE(msg) throw NotImplementedException(msg)
-#define _g_uNIE throw NotImplementedException("Unknown Exception")
-
 #include "../glib/gmath.h"
 
 namespace glib {
@@ -33,11 +30,6 @@ class Line2D;
 class InvalidLineException : public std::runtime_error {
 public:
     InvalidLineException(const Line2D* line) : std::runtime_error("Invalid Line") {}
-};
-
-class NotImplementedException : public std::runtime_error {
-public:
-    NotImplementedException(const char* msg) : std::runtime_error(msg) {}
 };
 
 

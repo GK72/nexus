@@ -17,6 +17,10 @@
 
 namespace glib {
 
+
+#define _g_NIE(msg) throw NotImplementedException(msg)
+#define _g_uNIE throw NotImplementedException("Unknown Exception")
+
 using gint = size_t;
 
 using pDim = std::vector<gint>;                   // For passing dimensions as parameter
@@ -44,9 +48,9 @@ class Subscriber;
 
 class Publisher {
 public:
-    virtual void attach(Subscriber* sub) = 0;
-    virtual void detach(Subscriber* sub) = 0;
-    virtual void notify(Event& evt) = 0;
+    virtual void attach(Subscriber* sub);
+    virtual void detach(Subscriber* sub);
+    virtual void notify(Event& evt);
 
 protected:
     Publisher() {}
@@ -218,6 +222,11 @@ private:
 // ************************************************************************** //
 //                                 Exceptions                                 //
 // ************************************************************************** //
+
+class NotImplementedException : public std::runtime_error {
+public:
+    NotImplementedException(const char* msg) : std::runtime_error(msg) {}
+};
 
 class IOErrorException : public std::runtime_error {
 public:
