@@ -158,11 +158,11 @@ private:
     std::vector<gint> _linebreaks;
 
     // Temporary variables for inner methods
-    EngineGFX* __gfx;
+    EngineGFX* __gfx = nullptr;
     std::string __str_line;
-    gint __str_lines;
-    gint __str_begin;
-    gint __str_length;
+    gint __str_lines = 0;
+    gint __str_begin = 0;
+    gint __str_length = 0;
 
     void refresh();
     void print();
@@ -182,9 +182,9 @@ private:
 class FrameBuilder {
 public:
     FrameBuilder(EngineGFX* engine);
-    Frame* createFrame(std::string title, Point2D extent, Point2D topleft);
-    Frame* createFrame(std::string title, Point2D extent);
-    Frame* createFrame(std::string title);
+    virtual Frame* createFrame(std::string title, Point2D extent, Point2D topleft);
+    virtual Frame* createFrame(std::string title, Point2D extent);
+    virtual Frame* createFrame(std::string title);
 
 private:
     EngineGFX* _engine;
@@ -199,6 +199,15 @@ private:
         gint maxWidth  = 64;
         gint maxHeight = 32;
     } frameDimensionLimits;
+
+};
+
+class FrameBuilderText : FrameBuilder {
+public:
+    FrameBuilderText(EngineGFX* engine) : FrameBuilder(engine) {}
+    Frame* createFrame(std::string title, std::string text, Point2D extent, Point2D topleft);
+    Frame* createFrame(std::string title, std::string text, Point2D extent);
+    Frame* createFrame(std::string title, std::string text);
 
 };
 

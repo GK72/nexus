@@ -46,30 +46,19 @@ void Game::init()
 {
     mt = std::mt19937(rd());
     hero = new Hero(this, "Aida");
-    FrameBuilder framebuilder(gfx);
+    FrameBuilderText framebuilder(gfx);
 
     // TODO: auto frame position
     // - set frame number, size them equally
-    frames["Menu"] = framebuilder.createFrame("Menu", Point2D(46, 16));
-    frames["HeroStat"] = framebuilder.createFrame("Hero Stat", Point2D(32, 16), Point2D(50, 0));
-    frames["EventLog"] = framebuilder.createFrame("Event Log", Point2D(32, 16), Point2D(50, 19));
+    frames["Menu"] = framebuilder.createFrame("Menu", "", Point2D(46, 16));
+    frames["HeroStat"] = framebuilder.createFrame("Hero Stat", hero->toString(), Point2D(32, 16), Point2D(50, 0));
+    frames["EventLog"] = framebuilder.createFrame("Event Log", "", Point2D(32, 16), Point2D(50, 19));
 
-    // TODO: wrap these in builder
-    new FrameContentText(frames["Menu"], "Menu ...");
     menu = new Menu();
     menu->addItem(new MenuItem("Attack", new CmdAttack(hero)));
     menu->addItem(new MenuItem("Quit", new CmdQuitApp()));
 
-    // Menu toString
-    std::string menuStr;
-    for (auto& e : menu->getItems()) {
-        menuStr += e->toString() + '\n';
-    }
-    frames["Menu"]->setContent(menuStr);
-
-
-    new FrameContentText(frames["HeroStat"], hero->toString());
-    new FrameContentText(frames["EventLog"], "");
+    menu->draw(frames["Menu"]);
 }
 
 int Game::inputHandling()
@@ -115,7 +104,6 @@ void Game::trigger(Event& evt)
     frames["HeroStat"]->setContent(hero->toString());
     frames["EventLog"]->setContent("Last attack: " + evt.msg);
 }
-
 
 
 Hero::Hero(Game* engine, std::string name)

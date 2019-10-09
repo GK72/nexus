@@ -14,6 +14,7 @@ using glib::gGfx::Point2D;
 using glib::UI::Command;
 using glib::UI::Frame;
 using glib::UI::FrameBuilder;
+using glib::UI::FrameBuilderText;
 using glib::UI::FrameContent;
 using glib::UI::FrameContentText;
 using glib::UI::Menu;
