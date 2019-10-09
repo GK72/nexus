@@ -217,6 +217,27 @@ Frame* FrameBuilder::createFrame(std::string title)
     return createFrame(title, e, p);
 }
 
+Frame* FrameBuilderText::createFrame(std::string title, std::string text, Point2D extent, Point2D topleft)
+{
+    Frame* frame = FrameBuilder::createFrame(title, extent, topleft);
+    new FrameContentText(frame, text);
+    return frame;
+}
+
+Frame* FrameBuilderText::createFrame(std::string title, std::string text, Point2D extent)
+{
+    Frame* frame = FrameBuilder::createFrame(title, extent);
+    new FrameContentText(frame, text);
+    return frame;
+}
+
+Frame* FrameBuilderText::createFrame(std::string title, std::string text)
+{
+    Frame* frame = FrameBuilder::createFrame(title);
+    new FrameContentText(frame, text);
+    return frame;
+}
+
 Menu::Menu()
 {
 
