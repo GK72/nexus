@@ -98,6 +98,7 @@ void FrameBasic::setContent(FrameContent* content)
 void FrameBasic::setContent(std::string content_name)
 {
     _content->setContent(content_name);
+    _content->markForUpdate();
 }
 
 FrameContentText::FrameContentText(Frame* frame, std::string str)
@@ -116,23 +117,33 @@ FrameContentText::~FrameContentText()
 
 void FrameContentText::draw()
 {
-    std::lock_guard<std::mutex> lk(mx);
+    if (_outdated) {
+        refresh();
+        _outdated = false;
+    }
+    print();
+}
+
+void FrameContentText::refresh()
+{
     format();
-    EngineGFX* g = _frame->getEngine();
-    gint lines = _linebreaks.size();
-    std::string line;
-    gint begin = 0;
-    gint str_length = 0;
+    __str_lines = _linebreaks.size();
+    __gfx = _frame->getEngine();
+}
 
-    for (gint i = 0; i < lines; ++i) {
-        g->setCurPosX(_frame->getTopLeft().x + _frame->getBorderSize() + _padding);
-        g->setCurPosY(_frame->getTopLeft().y + _frame->getBorderSize() + i);
+void FrameContentText::print()
+{
+    __str_begin = 0;
 
-        str_length = _linebreaks.at(i) - begin;
-        line = _str.substr(begin, str_length);
-        line.erase(std::remove(line.begin(), line.end(), '\n'));
-        g->print(line);
-        begin = _linebreaks.at(i);
+    for (gint i = 0; i < __str_lines; ++i) {
+        __gfx->setCurPosX(_frame->getTopLeft().x + _frame->getBorderSize() + _padding);
+        __gfx->setCurPosY(_frame->getTopLeft().y + _frame->getBorderSize() + i);
+
+        __str_length = _linebreaks.at(i) - __str_begin;
+        __str_line = _str.substr(__str_begin, __str_length);
+        __str_line.erase(std::remove(__str_line.begin(), __str_line.end(), '\n'));
+        __gfx->print(__str_line);
+        __str_begin = _linebreaks.at(i);
     }
 }
 
@@ -208,7 +219,7 @@ Frame* FrameBuilder::createFrame(std::string title)
 
 Menu::Menu()
 {
-    _selection = 0;
+
 }
 
 Menu::~Menu()
