@@ -26,9 +26,15 @@ Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
 
 Game::~Game()
 {
+    // Detach subscriber from publisher,
+    // but in this case it isn't necessary
+    // because the publisher gets deleted
+    //hero->detach(this);
+
     delete hero;
     delete gfx;
     if (frame) delete frame;
+    
 }
 
 void Game::run()
@@ -40,7 +46,7 @@ void Game::init()
 {
     mt = std::mt19937(rd());
     hero = new Hero(this, "Aida");
-    glib::gGfx::FrameBuilder framebuilder(gfx);
+    FrameBuilder framebuilder(gfx);
 
     // TODO: auto frame position
     // - set frame number, size them equally
@@ -49,10 +55,10 @@ void Game::init()
     frames["EventLog"] = framebuilder.createFrame("Event Log", Point2D(32, 16), Point2D(50, 19));
 
     // TODO: wrap these in builder
-    new glib::gGfx::FrameContentText(frames["Menu"], "Menu ...");
-    menu = new glib::gGfx::Menu();
-    menu->addItem(new glib::gGfx::MenuItem("Attack", new CmdAttack(hero)));
-    menu->addItem(new glib::gGfx::MenuItem("Quit", new CmdQuitApp()));
+    new FrameContentText(frames["Menu"], "Menu ...");
+    menu = new Menu();
+    menu->addItem(new MenuItem("Attack", new CmdAttack(hero)));
+    menu->addItem(new MenuItem("Quit", new CmdQuitApp()));
 
     // Menu toString
     std::string menuStr;
@@ -62,16 +68,14 @@ void Game::init()
     frames["Menu"]->setContent(menuStr);
 
 
-    new glib::gGfx::FrameContentText(frames["HeroStat"], hero->toString());
-    new glib::gGfx::FrameContentText(frames["EventLog"], "");
+    new FrameContentText(frames["HeroStat"], hero->toString());
+    new FrameContentText(frames["EventLog"], "");
 }
 
 int Game::inputHandling()
 {
     inputEventNo = 0;
 
-    // TODO: send event to display the new selection
-    //       and handle elsewhere the printing
     if (gfx->getKey(VK_RETURN).isPressed) {
         menu->execute();
         ++inputEventNo;
@@ -82,20 +86,7 @@ int Game::inputHandling()
                 ? 0
                 : menu->getSelection() - 1);
 
-        std::string menuStr;
-        gint i = 0;
-        for (auto& e : menu->getItems()) {
-            menuStr += e->toString();
-            if (menu->getSelection() == i) {
-                menuStr += " #\n";
-            }
-            else {
-                menuStr += "\n";
-            }
-            ++i;
-        }
-        frames["Menu"]->setContent(menuStr);
-
+        menu->draw(frames["Menu"]);
         ++inputEventNo;
     }
     if (gfx->getKey(VK_DOWN).isPressed) {
@@ -104,20 +95,7 @@ int Game::inputHandling()
                 ? menu->getSelection()
                 : menu->getSelection() + 1);
 
-        std::string menuStr;
-        gint i = 0;
-        for (auto& e : menu->getItems()) {
-            menuStr += e->toString();
-            if (menu->getSelection() == i) {
-                menuStr += " #\n";
-            }
-            else {
-                menuStr += "\n";
-            }
-            ++i;
-        }
-        frames["Menu"]->setContent(menuStr);
-
+        menu->draw(frames["Menu"]);
         ++inputEventNo;
     }
 

@@ -1,15 +1,27 @@
+// **********************************************
+// ** gkpro @ 2019-10-09                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **      User Interface implementation       **
+// **                                          **
+// **********************************************
+
 #include "pch.h"
 #include "frames.h"
 
 extern std::mutex mx;
 
 namespace glib {
-namespace gGfx {
+namespace UI {
 
 
 int Frame::_id = 0;
 
-FrameBasic::FrameBasic(EngineGFX* engineGfx, const Point2D& topleft, const Point2D& extent, std::string title, wchar_t borderType = ' ')
+FrameBasic::FrameBasic(EngineGFX* engineGfx
+                      ,const Point2D& topleft
+                      ,const Point2D& extent
+                      ,std::string title
+                      ,wchar_t borderType = ' ')
 {
     _gfx = engineGfx;
     _topleft = topleft;
@@ -32,14 +44,14 @@ void FrameBasic::draw()
     // Drawing horizontal lines
     gint x = (gint)_extent.x < _gfx->getScreenWidth() ? (gint)_extent.x : _gfx->getScreenWidth();
     for (gint i = 0; i <= x; ++i) {
-        _gfx->draw((gint)(_topleft.x + i), (gint)_topleft.y, FG_GREY, _borderType);
-        _gfx->draw((gint)(_btmright.x - i), (gint)_btmright.y, FG_GREY, _borderType);
+        _gfx->draw((gint)(_topleft.x + i), (gint)_topleft.y, COLOUR::FG_GREY, _borderType);
+        _gfx->draw((gint)(_btmright.x - i), (gint)_btmright.y, COLOUR::FG_GREY, _borderType);
     }
     // Drawing vertical lines
     gint y = (gint)_extent.y < _gfx->getScreenHeight() ? (gint)_extent.y : _gfx->getScreenHeight();
     for (gint i = 0; i <= y; ++i) {
-        _gfx->draw((gint)_topleft.x, (gint)(_topleft.y + i), FG_GREY, _borderType);
-        _gfx->draw((gint)_btmright.x, (gint)(_btmright.y - i), FG_GREY, _borderType);
+        _gfx->draw((gint)_topleft.x, (gint)(_topleft.y + i), COLOUR::FG_GREY, _borderType);
+        _gfx->draw((gint)_btmright.x, (gint)(_btmright.y - i), COLOUR::FG_GREY, _borderType);
     }
 
     // Drawing title
@@ -207,6 +219,23 @@ Menu::~Menu()
 void Menu::addItem(MenuItem* item)
 {
     _items.push_back(item);
+}
+
+
+void Menu::draw(Frame* frame)
+{
+    std::string str;
+    gint length = _items.size();
+    for (gint i = 0; i < length; ++i) {
+        str += _items[i]->toString();
+        if (_selection == i) {
+            str += " #\n";
+        }
+        else {
+            str += "\n";
+        }
+    }
+    frame->setContent(str);
 }
 
 void Menu::execute()
