@@ -17,6 +17,7 @@
 namespace glib {
 namespace UI {
 
+
 using glib::NotImplementedException;
 using glib::gGfx::COLOUR;
 using glib::gGfx::EngineGFX;
@@ -242,6 +243,23 @@ private:
     Command* _command;
 
 };
+
+
+class Logger {
+public:
+    static Logger* getInstance();
+    static void attachOutput(Frame* output);
+    static void log(const std::string& msg);
+
+protected:
+    Logger();
+
+private:
+    static Logger* m_instance;
+    static Frame* m_output;
+    static gint m_nLog;
+};
+
 
 
 } // End of namespace gGfx

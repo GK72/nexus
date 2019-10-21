@@ -15,6 +15,9 @@ namespace glib {
 namespace UI {
 
 
+Logger* Logger::m_instance = nullptr;
+Frame* Logger::m_output = nullptr;
+gint Logger::m_nLog = 0;
 int Frame::_id = 0;
 
 FrameBasic::FrameBasic(EngineGFX* engineGfx
@@ -55,8 +58,8 @@ void FrameBasic::draw()
     }
 
     // Drawing title
-    _gfx->setCurPosX(titlePosX);
-    _gfx->setCurPosY(_topleft.y);
+    _gfx->setCurPosX(static_cast<short>(titlePosX));
+    _gfx->setCurPosY(static_cast<short>(_topleft.y));
     _gfx->print(" " + _title + " ");
 
     _content->draw();
@@ -136,8 +139,10 @@ void FrameContentText::print()
     __str_begin = 0;
 
     for (gint i = 0; i < __str_lines; ++i) {
-        __gfx->setCurPosX(_frame->getTopLeft().x + _frame->getBorderSize() + _padding);
-        __gfx->setCurPosY(_frame->getTopLeft().y + _frame->getBorderSize() + i);
+        __gfx->setCurPosX(static_cast<short>(
+            _frame->getTopLeft().x + _frame->getBorderSize() + _padding));
+        __gfx->setCurPosY(static_cast<short>(
+            _frame->getTopLeft().y + _frame->getBorderSize() + i));
 
         __str_length = _linebreaks.at(i) - __str_begin;
         __str_line = _str.substr(__str_begin, __str_length);
@@ -213,7 +218,9 @@ Frame* FrameBuilder::createFrame(std::string title, Point2D extent)
 Frame* FrameBuilder::createFrame(std::string title)
 {
     Point2D p(_lastFramePos.x, 0);
-    Point2D e(frameDimensionLimits.minWidth, frameDimensionLimits.minHeight);
+    Point2D e(
+         static_cast<float>(frameDimensionLimits.minWidth)
+        ,static_cast<float>(frameDimensionLimits.minHeight));
     return createFrame(title, e, p);
 }
 
@@ -288,6 +295,34 @@ gint Menu::getSelection()
 std::vector<MenuItem*> Menu::getItems()
 {
     return _items;
+}
+
+
+
+Logger::Logger()
+{
+
+}
+
+Logger* Logger::getInstance()
+{
+    if (m_instance == nullptr) {
+        m_instance = new Logger();
+    }
+    return m_instance;
+}
+
+void Logger::attachOutput(Frame* output)
+{
+    m_output = output;
+}
+
+void Logger::log(const std::string& msg)
+{
+    m_output->setContent(
+        std::to_string(++m_nLog)
+        + ": " + msg
+    );
 }
 
 
