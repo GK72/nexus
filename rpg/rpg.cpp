@@ -15,6 +15,8 @@ namespace glib {
 namespace rpg {
 
 
+int Item::_uid = 0;
+
 Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
 {
 #ifdef _MSC_BUILD
