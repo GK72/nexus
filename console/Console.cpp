@@ -9,7 +9,7 @@
 #include "gmath.h"
 #include "gGfx.h"
 #include "utility.h"
-#include "rpg.h"
+#include "game.h"
 
 #ifdef __linux__
 #include "curses.h"
@@ -18,7 +18,7 @@
 
 int main()
 {
-    glib::rpg::Game* game = new glib::rpg::Game(192, 108, 7, 14);
+    rts::Game* game = new rts::Game(192, 108, 7, 14);
     game->run();
 
 }
