@@ -12,6 +12,12 @@
 
 namespace glib {
 
+
+Random* Random::m_instance = nullptr;
+std::random_device Random::m_rd;
+std::mt19937 Random::m_mt;
+
+
 std::string ipv6Formatter(std::string ipv6) {
     gint p = 0;
     gint q = 0;
@@ -43,6 +49,24 @@ std::string ipv6Formatter(std::string ipv6) {
     return out;
 }
 
+
+Random::Random()
+{
+    m_mt = std::mt19937(m_rd());
+}
+
+Random* Random::getInstance() {
+    if (m_instance == nullptr) {
+        m_instance = new Random();
+    }
+    return m_instance;
+}
+int Random::randomInt(int min, int max) {
+    std::uniform_int_distribution<> dist(min, max);
+    return dist(m_mt);
+}
+
+
 void Publisher::attach(Subscriber* sub) {
     _subs.push_back(sub);
 }
@@ -51,7 +75,7 @@ void Publisher::detach(Subscriber* sub) {
     _subs.erase(std::find(_subs.begin(), _subs.end(), sub));
 }
 
-void Publisher::notify(Event& evt) {
+void Publisher::notify(Event&& evt) {
     for (auto& e : _subs) e->trigger(evt);
 }
 
@@ -69,7 +93,8 @@ template <class T> iterator<T> iterator<T>::operator++(int)
 
 index::index(const std::vector<gint>& dim) : dims(dim) {}
 
-gint index::at(const std::vector<gint>& vec) const {
+gint index::at(const std::vector<gint>& vec) const
+{
     _global = vec[vec.size() - 1];
     gint dm = 1;
     for (gint i = vec.size(); i > 1; --i) {
@@ -80,6 +105,7 @@ gint index::at(const std::vector<gint>& vec) const {
 }
 
 gint index::at(gint x, gint y) const { return x * dims[1] + y; }
+
 
 
 } //End of namespace glib
