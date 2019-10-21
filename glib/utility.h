@@ -12,8 +12,10 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
+
 
 namespace glib {
 
@@ -39,6 +41,21 @@ template <class T> T swapEndian32(T& x) {
 std::string ipv6Formatter(std::string ipv6);
 
 
+class Random {
+public:
+    static Random* getInstance();
+    static int randomInt(int min, int max);
+
+protected:
+    Random();
+
+private:
+    static Random* m_instance;
+    static std::random_device m_rd;
+    static std::mt19937 m_mt;
+};
+
+
 struct Event {
     Event(const std::string& str) : msg(str) {}
     std::string msg;
@@ -50,7 +67,7 @@ class Publisher {
 public:
     virtual void attach(Subscriber* sub);
     virtual void detach(Subscriber* sub);
-    virtual void notify(Event& evt);
+    virtual void notify(Event&& evt);
 
 protected:
     Publisher() {}
