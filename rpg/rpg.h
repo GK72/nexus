@@ -21,6 +21,53 @@ using glib::UI::Menu;
 using glib::UI::MenuItem;
 
 
+enum class ItemType {
+    ONE_HANDED_SWORD,
+    BOW
+};
+
+enum class ItemSlotType {
+    MAIN_HAND,
+    OFF_HAND,
+    HEAD,
+    TORSO,
+    HANDS,
+    WAIST,
+    LEGS,
+    FEET,
+    NECK,
+    FINGER
+};
+
+enum class ElementalType {
+    PHYSICAL,
+    FIRE,
+    ICE
+};
+
+enum class DamageType {
+    MELEE,
+    PROJECTILE,
+    SPELL
+};
+
+struct damage {
+    DamageType type;
+    ElementalType elemental;
+    int min;
+    int max;
+    float duration;
+};
+
+struct stat {
+    int life;
+    int mana;
+    damage dmg;
+
+};
+
+
+
 class Hero;
 
 class Game : public glib::gGfx::Engine, public Subscriber {
@@ -68,14 +115,40 @@ private:
     std::string _name;
     int _experience;
     int _heroLevel;
-    int _maxHp;
     int _hp;
-    int _maxMana;
     int _mana;
 
+    stat stats;
     int _damageMin;
     int _damageMax;
 };
+
+
+class Item {
+public:
+    Item(std::string name) : _name(name) { generateID(); }
+
+protected:
+    std::string _name;
+
+private:
+    void generateID()           { ++_uid; }
+    static int _uid;
+
+};
+
+class Equipment : public Item {
+public:
+    Equipment(std::string name, stat stats) : Item(name), _stats(stats) {}
+    void equip();
+
+private:
+    stat _stats;
+    //ItemSlotType slotType;
+    //ItemType type;
+};
+
+
 
 class CmdQuitApp : public Command {
 public:
