@@ -89,14 +89,21 @@ void Game::update(float elapsedTime)
 {
     m_timeSLR += elapsedTime;
     if (m_timeSLR > 1) {
+        m_gameTimeSec += m_timeSLR;
         --m_timeSLR;
-        m_gameTimeSec += elapsedTime;
         m_world->iterate();
     }
 
     // Refresh UI
-    m_frames["Stat"]->setContent("Population: "
-        + std::to_string(m_world->getPopulationSize()));
+    m_frames["Stat"]->setContent(
+          "Time      : " + std::to_string(m_gameTimeSec) + '\n'
+        + "Population: " + std::to_string(m_world->getPopulationSize()) + '\n'
+        + "FullFamily: " + std::to_string(dynamic_cast<PopulationRM*>(m_world->m_population)->getNFamilyFull()) + '\n'
+        + "Females   : " + std::to_string(dynamic_cast<PopulationRM*>(m_world->m_population)->getNFemales()) + '\n'
+        + "Males     : " + std::to_string(dynamic_cast<PopulationRM*>(m_world->m_population)->getNMales()) + '\n'
+        + "Children  : " + std::to_string(dynamic_cast<PopulationRM*>(m_world->m_population)->getNChildren()) + '\n'
+        + "Elders    : " + std::to_string(dynamic_cast<PopulationRM*>(m_world->m_population)->getNElder())
+    );
 
     for (const auto& e : m_frames) {
         e.second->draw();
@@ -108,7 +115,7 @@ void Game::trigger(Event& evt)
 
 }
 
-Inhabitant::Inhabitant(gint familyid, std::optional<enu_gender> gender, unsigned short age)
+Inhabitant::Inhabitant(gint familyIdParent, std::optional<enu_gender> gender, unsigned short age)
 {
     if (!gender.has_value()) {
         m_gender = static_cast<enu_gender>(Random::randomInt(0, 1));
@@ -116,80 +123,120 @@ Inhabitant::Inhabitant(gint familyid, std::optional<enu_gender> gender, unsigned
     else {
         m_gender = gender.value();
     }
-    m_familyId = familyid;
+    m_familyIdParent = familyIdParent;
+    m_familyId = familyIdParent;
     m_age = age;
 }
 
-Population::Population(gint initPopulationSize)
+PopulationRM::PopulationRM(gint initPopulationSize)
 {
     m_populationSizeCurrent = initPopulationSize * 2;
 
-    Inhabitant* inhabitant;
     for (gint i = 0; i < initPopulationSize; ++i) {
         ++m_familyIdLast;
-        inhabitant = new Inhabitant(m_familyIdLast, std::optional<enu_gender>() = enu_gender::FEMALE, Random::randomInt(20, 30));
-        m_inhabitants.push_back(inhabitant);
-        inhabitant = new Inhabitant(m_familyIdLast, std::optional<enu_gender>() = enu_gender::MALE, Random::randomInt(20, 30));
-        m_inhabitants.push_back(inhabitant);
+        m_inhabitants.emplace_back(
+            new Inhabitant(m_familyIdLast
+                , std::optional<enu_gender>() = enu_gender::FEMALE, Random::randomInt(20, 30))
+        );
+        ++m_stats.nFemales;
+        m_inhabitants.emplace_back(
+            new Inhabitant(m_familyIdLast
+                , std::optional<enu_gender>() = enu_gender::FEMALE, Random::randomInt(20, 30))
+        );
+        ++m_stats.nMales;
     }
 }
 
-
-
-void Population::iteratePopulation()
+void PopulationRM::iteratePopulation()
 {
+    ++m_iteration;
     gint length = m_inhabitants.size();
     for (gint i = 0; i < length; ++i) {
         ++m_inhabitants[i]->m_age;
-        if (m_inhabitants[i]->m_familyId == 0) {
-            //findMate(e);
-            Logger::log("Finding mate... -Not Implemented-");
-        }
-        else {
-            // Make child
-            if (m_inhabitants[i]->m_age >= m_fertilityAgeMinYear
-                    && m_inhabitants[i]->m_age <= m_fertilityAgeMaxYear
-                    && m_inhabitants[i]->m_nChildren < m_familySizeMax)
-            {
-                if (m_inhabitants[i]->m_gender == enu_gender::FEMALE) {
-                    m_inhabitants.push_back(new Inhabitant(
-                        m_inhabitants[i]->m_familyId, std::optional<enu_gender>()));
-                        ++m_populationSizeCurrent;
-                }
-                ++m_inhabitants[i]->m_nChildren;
-            }
-        }
+
+        //updateStats();
+
         if (m_inhabitants[i]->m_age >= m_fertilityAgeMinYear
-                && m_inhabitants[i]->m_nChildren == 0) {
-            m_inhabitants[i]->m_familyId = 0;
-        }
-    }
-    std::remove_if(m_inhabitants.begin(), m_inhabitants.end()
-        , [&](const auto& x) {
-            if (x->m_age > m_lifeExpectationAvgYear) {
-                --m_populationSizeCurrent;
-                return true;
+            && m_inhabitants[i]->m_age <= m_fertilityAgeMaxYear)
+        {
+            if (m_inhabitants[i]->m_familyId == m_inhabitants[i]->m_familyIdParent) {
+                // Detach from parent family
+                m_inhabitants[i]->m_familyId = 0;
             }
-            return false;
-        });
+            if (m_inhabitants[i]->m_familyId == 0) {
+                findMate(i);
+            }
+            else {
+                makeChild(i);
+            }
+        }
+
+
+    }
+    m_inhabitants.erase(
+        std::remove_if(m_inhabitants.begin(), m_inhabitants.end()
+            , [&](const auto& x) {
+                if (x->m_age > m_lifeExpectationAvgYear) {
+                    --m_populationSizeCurrent;
+                    return true;
+                }
+                return false;
+            })
+        ,m_inhabitants.end()
+    );
         //m_inhabitants[i]->m_age > m_lifeExpectationAvgYear
 }
 
-void Population::findMate(Inhabitant* inhabitant)
+void PopulationRM::findMate(gint i)
 {
+    Logger::log("Finding mate... -Not Implemented-"
+        + std::to_string(m_iteration)
+    );
     auto mate = std::find_if(m_inhabitants.begin(), m_inhabitants.end()
         , [&](const auto& x) {
-            return x->m_gender == inhabitant->m_gender
-                && x->m_familyId == 0; });
+            return x->m_familyId == 0
+                && x->m_gender != m_inhabitants[i]->m_gender;
+        }
+    );
 
     ++m_familyIdLast;
-    inhabitant->m_familyId = m_familyIdLast;
-    //mate->m_familyId = m_familyIdLast;
+    m_inhabitants[i]->m_familyId = m_familyIdLast;
+    if (mate != std::end(m_inhabitants)) {
+        (*mate)->m_familyId = m_familyIdLast;
+    }
 }
 
-World::World()
+void PopulationRM::makeChild(gint i)
 {
-    m_population = new Population(5);
+    if (m_inhabitants[i]->m_age >= m_fertilityAgeMinYear
+        && m_inhabitants[i]->m_age <= m_fertilityAgeMaxYear
+        && m_inhabitants[i]->m_nChildren < m_familySizeMax)
+    {
+        if (m_inhabitants[i]->m_gender == enu_gender::FEMALE) {
+            m_inhabitants.push_back(new Inhabitant(
+                m_inhabitants[i]->m_familyId, std::optional<enu_gender>()));
+            ++m_populationSizeCurrent;
+        }
+        ++m_inhabitants[i]->m_nChildren;
+        ++m_stats.nChildren;
+    }
+}
+
+void PopulationRM::updateStats(gint i)
+{
+    if (m_inhabitants[i]->m_age == m_fertilityAgeMinYear) {
+        --m_stats.nChildren;
+        ++m_stats.nAdults;
+    }
+    else if (m_inhabitants[i]->m_age == m_fertilityAgeMaxYear + 1) {
+        --m_stats.nAdults;
+        ++m_stats.nElders;
+    }
+}
+
+World::World(Population* population)
+{
+    m_population = population;
 }
 
 void World::populate()
@@ -204,7 +251,7 @@ void World::iterate()
 
 gint World::getPopulationSize()
 {
-    return m_population->m_populationSizeCurrent;
+    return m_population->getPopulationSize();
 }
 
 
