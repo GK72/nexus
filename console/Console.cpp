@@ -6,10 +6,12 @@
 // **                                          **
 // **********************************************
 
-#include "gmath.h"
-#include "gGfx.h"
+#include <fstream>
+//#include "gmath.h"
+//#include "gGfx.h"
 #include "utility.h"
-#include "game.h"
+#include "io.h"
+//#include "game.h"
 
 #ifdef __linux__
 #include "curses.h"
@@ -18,7 +20,17 @@
 
 int main()
 {
-    rts::Game* game = new rts::Game(192, 108, 7, 14);
-    game->run();
+    //rts::Game* game = new rts::Game(192, 108, 7, 14);
+    //game->run();
+
+    glib::ParserJSON json(R"#(D:\dev\data\houses.json)#");
+    auto data = json.read();
+    for (const auto& e : data) {
+        for (const auto& m : e) {
+            std::cout << m.first << ": " << std::any_cast<std::string>(m.second) << '\n';
+        }
+    }
+
+    //std::cout << json.readToken() << '\n';
 
 }
