@@ -7,9 +7,10 @@
 // **********************************************
 
 #pragma once
-#include <exception>
-#include <iostream>
 #include <cmath>
+#include <exception>
+#include <fstream>
+#include <string>
 #include "utility.h"
 
 namespace glib {

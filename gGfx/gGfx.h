@@ -36,7 +36,7 @@ public:
 #define KEY_NUMBERS 256		
 #define MOUSE_BUTTONS 5
 
-enum DIRECTION_2D
+enum class DIRECTION_2D
 {
     NORTH,
     SOUTH,
