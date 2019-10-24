@@ -35,25 +35,50 @@ enum class enu_gender {
 };
 
 class Inhabitant {
-    friend class Population;
+    friend class PopulationRM;
 public:
-    Inhabitant(gint familyid, std::optional<enu_gender> gender, unsigned short age = 0);
+    Inhabitant(gint familyIdParent, std::optional<enu_gender> gender, unsigned short age = 0);
 
 private:
     enu_gender m_gender;
     unsigned short m_age = 0;
     unsigned short m_nChildren = 0;
-    gint m_familyId = 0;      // Single
+    gint m_familyIdParent = 0;
+    gint m_familyId = 0;      // 0 means single
+};
+
+struct StatPopulation {
+    gint nFamilySizeMax = 0;
+    gint nFemales = 0;
+    gint nMales = 0;
+    gint nChildren = 0;
+    gint nAdults = 0;
+    gint nElders = 0;
 };
 
 class Population {
+public:
+    virtual void iteratePopulation() = 0;
+    virtual gint getPopulationSize() = 0;
+};
+
+
+class PopulationRM : public Population {
     friend class World;
 public:
-    Population(gint initPopulationSize);
-    void iteratePopulation();
+    PopulationRM(gint initPopulationSize);
+    void iteratePopulation() override;
+    gint getPopulationSize() override           { return m_populationSizeCurrent; }
+    gint getNFamilyFull() { return std::count_if(m_inhabitants.begin(), m_inhabitants.end(), [&](const auto& x) {return x->m_nChildren == m_familySizeMax; }); }
+    gint getNFemales() { return std::count_if(m_inhabitants.begin(), m_inhabitants.end(), [&](const auto& x) {return x->m_gender == enu_gender::FEMALE; }); }
+    gint getNMales() { return std::count_if(m_inhabitants.begin(), m_inhabitants.end(), [&](const auto& x) {return x->m_gender == enu_gender::MALE; }); }
+    gint getNChildren() { return std::count_if(m_inhabitants.begin(), m_inhabitants.end(), [&](const auto& x) {return x->m_age < m_fertilityAgeMinYear ; }); }
+    gint getNElder() { return std::count_if(m_inhabitants.begin(), m_inhabitants.end(), [&](const auto& x) {return x->m_age > m_fertilityAgeMinYear; }); }
 
 private:
-    void findMate(Inhabitant* inhabitant);
+    void findMate(gint i);
+    void makeChild(gint i);
+    void updateStats(gint i);
 
     std::vector<Inhabitant*> m_inhabitants;
 
@@ -64,6 +89,9 @@ private:
     gint m_fertilityAgeMaxYear = 40;
     gint m_lifeExpectationAvgYear = 60;
     gint m_familyIdLast = 0;
+    gint m_iteration = 0;
+
+    StatPopulation m_stats;
 
 };
 
@@ -71,7 +99,7 @@ class World {
     friend class Game;
 
 public:
-    World();
+    World(Population* population);
 
     void iterate();
 
@@ -90,7 +118,7 @@ public:
     ~Game();
 
     void run();
-    void initNewWorld()                 { m_world = new World(); }
+    void initNewWorld()                 { m_world = new World(new PopulationRM(5)); }
 
 protected:
     void init() override;
