@@ -26,6 +26,8 @@ using gint = size_t;
 
 using pDim = std::vector<gint>;                   // For passing dimensions as parameter
 
+std::string ipv6Formatter(std::string ipv6);
+
 template <class ...Ts> void print(Ts&&... args) {
     (std::cout << ... << args) << '\n';
 }
@@ -36,8 +38,6 @@ template <class T> T swapEndian32(T& x) {
            (x >>  8) & 0x0000FF00 |
            (x >> 24) & 0x000000FF ;
 }
-
-std::string ipv6Formatter(std::string ipv6);
 
 
 class Random {

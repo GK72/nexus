@@ -2,6 +2,18 @@
 
 
 namespace glib {
+namespace IO {
+
+
+std::string trim(const std::string& str, const std::string& what)
+{
+    size_t posStart = str.find_first_not_of(what);
+    size_t posEnd = str.find_last_not_of(what);
+    if (posEnd == std::string::npos) {
+        return str;
+    }
+    return str.substr(posStart, posEnd + 1 - posStart);
+}
 
 
 Tokenizer::Tokenizer(const std::vector<std::string>& delims)
@@ -10,20 +22,33 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims)
     m_nDelims = delims.size();
 }
 
-const std::string_view& Tokenizer::next()
+std::string Tokenizer::next()
 {
-    m_posEnd = m_sv.find(m_delims[m_idxDelim], m_posEnd);
-    m_str = m_posEnd != std::string_view::npos
-        ? m_sv.substr(m_posStart, m_posEnd - m_posStart)
-        : "";
-    m_posStart = ++m_posEnd;
-    m_idxDelim = ++m_idxDelim % m_nDelims;
-    return m_str;
+    if (m_posEnd < m_str.size()) {
+        m_posEnd = m_str.find(m_delims[m_idxDelim], m_posEnd + 1);
+        m_token = m_str.substr(m_posStart, m_posEnd - m_posStart);
+        m_posStart = m_posEnd + 1;
+        m_idxDelim = ++m_idxDelim % m_nDelims;
+    }
+    else {
+        m_token = "";
+    }
+
+    return m_token;
 }
 
-void Tokenizer::setString(const std::string_view& sv)
+void Tokenizer::clear()
 {
-    m_sv = sv;
+    m_posStart = 0;
+    m_posEnd = 0;
+    m_idxDelim = 0;
+    m_str = "";
+    m_token = "";
+}
+
+void Tokenizer::setString(const std::string&& str)
+{
+    m_str = str;
 }
 
 
@@ -34,47 +59,43 @@ ParserJSON::ParserJSON(const std::string_view& path)
     m_tokenizer = new Tokenizer(std::vector<std::string>{":", ","});
 }
 
-Parser::container ParserJSON::read()
+ParserJSON::record ParserJSON::readRecord()
 {
-    while (!m_inf.eof()) {
-        nextRecord();
+    bool doRead = true;
+    m_record.clear();
+    m_tokenizer->clear();
+
+    if (!m_inf.eof()) {
+        std::stringstream ss;
+        while (((m_ch = m_inf.get()) != '{')
+            && (m_inf.good()));
+        if (m_ch == '{') { ++m_nRecords; }
+        while (doRead) {
+            ss << (m_ch = m_inf.get());
+
+            if (m_ch == '{') { ++m_nRecords; }
+            else if (m_ch == '}') { --m_nRecords; }
+            if (m_nRecords == 0) {
+                doRead = false;
+            }
+        }
+        m_tokenizer->setString(ss.str());
+
         while ((m_key = readToken()).size() > 0) {
-            m_value = readToken();
+            m_value = trim(trim(readToken(), " "), "\"");
+            m_key = trim(trim(m_key, " "), "\"");
             m_record[m_key] = m_value;
         }
-        m_data.push_back(m_record);
-        m_doRead = true;
     }
-    return m_data;
-}
-
-void ParserJSON::nextRecord()
-{
-    while (m_doRead) {
-        m_ss << (m_ch = m_inf.get());
-        if (m_ch == '{') { ++m_nRecords; }
-        else if (m_ch == '}') { --m_nRecords; }
-        if (m_nRecords == 0) {
-            m_doRead = false;
-        }
-        mt_line = m_ss.str();
-    }
+    return m_record;
 }
 
 std::string ParserJSON::readToken()
 {
-    //while (m_doRead) {
-    //    m_ss << (m_ch = m_inf.get());
-    //    if (m_ch == '{')        { ++m_nRecords; }
-    //    else if (m_ch == '}')   { --m_nRecords; }
-    //    if (m_nRecords == 0) {
-    //        m_doRead = false;
-    //    }
-    //}
-
-    m_tokenizer->setString(mt_line);
-    mt_token = m_tokenizer->next();
-    return mt_token;
+    return m_tokenizer->next();
 }
 
+
+
+} // End of namespace IO
 } // End of namespace glib

@@ -10,14 +10,18 @@
 
 
 namespace glib {
+namespace IO {
 
 using gint = size_t;
+
+std::string trim(const std::string& str, const std::string& what);
 
 class Tokenizer {
 public:
     Tokenizer(const std::vector<std::string>& delims);
-    const std::string_view& next();
-    void setString(const std::string_view& sv);
+    std::string next();
+    void setString(const std::string&& str);
+    void clear();
 
 private:
     std::string_view m_sv;
@@ -28,43 +32,41 @@ private:
     gint m_idxDelim = 0;
     gint m_nDelims;
 
-    std::string_view m_str;
+    std::string m_str;
+    std::string m_token;
 };
 
 
 class Parser {
 public:
-    using record = std::map<std::string, std::any>;
+    using record = std::map<std::string, std::string>;
     using container = std::vector<record>;
 
     Parser() {}
     virtual ~Parser() {}
-    Parser(const Parser&)               = delete;
-    Parser& operator=(const Parser&)    = delete;
-    virtual container read()            = 0;
-    virtual std::string readToken()     = 0;
+    Parser(const Parser&) = delete;
+    Parser& operator=(const Parser&) = delete;
+    virtual container read() = 0;
+    virtual record readRecord() = 0;
+    virtual std::string readToken() = 0;
 };
 
 
 class ParserJSON : public Parser {
 public:
     ParserJSON(const std::string_view& path);
-    container read() override;
-    void nextRecord();
+    container read() override { return container(); };
+    record readRecord();
     std::string readToken() override;
 
 private:
     std::ifstream m_inf;
     std::string m_path;
-    std::stringstream m_ss;
-    bool m_doRead = true;
     gint m_nRecords = 0;
     char m_ch;
 
-    std::string mt_line;
-    std::string mt_token;
     std::string m_key;
-    std::any m_value;
+    std::string m_value;
 
     Tokenizer* m_tokenizer;
     record m_record;
@@ -72,4 +74,7 @@ private:
 
 };
 
+
+
+} // End of namespace IO
 } // End of namespace glib
