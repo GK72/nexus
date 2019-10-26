@@ -18,6 +18,27 @@ std::random_device Random::m_rd;
 std::mt19937 Random::m_mt;
 
 
+void dumpError(const std::exception& ex, const std::string_view& sv)
+{
+    if (sv.empty()) {
+        printLog(ex.what());
+}
+    else {
+        std::string prefix = "\n***** Dump ****\n";
+        std::string suffix = "\n***************\n";
+        std::string data = sv.data();
+        printLog(ex.what() + prefix + data + suffix);
+    }
+}
+
+void printLog(const std::string_view& msg)
+{
+    auto timestamp = std::chrono::system_clock::now();
+    time_t time = std::chrono::system_clock::to_time_t(timestamp);
+    std::cerr << "[LOG] " << std::put_time(std::localtime(&time), "%T") << " - " << msg;
+}
+
+
 std::string ipv6Formatter(std::string ipv6) {
     gint p = 0;
     gint q = 0;
