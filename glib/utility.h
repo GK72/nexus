@@ -11,8 +11,10 @@
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <iomanip>
 #include <random>
 #include <string>
+#include <string_view>
 #include <vector>
 
 
@@ -23,14 +25,16 @@ namespace glib {
 #define _g_uNIE throw NotImplementedException("Unknown Exception")
 
 using gint = size_t;
-
 using pDim = std::vector<gint>;                   // For passing dimensions as parameter
 
+void dumpError(const std::exception& ex, const std::string_view& sv);
 std::string ipv6Formatter(std::string ipv6);
 
-template <class ...Ts> void print(Ts&&... args) {
-    (std::cout << ... << args) << '\n';
+template <class ...Ts> void print(const std::string& separator, Ts&&... args) {
+    (std::cout << ... << (separator + args)) << '\n';
 }
+
+void printLog(const std::string_view& msg);
 
 template <class T> T swapEndian32(T& x) {
     return (x << 24) & 0xFF000000 |
