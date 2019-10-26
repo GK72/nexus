@@ -19,7 +19,7 @@ std::string trim(const std::string& str, const std::string& what);
 class Tokenizer {
 public:
     Tokenizer(const std::vector<std::string>& delims);
-    std::string next();
+    const std::string& next();
     void setString(const std::string&& str);
     void clear();
 
@@ -43,12 +43,15 @@ public:
     using container = std::vector<record>;
 
     Parser() {}
-    virtual ~Parser() {}
-    Parser(const Parser&) = delete;
-    Parser& operator=(const Parser&) = delete;
+    virtual ~Parser()                   = default;
+    Parser(const Parser&)               = delete;
+    Parser(Parser&&)                    = delete;
+    Parser& operator=(const Parser&)    = delete;
+    Parser& operator=(Parser&&)         = delete;
+
     virtual container read() = 0;
     virtual record readRecord() = 0;
-    virtual std::string readToken() = 0;
+    virtual const std::string& readToken() = 0;
 };
 
 
@@ -57,20 +60,16 @@ public:
     ParserJSON(const std::string_view& path);
     container read() override { return container(); };
     record readRecord();
-    std::string readToken() override;
+    const std::string& readToken() override;
 
 private:
     std::ifstream m_inf;
     std::string m_path;
-    gint m_nRecords = 0;
-    char m_ch;
-
-    std::string m_key;
-    std::string m_value;
-
     Tokenizer* m_tokenizer;
     record m_record;
     container m_data;
+
+    void readKeyValuePair();
 
 };
 

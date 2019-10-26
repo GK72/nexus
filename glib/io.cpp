@@ -15,14 +15,13 @@ std::string trim(const std::string& str, const std::string& what)
     return str.substr(posStart, posEnd + 1 - posStart);
 }
 
-
 Tokenizer::Tokenizer(const std::vector<std::string>& delims)
     : m_delims(delims)
 {
     m_nDelims = delims.size();
 }
 
-std::string Tokenizer::next()
+const std::string& Tokenizer::next()
 {
     if (m_posEnd < m_str.size()) {
         m_posEnd = m_str.find(m_delims[m_idxDelim], m_posEnd + 1);
@@ -51,7 +50,6 @@ void Tokenizer::setString(const std::string&& str)
     m_str = str;
 }
 
-
 ParserJSON::ParserJSON(const std::string_view& path)
 {
     m_path = path;
@@ -61,36 +59,44 @@ ParserJSON::ParserJSON(const std::string_view& path)
 
 ParserJSON::record ParserJSON::readRecord()
 {
-    bool doRead = true;
     m_record.clear();
     m_tokenizer->clear();
 
     if (!m_inf.eof()) {
         std::stringstream ss;
-        while (((m_ch = m_inf.get()) != '{')
-            && (m_inf.good()));
-        if (m_ch == '{') { ++m_nRecords; }
-        while (doRead) {
-            ss << (m_ch = m_inf.get());
+        char ch;
+        gint nRecords = 0;
 
-            if (m_ch == '{') { ++m_nRecords; }
-            else if (m_ch == '}') { --m_nRecords; }
-            if (m_nRecords == 0) {
-                doRead = false;
-            }
+        // Finding the start of the record
+        while (((ch = m_inf.get()) != '{')
+            && (m_inf.good()));
+        if (ch == '{') { ++nRecords; }
+
+        bool doRead = true;
+        while (doRead) {
+            ss << (ch = m_inf.get());
+            if (ch == '{')      { ++nRecords; }
+            else if (ch == '}') { --nRecords; }
+            if (nRecords == 0)  { doRead = false; }
         }
         m_tokenizer->setString(ss.str());
-
-        while ((m_key = readToken()).size() > 0) {
-            m_value = trim(trim(readToken(), " "), "\"");
-            m_key = trim(trim(m_key, " "), "\"");
-            m_record[m_key] = m_value;
-        }
+        readKeyValuePair();
     }
     return m_record;
 }
 
-std::string ParserJSON::readToken()
+void ParserJSON::readKeyValuePair()
+{
+    std::string key;
+    std::string value;
+    while ((key = readToken()).size() > 0) {
+        value = trim(trim(readToken(), " "), "\"");
+        key = trim(trim(key, " "), "\"");
+        m_record[key] = value;
+    }
+}
+
+const std::string& ParserJSON::readToken()
 {
     return m_tokenizer->next();
 }
