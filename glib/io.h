@@ -64,6 +64,8 @@ public:
     Parser& operator=(const Parser&)    = delete;
     Parser& operator=(Parser&&)         = delete;
 
+    virtual std::string getKey(const std::string_view& sv) = 0;
+
     virtual container* read() = 0;
     virtual record readRecord() = 0;
     virtual std::string_view readToken() = 0;
@@ -79,6 +81,8 @@ public:
     ParserJSON& operator=(const ParserJSON&)    = delete;
     ParserJSON& operator=(ParserJSON&&)         = delete;
 
+    std::string getKey(const std::string_view& sv);
+
     container* read() override;
     record readRecord();
     std::string_view readToken() override { return strip(m_tokenizer->next()); };
@@ -88,7 +92,7 @@ private:
     std::string m_path;
     Tokenizer* m_tokenizer;
     record m_record;
-    container* m_data;
+    container* m_data;          // TODO: remove m_data
 
     void readKeyValuePair();
 

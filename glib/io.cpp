@@ -88,8 +88,16 @@ ParserJSON::~ParserJSON()
     delete m_tokenizer;
 }
 
+std::string ParserJSON::getKey(const std::string_view& sv)
+{
+    //return std::any_cast<std::string>(m_record.at(std::string(sv)));
+    return std::any_cast<std::string>(std::any_cast<record>(m_record.at("travel")).at(std::string(sv)));
+}
+
 ParserJSON::container* ParserJSON::read()
 {
+    // TODO: remove m_data from the class members
+    // Delete this function
     while ((m_record = readRecord()).size() > 0) {
         m_data->push_back(m_record);
     }
@@ -121,30 +129,29 @@ ParserJSON::record ParserJSON::readRecord()
 
         while (doRead) {
             ss << (ch = m_inf.get());
-            std::cout << ch;
             if (ch == '{') {
                 ++level;
                 // Stopping in between a key and value (value is the new record)
                 gint end = ss.str().find_last_of(",");
                 std::string str = ss.str().substr(0, end);
-                // Store key value pairs in a string
-                //m_tokenizer->setString(str);
-                //readKeyValuePair();
 
-                str = ss.str().substr(end + 1);
-                m_tokenizer->setString(str);
-                std::string key;
-                key = readToken();
+                // Key of the record
+                m_tokenizer->setString(ss.str().substr(end + 1));
+                std::string key(readToken());
                 m_inf.putback(ch);
                 --level;
+
                 std::any value = readRecord();
                 m_record.clear();
                 m_record[key] = value;
             }
             else if (ch == '}') {
-                if (--level == 0) { doRead = false; }
-                m_tokenizer->setString(ss.str());
-                readKeyValuePair();
+                if (--level == 0) {
+                    doRead = false;
+                    std::cout << ss.str() << '\n';
+                    m_tokenizer->setString(ss.str());
+                    readKeyValuePair();
+                }
             }
         }
         //m_tokenizer->setString(ss.str());
@@ -157,8 +164,8 @@ void ParserJSON::readKeyValuePair()
 {
     std::string key;
     std::any value;
-    while ((key = readToken()).size() > 0) {
-        value = readToken();
+    while ((key = std::string(readToken())).size() > 0) {
+        value = std::string(readToken());
         m_record[key] = value;
     }
 }
