@@ -1,3 +1,11 @@
+// **********************************************
+// ** gkpro @ 2019-10-27                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **                IO header                 **
+// **                                          **
+// **********************************************
+
 #pragma once
 #include <any>
 #include <fstream>
@@ -21,7 +29,7 @@ class Tokenizer {
 public:
     Tokenizer(const std::vector<std::string>& delims, const std::string_view& end);
     std::string_view next();
-    void setString(const std::string_view& str) { m_str = str; }
+    void setString(const std::string_view& str) { clear(); m_str = str; }
     void setQuote(const std::string_view& sv) { m_quote = sv; }
     void clear();
 
@@ -45,7 +53,8 @@ private:
 
 class Parser {
 public:
-    using record = std::map<std::string, std::string>;
+    //using record = std::map<std::string, std::string>;
+    using record = std::map<std::string, std::any>;
     using container = std::vector<record>;
 
     Parser() {}
@@ -55,7 +64,7 @@ public:
     Parser& operator=(const Parser&)    = delete;
     Parser& operator=(Parser&&)         = delete;
 
-    virtual container read() = 0;
+    virtual container* read() = 0;
     virtual record readRecord() = 0;
     virtual std::string_view readToken() = 0;
 };
@@ -64,7 +73,13 @@ public:
 class ParserJSON : public Parser {
 public:
     ParserJSON(const std::string_view& path);
-    container read() override { return container(); };
+    ~ParserJSON();
+    ParserJSON(const ParserJSON&)               = delete;
+    ParserJSON(ParserJSON&&)                    = delete;
+    ParserJSON& operator=(const ParserJSON&)    = delete;
+    ParserJSON& operator=(ParserJSON&&)         = delete;
+
+    container* read() override;
     record readRecord();
     std::string_view readToken() override { return strip(m_tokenizer->next()); };
 
@@ -73,7 +88,7 @@ private:
     std::string m_path;
     Tokenizer* m_tokenizer;
     record m_record;
-    container m_data;
+    container* m_data;
 
     void readKeyValuePair();
 
