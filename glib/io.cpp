@@ -5,23 +5,26 @@ namespace glib {
 namespace IO {
 
 
-std::string trim(const std::string& str, const std::string& what)
+std::string& trim(std::string& str, const std::string& what)
 {
     size_t posStart = str.find_first_not_of(what);
     size_t posEnd = str.find_last_not_of(what);
     if (posEnd == std::string::npos) {
         return str;
     }
-    return str.substr(posStart, posEnd + 1 - posStart);
+    str = str.substr(posStart, posEnd + 1 - posStart);
+    return str;
 }
 
-std::string strip(std::string& str, std::vector<std::string>&& vec/* = { "\n", " ", "\"" }*/)
+std::string& strip(std::string& str, std::vector<std::string>&& vec/* = { "\n", " ", "\"" }*/)
 {
-    std::string outstr = str;
+    //std::string outstr = str;
     for (const auto& v : vec) {
-        outstr = trim(outstr, v);
+        //outstr = trim(outstr, v);
+        str = trim(str, v);
     }
-    return outstr;
+    //return outstr;
+    return str;
 }
 
 Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_view& end)

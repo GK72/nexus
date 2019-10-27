@@ -14,8 +14,8 @@ namespace IO {
 
 using gint = size_t;
 
-std::string trim(const std::string& str, const std::string& what);
-std::string strip(std::string& str, std::vector<std::string>&& vec = {"\n", " ", "\""});
+std::string& trim(std::string& str, const std::string& what);
+std::string& strip(std::string& str, std::vector<std::string>&& vec = {"\n", " ", "\""});
 
 class Tokenizer {
 public:
@@ -57,7 +57,7 @@ public:
 
     virtual container read() = 0;
     virtual record readRecord() = 0;
-    virtual std::string readToken() = 0;
+    virtual std::string& readToken() = 0;
 };
 
 
@@ -66,7 +66,7 @@ public:
     ParserJSON(const std::string_view& path);
     container read() override { return container(); };
     record readRecord();
-    std::string readToken() override { return strip(m_tokenizer->next()); };
+    std::string& readToken() override { return strip(m_tokenizer->next()); };
 
 private:
     std::ifstream m_inf;
