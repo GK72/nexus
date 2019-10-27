@@ -5,26 +5,22 @@ namespace glib {
 namespace IO {
 
 
-std::string& trim(std::string& str, const std::string& what)
+std::string_view& trim(std::string_view& sv, const std::string& what)
 {
-    size_t posStart = str.find_first_not_of(what);
-    size_t posEnd = str.find_last_not_of(what);
+    size_t posStart = sv.find_first_not_of(what);
+    size_t posEnd = sv.find_last_not_of(what);
     if (posEnd == std::string::npos) {
-        return str;
+        return sv;
     }
-    str = str.substr(posStart, posEnd + 1 - posStart);
-    return str;
+    return sv = sv.substr(posStart, posEnd + 1 - posStart);
 }
 
-std::string& strip(std::string& str, std::vector<std::string>&& vec/* = { "\n", " ", "\"" }*/)
+std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec)
 {
-    //std::string outstr = str;
     for (const auto& v : vec) {
-        //outstr = trim(outstr, v);
-        str = trim(str, v);
+        sv = trim(sv, v);
     }
-    //return outstr;
-    return str;
+    return sv;
 }
 
 Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_view& end)
@@ -34,12 +30,11 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_v
     m_endMark = end;
 }
 
-std::string& Tokenizer::next()
+std::string_view Tokenizer::next()
 {
     // TODO: more general tokenizer; keep track of structure depth level
     // like JSON's recursive records
     if (!m_isEnd) {
-    //if (m_posEnd < m_str.size()) {
         if (m_isInQuotes) {
             m_posEnd = m_str.find(m_quote, m_posEnd + 1);
         }
