@@ -14,8 +14,8 @@ namespace IO {
 
 using gint = size_t;
 
-std::string_view& trim(std::string_view& sv, const std::string& what);
-std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
+std::string_view trim(std::string_view sv, const std::string& what);
+std::string_view strip(std::string_view sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
 
 class Tokenizer {
 public:

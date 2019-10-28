@@ -5,7 +5,7 @@ namespace glib {
 namespace IO {
 
 
-std::string_view& trim(std::string_view& sv, const std::string& what)
+std::string_view trim(std::string_view sv, const std::string& what)
 {
     size_t posStart = sv.find_first_not_of(what);
     size_t posEnd = sv.find_last_not_of(what);
@@ -15,7 +15,7 @@ std::string_view& trim(std::string_view& sv, const std::string& what)
     return sv = sv.substr(posStart, posEnd + 1 - posStart);
 }
 
-std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec)
+std::string_view strip(std::string_view sv, std::vector<std::string>&& vec)
 {
     for (const auto& v : vec) {
         sv = trim(sv, v);
@@ -85,19 +85,22 @@ ParserJSON::record ParserJSON::readRecord()
 
         // TODO: tokenize also records
         // Finding the start of the record
-        while (((ch = m_inf.get()) != '{')
-            && (m_inf.good()));
+        while (m_inf.good()
+            && (ch = m_inf.get()) != '{'
+        );
         if (ch == '{') { ++level; }
 
         bool doRead = true;
         while (doRead) {
             ss << (ch = m_inf.get());
             if (ch == '{')      { ++level; }
-            else if (ch == '}') { --level; }
+            else if (ch == '}') {
+                --level;
+                m_tokenizer->setString(ss.str());
+                readKeyValuePair();
+            }
             if (level == 0)  { doRead = false; }
         }
-        m_tokenizer->setString(ss.str());
-        readKeyValuePair();
     }
     return m_record;
 }
