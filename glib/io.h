@@ -25,6 +25,11 @@ using gint = size_t;
 std::string_view& trim(std::string_view& sv, const std::string& what);
 std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
 
+class ParseErrorException : public std::runtime_error {
+public:
+    ParseErrorException() : std::runtime_error("Parser Error") {}
+};
+
 class Tokenizer {
 public:
     Tokenizer(const std::vector<std::string>& delims, const std::string_view& end);
@@ -39,7 +44,7 @@ private:
 
     std::string_view m_sv;
     std::string m_str;
-    std::string m_token;
+    std::string m_token;            // TODO: remove
     gint m_posStart = 0;
     gint m_posEnd = 0;
     gint m_idxDelim = 0;
@@ -64,8 +69,6 @@ public:
     Parser& operator=(const Parser&)    = delete;
     Parser& operator=(Parser&&)         = delete;
 
-    virtual std::string getKey(const std::string_view& sv) = 0;
-
     virtual container* read() = 0;
     virtual record readRecord() = 0;
     virtual std::string_view readToken() = 0;
@@ -81,8 +84,6 @@ public:
     ParserJSON& operator=(const ParserJSON&)    = delete;
     ParserJSON& operator=(ParserJSON&&)         = delete;
 
-    std::string getKey(const std::string_view& sv);
-
     container* read() override;
     record readRecord();
     std::string_view readToken() override { return strip(m_tokenizer->next()); };
@@ -94,9 +95,11 @@ private:
     record m_record;
     container* m_data;          // TODO: remove m_data
 
-    void readKeyValuePair();
+    void readKeyValuePair(record& rec);
 
 };
+
+std::string getKey(const Parser::record& rec, const std::string_view& sv);
 
 
 

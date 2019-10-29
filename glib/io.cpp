@@ -7,7 +7,7 @@
 // **********************************************
 
 #include "io.h"
-
+#include "utility.h"
 
 namespace glib {
 namespace IO {
@@ -86,12 +86,16 @@ ParserJSON::~ParserJSON()
 {
     delete m_data;
     delete m_tokenizer;
+    
 }
 
-std::string ParserJSON::getKey(const std::string_view& sv)
+std::string getKey(const Parser::record& rec, const std::string_view& sv)
 {
     //return std::any_cast<std::string>(m_record.at(std::string(sv)));
-    return std::any_cast<std::string>(std::any_cast<record>(m_record.at("travel")).at(std::string(sv)));
+    return std::any_cast<std::string>(
+        std::any_cast<Parser::record>(
+            rec.at("travel")).at(
+                std::string(sv)));
 }
 
 ParserJSON::container* ParserJSON::read()
@@ -106,19 +110,21 @@ ParserJSON::container* ParserJSON::read()
 
 ParserJSON::record ParserJSON::readRecord()
 {
+    record rec;
     // Sample
     // {"key": "value", ..., "key": {"key": ... } }
-    m_record.clear();
-    //m_tokenizer->clear();
-
+    // ...
+    //     "key" : value,
+    //     "key" :
+    //         { record ...
+    // ...
+    
     if (!m_inf.eof()) {
         std::stringstream ss;
-        char ch;
         gint level = 0;
+        char ch;
         bool doRead = true;
 
-        // TODO: tokenize also records
-        // Finding the start of the record
         while ((ch = m_inf.get()) != '{') {
             if (!m_inf.good()) {
                 doRead = false;
@@ -130,43 +136,41 @@ ParserJSON::record ParserJSON::readRecord()
         while (doRead) {
             ss << (ch = m_inf.get());
             if (ch == '{') {
-                ++level;
-                // Stopping in between a key and value (value is the new record)
-                gint end = ss.str().find_last_of(",");
-                std::string str = ss.str().substr(0, end);
-
-                // Key of the record
-                m_tokenizer->setString(ss.str().substr(end + 1));
-                std::string key(readToken());
-                m_inf.putback(ch);
-                --level;
-
+                m_inf.unget();
+                ss.get();
+                //++level;
+                std::string key_str = ss.str();
+                std::string_view key = key_str;
+                size_t start = key.find_last_of(",") + 1;
+                ss.str(key_str.substr(0, start - 1));
+                size_t end = key.find_last_of(':');
+                if (end == std::string::npos) {
+                    throw ParseErrorException();
+                }
+                key = strip(key.substr(start, end - start));
                 std::any value = readRecord();
-                m_record.clear();
-                m_record[key] = value;
+                rec[std::string(key)] = value;
             }
             else if (ch == '}') {
                 if (--level == 0) {
                     doRead = false;
-                    std::cout << ss.str() << '\n';
                     m_tokenizer->setString(ss.str());
-                    readKeyValuePair();
+                    readKeyValuePair(rec);
                 }
             }
         }
-        //m_tokenizer->setString(ss.str());
-        //readKeyValuePair();
     }
-    return m_record;
+
+    return rec;
 }
 
-void ParserJSON::readKeyValuePair()
+void ParserJSON::readKeyValuePair(record& rec)
 {
     std::string key;
     std::any value;
     while ((key = std::string(readToken())).size() > 0) {
         value = std::string(readToken());
-        m_record[key] = value;
+        rec[key] = value;
     }
 }
 
