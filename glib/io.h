@@ -22,6 +22,8 @@ namespace IO {
 
 using gint = size_t;
 
+class RType;
+
 std::string_view& trim(std::string_view& sv, const std::string& what);
 std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
 
@@ -29,6 +31,8 @@ class ParseErrorException : public std::runtime_error {
 public:
     ParseErrorException() : std::runtime_error("Parser Error") {}
 };
+
+
 
 class Tokenizer {
 public:
@@ -59,7 +63,7 @@ private:
 class Parser {
 public:
     //using record = std::map<std::string, std::string>;
-    using record = std::map<std::string, std::any>;
+    using record = std::map<std::string, RType>;
     using container = std::vector<record>;
 
     Parser() {}
@@ -99,7 +103,45 @@ private:
 
 };
 
-std::string getKey(const Parser::record& rec, const std::string_view& sv);
+class RType {
+public:
+    enum class Type {
+        EMPTY = 0
+        ,RECORD
+        ,LIST
+        ,VALUE_STRING
+        ,VALUE_INT
+    };
+
+    RType& operator=(const Parser::record& rec)         { value = rec; typeName = "record"; type = Type::RECORD; return *this; }
+    RType& operator=(const std::vector<RType>& vec)     { value = vec; typeName = "list"  ; type = Type::LIST  ; return *this; }
+    RType& operator=(const std::string& str)            { value = str; typeName = "string"; type = Type::VALUE_STRING; return *this; }
+    RType& operator=(const std::string_view& sv)        { value = sv ; typeName = "string"; type = Type::VALUE_STRING; return *this; }
+    RType& operator=(int num)                           { value = num; typeName = "int   "; type = Type::VALUE_INT; return *this; }
+
+    const std::string& getTypeName() const              { return typeName; }
+    const auto getValue() const                         { return value; }
+    const auto asRecord() const                         { return cast<Parser::record>(); }
+    const auto asList() const                           { return cast<std::vector<RType>>(); }
+    const auto asString() const                         { return cast<std::string>(); }
+    const auto asInt() const                            { return cast<int>(); }
+    RType getKey(const std::string& key) const;
+
+private:
+    std::string typeName = "empty";
+    Type type = Type::EMPTY;
+    std::any value;
+
+    template <typename T> T cast() const {
+        try { return std::any_cast<T>(value); }
+        catch (const std::bad_any_cast& ex) { glib::dumpError(ex); }
+    }
+
+};
+
+
+//std::string getKey(const Parser::record& rec, const std::string_view& sv);
+glib::IO::RType getKey(const Parser::record& rec, const std::string_view& sv);
 
 
 

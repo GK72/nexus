@@ -86,16 +86,17 @@ ParserJSON::~ParserJSON()
 {
     delete m_data;
     delete m_tokenizer;
-    
 }
 
-std::string getKey(const Parser::record& rec, const std::string_view& sv)
+//std::string getKey(const Parser::record& rec, const std::string_view& sv)
+glib::IO::RType getKey(const Parser::record& rec, const std::string_view& sv)
 {
+    return rec.at(std::string(sv));
     //return std::any_cast<std::string>(m_record.at(std::string(sv)));
-    return std::any_cast<std::string>(
-        std::any_cast<Parser::record>(
-            rec.at("travel")).at(
-                std::string(sv)));
+    //return std::any_cast<std::string>(
+    //    std::any_cast<Parser::record>(
+    //        rec.at("travel")).at(
+    //            std::string(sv)));
 }
 
 ParserJSON::container* ParserJSON::read()
@@ -111,13 +112,6 @@ ParserJSON::container* ParserJSON::read()
 ParserJSON::record ParserJSON::readRecord()
 {
     record rec;
-    // Sample
-    // {"key": "value", ..., "key": {"key": ... } }
-    // ...
-    //     "key" : value,
-    //     "key" :
-    //         { record ...
-    // ...
     
     if (!m_inf.eof()) {
         std::stringstream ss;
@@ -148,8 +142,9 @@ ParserJSON::record ParserJSON::readRecord()
                     throw ParseErrorException();
                 }
                 key = strip(key.substr(start, end - start));
-                std::any value = readRecord();
-                rec[std::string(key)] = value;
+                //std::any value = readRecord();
+                //rec[std::string(key)] = value;
+                rec[std::string(key)] = readRecord();
             }
             else if (ch == '}') {
                 if (--level == 0) {
@@ -169,9 +164,15 @@ void ParserJSON::readKeyValuePair(record& rec)
     std::string key;
     std::any value;
     while ((key = std::string(readToken())).size() > 0) {
-        value = std::string(readToken());
-        rec[key] = value;
+        //value = std::string(readToken());
+        //rec[key] = value;
+        rec[key] = std::string(readToken());
     }
+}
+
+RType RType::getKey(const std::string& key) const
+{
+    return asRecord().at(key);
 }
 
 
