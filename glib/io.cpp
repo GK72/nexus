@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-10-27                       **
+// ** gkpro @ 2019-10-30                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **            IO implementation             **
@@ -13,7 +13,7 @@ namespace glib {
 namespace IO {
 
 
-std::string_view& trim(std::string_view& sv, const std::string& what)
+std::string_view trim(std::string_view sv, const std::string& what)
 {
     size_t posStart = sv.find_first_not_of(what);
     size_t posEnd = sv.find_last_not_of(what);
@@ -23,7 +23,7 @@ std::string_view& trim(std::string_view& sv, const std::string& what)
     return sv = sv.substr(posStart, posEnd + 1 - posStart);
 }
 
-std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec)
+std::string_view strip(std::string_view sv, std::vector<std::string>&& vec)
 {
     for (const auto& v : vec) {
         sv = trim(sv, v);
@@ -40,8 +40,6 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_v
 
 std::string_view Tokenizer::next()
 {
-    // TODO: more general tokenizer; keep track of structure depth level
-    // like JSON's recursive records
     if (!m_isEnd) {
         if (m_isInQuotes) {
             m_posEnd = m_str.find(m_quote, m_posEnd + 1);
@@ -79,34 +77,11 @@ ParserJSON::ParserJSON(const std::string_view& path)
     m_path = path;
     m_inf = std::ifstream(m_path);
     m_tokenizer = new Tokenizer(std::vector<std::string>{":", ","}, "}");
-    m_data = new container();
 }
 
 ParserJSON::~ParserJSON()
 {
-    delete m_data;
     delete m_tokenizer;
-}
-
-//std::string getKey(const Parser::record& rec, const std::string_view& sv)
-glib::IO::RType getKey(const Parser::record& rec, const std::string_view& sv)
-{
-    return rec.at(std::string(sv));
-    //return std::any_cast<std::string>(m_record.at(std::string(sv)));
-    //return std::any_cast<std::string>(
-    //    std::any_cast<Parser::record>(
-    //        rec.at("travel")).at(
-    //            std::string(sv)));
-}
-
-ParserJSON::container* ParserJSON::read()
-{
-    // TODO: remove m_data from the class members
-    // Delete this function
-    while ((m_record = readRecord()).size() > 0) {
-        m_data->push_back(m_record);
-    }
-    return m_data;
 }
 
 ParserJSON::record ParserJSON::readRecord()
@@ -125,33 +100,29 @@ ParserJSON::record ParserJSON::readRecord()
                 break;
             }
         }
-        ++level;
 
         while (doRead) {
             ss << (ch = m_inf.get());
             if (ch == '{') {
                 m_inf.unget();
                 ss.get();
-                //++level;
-                std::string key_str = ss.str();
-                std::string_view key = key_str;
+
+                std::string key = ss.str();
                 size_t start = key.find_last_of(",") + 1;
-                ss.str(key_str.substr(0, start - 1));
+                ss.str("");
+                ss << key.substr(0, start - 1);     // Because ss.str() resets the position
+
                 size_t end = key.find_last_of(':');
                 if (end == std::string::npos) {
                     throw ParseErrorException();
                 }
                 key = strip(key.substr(start, end - start));
-                //std::any value = readRecord();
-                //rec[std::string(key)] = value;
                 rec[std::string(key)] = readRecord();
             }
             else if (ch == '}') {
-                if (--level == 0) {
-                    doRead = false;
-                    m_tokenizer->setString(ss.str());
-                    readKeyValuePair(rec);
-                }
+                doRead = false;
+                m_tokenizer->setString(ss.str());
+                readKeyValuePair(rec);
             }
         }
     }
@@ -162,17 +133,9 @@ ParserJSON::record ParserJSON::readRecord()
 void ParserJSON::readKeyValuePair(record& rec)
 {
     std::string key;
-    std::any value;
     while ((key = std::string(readToken())).size() > 0) {
-        //value = std::string(readToken());
-        //rec[key] = value;
         rec[key] = std::string(readToken());
     }
-}
-
-RType RType::getKey(const std::string& key) const
-{
-    return asRecord().at(key);
 }
 
 

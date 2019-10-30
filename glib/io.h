@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-10-27                       **
+// ** gkpro @ 2019-10-30                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **                IO header                 **
@@ -24,14 +24,13 @@ using gint = size_t;
 
 class RType;
 
-std::string_view& trim(std::string_view& sv, const std::string& what);
-std::string_view& strip(std::string_view& sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
+std::string_view trim(std::string_view sv, const std::string& what);
+std::string_view strip(std::string_view sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
 
 class ParseErrorException : public std::runtime_error {
 public:
     ParseErrorException() : std::runtime_error("Parser Error") {}
 };
-
 
 
 class Tokenizer {
@@ -62,7 +61,6 @@ private:
 
 class Parser {
 public:
-    //using record = std::map<std::string, std::string>;
     using record = std::map<std::string, RType>;
     using container = std::vector<record>;
 
@@ -73,7 +71,6 @@ public:
     Parser& operator=(const Parser&)    = delete;
     Parser& operator=(Parser&&)         = delete;
 
-    virtual container* read() = 0;
     virtual record readRecord() = 0;
     virtual std::string_view readToken() = 0;
 };
@@ -88,16 +85,13 @@ public:
     ParserJSON& operator=(const ParserJSON&)    = delete;
     ParserJSON& operator=(ParserJSON&&)         = delete;
 
-    container* read() override;
     record readRecord();
-    std::string_view readToken() override { return strip(m_tokenizer->next()); };
+    std::string_view readToken() override       { return strip(m_tokenizer->next()); };
 
 private:
     std::ifstream m_inf;
     std::string m_path;
     Tokenizer* m_tokenizer;
-    record m_record;
-    container* m_data;          // TODO: remove m_data
 
     void readKeyValuePair(record& rec);
 
@@ -125,7 +119,7 @@ public:
     const auto asList() const                           { return cast<std::vector<RType>>(); }
     const auto asString() const                         { return cast<std::string>(); }
     const auto asInt() const                            { return cast<int>(); }
-    RType getKey(const std::string& key) const;
+    RType getKey(const std::string_view& key) const     { return asRecord().at(key.data()); }
 
 private:
     std::string typeName = "empty";
@@ -138,10 +132,6 @@ private:
     }
 
 };
-
-
-//std::string getKey(const Parser::record& rec, const std::string_view& sv);
-glib::IO::RType getKey(const Parser::record& rec, const std::string_view& sv);
 
 
 
