@@ -1,5 +1,13 @@
-#include "io.h"
+// **********************************************
+// ** gkpro @ 2019-10-30                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **            IO implementation             **
+// **                                          **
+// **********************************************
 
+#include "io.h"
+#include "utility.h"
 
 namespace glib {
 namespace IO {
@@ -32,8 +40,6 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_v
 
 std::string_view Tokenizer::next()
 {
-    // TODO: more general tokenizer; keep track of structure depth level
-    // like JSON's recursive records
     if (!m_isEnd) {
         if (m_isInQuotes) {
             m_posEnd = m_str.find(m_quote, m_posEnd + 1);
@@ -73,45 +79,62 @@ ParserJSON::ParserJSON(const std::string_view& path)
     m_tokenizer = new Tokenizer(std::vector<std::string>{":", ","}, "}");
 }
 
-ParserJSON::record ParserJSON::readRecord()
+ParserJSON::~ParserJSON()
 {
-    m_record.clear();
-    m_tokenizer->clear();
-
-    if (!m_inf.eof()) {
-        std::stringstream ss;
-        char ch;
-        gint level = 0;
-
-        // TODO: tokenize also records
-        // Finding the start of the record
-        while (m_inf.good()
-            && (ch = m_inf.get()) != '{'
-        );
-        if (ch == '{') { ++level; }
-
-        bool doRead = true;
-        while (doRead) {
-            ss << (ch = m_inf.get());
-            if (ch == '{')      { ++level; }
-            else if (ch == '}') {
-                --level;
-                m_tokenizer->setString(ss.str());
-                readKeyValuePair();
-            }
-            if (level == 0)  { doRead = false; }
-        }
-    }
-    return m_record;
+    delete m_tokenizer;
 }
 
-void ParserJSON::readKeyValuePair()
+ParserJSON::record ParserJSON::readRecord()
+{
+    record rec;
+    
+    if (!m_inf.eof()) {
+        std::stringstream ss;
+        gint level = 0;
+        char ch;
+        bool doRead = true;
+
+        while ((ch = m_inf.get()) != '{') {
+            if (!m_inf.good()) {
+                doRead = false;
+                break;
+            }
+        }
+
+        while (doRead) {
+            ss << (ch = m_inf.get());
+            if (ch == '{') {
+                m_inf.unget();
+                ss.get();
+
+                std::string key = ss.str();
+                size_t start = key.find_last_of(",") + 1;
+                ss.str("");
+                ss << key.substr(0, start - 1);     // Because ss.str() resets the position
+
+                size_t end = key.find_last_of(':');
+                if (end == std::string::npos) {
+                    throw ParseErrorException();
+                }
+                key = strip(key.substr(start, end - start));
+                rec[std::string(key)] = readRecord();
+            }
+            else if (ch == '}') {
+                doRead = false;
+                m_tokenizer->setString(ss.str());
+                readKeyValuePair(rec);
+            }
+        }
+    }
+
+    return rec;
+}
+
+void ParserJSON::readKeyValuePair(record& rec)
 {
     std::string key;
-    std::string value;
-    while ((key = readToken()).size() > 0) {
-        value = readToken();
-        m_record[key] = value;
+    while ((key = std::string(readToken())).size() > 0) {
+        rec[key] = std::string(readToken());
     }
 }
 

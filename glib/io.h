@@ -1,3 +1,11 @@
+// **********************************************
+// ** gkpro @ 2019-10-30                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **                IO header                 **
+// **                                          **
+// **********************************************
+
 #pragma once
 #include <any>
 #include <fstream>
@@ -14,14 +22,22 @@ namespace IO {
 
 using gint = size_t;
 
+class RType;
+
 std::string_view trim(std::string_view sv, const std::string& what);
 std::string_view strip(std::string_view sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
+
+class ParseErrorException : public std::runtime_error {
+public:
+    ParseErrorException() : std::runtime_error("Parser Error") {}
+};
+
 
 class Tokenizer {
 public:
     Tokenizer(const std::vector<std::string>& delims, const std::string_view& end);
     std::string_view next();
-    void setString(const std::string_view& str) { m_str = str; }
+    void setString(const std::string_view& str) { clear(); m_str = str; }
     void setQuote(const std::string_view& sv) { m_quote = sv; }
     void clear();
 
@@ -31,7 +47,7 @@ private:
 
     std::string_view m_sv;
     std::string m_str;
-    std::string m_token;
+    std::string m_token;            // TODO: remove
     gint m_posStart = 0;
     gint m_posEnd = 0;
     gint m_idxDelim = 0;
@@ -45,7 +61,7 @@ private:
 
 class Parser {
 public:
-    using record = std::map<std::string, std::string>;
+    using record = std::map<std::string, RType>;
     using container = std::vector<record>;
 
     Parser() {}
@@ -55,7 +71,6 @@ public:
     Parser& operator=(const Parser&)    = delete;
     Parser& operator=(Parser&&)         = delete;
 
-    virtual container read() = 0;
     virtual record readRecord() = 0;
     virtual std::string_view readToken() = 0;
 };
@@ -64,18 +79,57 @@ public:
 class ParserJSON : public Parser {
 public:
     ParserJSON(const std::string_view& path);
-    container read() override { return container(); };
+    ~ParserJSON();
+    ParserJSON(const ParserJSON&)               = delete;
+    ParserJSON(ParserJSON&&)                    = delete;
+    ParserJSON& operator=(const ParserJSON&)    = delete;
+    ParserJSON& operator=(ParserJSON&&)         = delete;
+
     record readRecord();
-    std::string_view readToken() override { return strip(m_tokenizer->next()); };
+    std::string_view readToken() override       { return strip(m_tokenizer->next()); };
 
 private:
     std::ifstream m_inf;
     std::string m_path;
     Tokenizer* m_tokenizer;
-    record m_record;
-    container m_data;
 
-    void readKeyValuePair();
+    void readKeyValuePair(record& rec);
+
+};
+
+class RType {
+public:
+    enum class Type {
+        EMPTY = 0
+        ,RECORD
+        ,LIST
+        ,VALUE_STRING
+        ,VALUE_INT
+    };
+
+    RType& operator=(const Parser::record& rec)         { value = rec; typeName = "record"; type = Type::RECORD; return *this; }
+    RType& operator=(const std::vector<RType>& vec)     { value = vec; typeName = "list"  ; type = Type::LIST  ; return *this; }
+    RType& operator=(const std::string& str)            { value = str; typeName = "string"; type = Type::VALUE_STRING; return *this; }
+    RType& operator=(const std::string_view& sv)        { value = sv ; typeName = "string"; type = Type::VALUE_STRING; return *this; }
+    RType& operator=(int num)                           { value = num; typeName = "int   "; type = Type::VALUE_INT; return *this; }
+
+    const std::string& getTypeName() const              { return typeName; }
+    const auto getValue() const                         { return value; }
+    const auto asRecord() const                         { return cast<Parser::record>(); }
+    const auto asList() const                           { return cast<std::vector<RType>>(); }
+    const auto asString() const                         { return cast<std::string>(); }
+    const auto asInt() const                            { return cast<int>(); }
+    RType getKey(const std::string_view& key) const     { return asRecord().at(key.data()); }
+
+private:
+    std::string typeName = "empty";
+    Type type = Type::EMPTY;
+    std::any value;
+
+    template <typename T> T cast() const {
+        try { return std::any_cast<T>(value); }
+        catch (const std::bad_any_cast& ex) { glib::dumpError(ex); }
+    }
 
 };
 
