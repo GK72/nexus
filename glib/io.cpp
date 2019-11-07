@@ -41,16 +41,21 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_v
 std::string_view Tokenizer::next()
 {
     if (!m_isEnd) {
-        if (m_isInQuotes) {
-            m_posEnd = m_str.find(m_quote, m_posEnd + 1);
-        }
-        else {
-            m_posEnd = m_str.find(m_delims[m_idxDelim], m_posEnd + 1);
-        }
+        m_posEnd = m_str.find(m_delims[m_idxDelim], m_posStart);
+
         if (m_posEnd == std::string::npos) {
             m_posEnd = m_str.find(m_endMark, m_posEnd + 1);
             m_isEnd = true;
         }
+
+        gint posQuote = m_str.find(m_quote, m_posStart);
+        if (posQuote < m_posEnd) {
+            posQuote = m_str.find(m_quote, posQuote + 1);
+            if (posQuote > m_posEnd) {
+                m_posEnd = m_str.find(m_quote, posQuote);
+            }
+        }
+
         m_token = m_str.substr(m_posStart, m_posEnd - m_posStart);
         m_posStart = m_posEnd + 1;
         m_idxDelim = ++m_idxDelim % m_nDelims;
