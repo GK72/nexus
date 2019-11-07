@@ -52,7 +52,6 @@ private:
     gint m_posEnd = 0;
     gint m_idxDelim = 0;
     gint m_nDelims;
-    bool m_isInQuotes = false;
     bool m_isEnd = false;
     std::string m_quote = "\"";
 
