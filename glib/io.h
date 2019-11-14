@@ -112,13 +112,15 @@ public:
     RType& operator=(const std::string_view& sv)        { value = sv ; typeName = "string"; type = Type::VALUE_STRING; return *this; }
     RType& operator=(int num)                           { value = num; typeName = "int   "; type = Type::VALUE_INT; return *this; }
 
-    const std::string& getTypeName() const              { return typeName; }
-    const auto getValue() const                         { return value; }
-    const auto asRecord() const                         { return cast<Parser::record>(); }
-    const auto asList() const                           { return cast<std::vector<RType>>(); }
-    const auto asString() const                         { return cast<std::string>(); }
-    const auto asInt() const                            { return cast<int>(); }
-    RType getKey(const std::string_view& key) const     { return asRecord().at(key.data()); }
+    [[nodiscard]] const std::string& getTypeName() const    { return typeName; }
+    [[nodiscard]] const auto getValue() const               { return value; }
+    [[nodiscard]] const auto asRecord() const               { return cast<Parser::record>(); }
+    [[nodiscard]] const auto asList() const                 { return cast<std::vector<RType>>(); }
+    [[nodiscard]] const auto asString() const               { return cast<std::string>(); }
+    [[nodiscard]] const auto asInt() const                  { return cast<int>(); }
+
+    [[nodiscard]]
+    const RType getKey(const std::string_view &key) const   { return asRecord().at(key.data()); }
 
 private:
     std::string typeName = "empty";
