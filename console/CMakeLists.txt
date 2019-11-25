@@ -15,3 +15,8 @@ target_include_directories(gLib PUBLIC ../glib)
 target_include_directories(gLib PUBLIC ../rpg)
 target_include_directories(gLib PUBLIC ../rts)
 target_include_directories(gLib PUBLIC ../gGfx)
+
+
+add_executable (measure measuring.cpp)
+target_link_libraries (measure LINK_PUBLIC utility)
+target_include_directories(measure PUBLIC ../glib)
