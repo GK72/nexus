@@ -31,6 +31,10 @@ void dumpError(const std::exception& ex, const std::string_view& sv)
     }
 }
 
+void print(const std::string_view& sv) {
+    std::cout << sv << '\n';
+}
+
 void printLog(const std::string_view& msg)
 {
     auto timestamp = std::chrono::system_clock::now();

@@ -27,14 +27,16 @@ namespace glib {
 using gint = size_t;
 using pDim = std::vector<gint>;                   // For passing dimensions as parameter
 
-void dumpError(const std::exception& ex, const std::string_view& sv);
+void dumpError(const std::exception& ex, const std::string_view& sv = "");
+void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
-template <class ...Ts> void print(const std::string& separator, Ts&&... args) {
+void print(const std::string_view& sv);
+
+template <class ...Ts> void printm(const std::string& separator, Ts&&... args) {
     (std::cout << ... << (separator + args)) << '\n';
 }
 
-void printLog(const std::string_view& msg);
 
 template <class T> T swapEndian32(T& x) {
     return (x << 24) & 0xFF000000 |
@@ -138,10 +140,10 @@ template <class T> struct vectorforeach {
 
 // Performance measuring in a given container
 // Function can be a functor (function object), a named function or a lambda
-template <class Time = std::chrono::microseconds
+template <class Time = std::chrono::nanoseconds
     ,class Container
     ,class Function>
-    std::vector<Time> measure(Function func, Container &cont, gint runcount = 1) {
+std::vector<Time> measureCont(Function func, Container &cont, gint runcount = 1) {
     std::vector<Time> timeresults;
     for (gint i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
@@ -155,9 +157,9 @@ template <class Time = std::chrono::microseconds
 
 // Performance measuring
 // Function can be a functor (function object), a named function or a lambda
-template <class Time = std::chrono::microseconds
+template <class Time = std::chrono::nanoseconds
     ,class Function>
-    std::vector<Time> measure(Function func, gint runcount = 1) {
+std::vector<Time> measure(Function func, gint runcount = 1) {
     std::vector<Time> timeresults;
     for (gint i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
@@ -169,8 +171,9 @@ template <class Time = std::chrono::microseconds
     return timeresults;
 }
 
-template <class Time = std::chrono::microseconds>
-std::string getMeasureStats(std::vector<Time> &&vec, std::string &&label) {
+template <class Time = std::chrono::nanoseconds>
+std::string getMeasureStats(std::vector<Time>&& vec, std::string&& label
+                          , gint containerSize, bool csv = false) {
     std::string str;
     gint size = vec.size();
     Time min = vec[0];
@@ -184,11 +187,22 @@ std::string getMeasureStats(std::vector<Time> &&vec, std::string &&label) {
     }
     avg /= size;
 
-    str = "Name         : " + label + '\n' + 
-        "Best time    : " + std::to_string(min.count()) + '\n' +
-        "Worst time   : " + std::to_string(max.count()) + '\n' +
-        "Average time : " + std::to_string(avg.count()) + '\n' +
-        "# measures   : " + std::to_string(size) + "\n\n";
+    if (!csv) {
+        str = "Name         : " + label + '\n' +
+            "Best time    : " + std::to_string(min.count()) + '\n' +
+            "Worst time   : " + std::to_string(max.count()) + '\n' +
+            "Average time : " + std::to_string(avg.count()) + '\n' +
+            "Size         : " + std::to_string(containerSize) + '\n' +
+            "# measures   : " + std::to_string(size) + "\n\n";
+    }
+    else {
+        str = label + ',' +
+            std::to_string(min.count()) + ',' +
+            std::to_string(max.count()) + ',' +
+            std::to_string(avg.count()) + ',' +
+            std::to_string(containerSize) + ',' +
+            std::to_string(size) + '\n';
+    }
 
     return str;
 }
