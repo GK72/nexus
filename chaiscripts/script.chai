@@ -1,1 +1,12 @@
-puts(welcome("Chris\n"));
+print(welcome("Chris"))
+
+var a = 5
+for (i : [1,2,3]) {
+    print(i+5)
+}
+
+def myfunc(a, int b) {
+    increment(a + b)
+}
+
+print(myfunc(2, "a"))
