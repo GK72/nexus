@@ -22,10 +22,28 @@ int main(int argc, char* argv[])
     SetConsoleOutputCP(65001);      // Displaying Unicode characters
 
     glib::ArgParser args(argc, argv);
-    args.add(glib::Arg("path", "Path to something", false, false));
-    args.add(glib::Arg("level", "Level", false, false));
-    args.process();
-    std::cout << args.get("path").value << '\n';
-    std::cout << args.get("level").value << '\n';
+    args.add(glib::Arg("path", "Path to something", true, false));
+    args.add(glib::Arg("level", "Level"));
+    args.add(glib::Arg("debug", "Debug", false, true));
+
+    try {
+        args.process();
+    }
+    catch (const std::runtime_error& e) {
+        std::cout << e.what();
+        return 1;
+    }
+
+    if (args.get("help").getValue() == "true") {
+        return 0;
+    }
+
+    try {
+        std::cout << args.get("path").getValue() << '\n';
+        std::cout << args.get("debug").getValue() << '\n';
+    }
+    catch (const glib::InactiveArgException& e) {
+        std::cout << e.what();
+    }
 
 }
