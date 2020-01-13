@@ -17,12 +17,14 @@
 #endif
 //#include "libgs.h"              // DLL library
 
+void datatable_test(std::string_view path);
+
 int main(int argc, char* argv[])
 {
     SetConsoleOutputCP(65001);      // Displaying Unicode characters
 
     glib::ArgParser args(argc, argv);
-    args.add(glib::Arg("path", "Path to something", true, false));
+    args.add(glib::Arg("path", "Path to something", false, false));
     args.add(glib::Arg("level", "Level"));
     args.add(glib::Arg("debug", "Debug", false, true));
 
@@ -39,8 +41,9 @@ int main(int argc, char* argv[])
     }
 
     try {
-        std::cout << args.get("path").getValue() << '\n';
-        std::cout << args.get("debug").getValue() << '\n';
+        std::string path = "D:\\dev\\data\\ledger_transactions.csv";
+        datatable_test(path);
+        //datatable_test(args.get("path").getValue());
     }
     catch (const glib::InactiveArgException& e) {
         std::cout << e.what();

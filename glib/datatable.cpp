@@ -8,69 +8,45 @@
 
 #include "datatable.h"
 
-class DataTable
+namespace glib {
+
+
+DataTable::DataTable(std::string_view path)
 {
-public:
-    DataTable() {}
-    ~DataTable() {}
-    DataTable(const DataTable& rhs)				= delete;
-    DataTable(DataTable&& rhs)					= delete;
-    DataTable& operator=(const DataTable& rhs)	= delete;
-    DataTable& operator=(DataTable&& rhs)		= delete;
+    m_reader = new IO::ParserCSV(path);
+}
 
-    void readCSV(const std::string& fullpath, bool header = false, char delim = ',')
-    {
-        std::string str;
-        std::string elem;
-        std::stringstream ss;
-        std::ifstream inf(fullpath);
-        gint col = 0;
+DataTable::~DataTable()
+{
+    delete m_reader;
+}
 
-        // Reading first line, populating map with vectors - number of columns
-        // One column = one vector
-        if (getline(inf, str)) {
-            ss.clear();
-            ss.str(str);
-
-            while (getline(ss, elem, delim)) {
-                if (header) {
-                    record.insert({ elem, std::vector<std::any>() });
-                }
-                else {
-                    record.insert({ std::to_string(col), std::vector<std::any>() });
-                    record.at(std::to_string(col)).push_back(std::any(elem));
-                    ++col;
-                }
-            }
-        }
-
-        // Reading the rest of the file
-        while (getline(inf, str))
-        {
-            ss.clear();
-            ss.str(str);
-            col = 0;
-
-            while (getline(ss, elem, delim)) {
-                for (auto &col : record) {
-                    col.second.push_back(std::any(elem));
-                }
-                //record.at(std::to_string(col)).push_back(std::any(elem));
-                //++col;
-            }
-        }
-        inf.close();
-    }
-    void print() {
-        for (const auto &rec : record) {
-            for (const auto &e : rec.second) {
-                std::cout << std::any_cast<std::string>(e) << ' ';
-            }
-            std::cout << '\n';
-        }
+void DataTable::print()
+{
+    for (const auto& rec : m_records) {
+        std::cout << rec.at(m_header.at("Category")) << '\n';
     }
 
-private:
-    std::string name;
-    std::unordered_map<std::string,	std::vector<std::any>> record;
-};
+    //for (const auto &rec : record) {
+    //    for (const auto &e : rec.second) {
+    //        std::cout << std::any_cast<std::string>(e) << ' ';
+    //    }
+    //    std::cout << '\n';
+    //}
+}
+
+void DataTable::read()
+{
+    m_header = m_reader->readHeader();
+    int i = 0;
+    IO::ParserCSV::record value;
+    while ((value = m_reader->readRecord()).size() > 0 && i < 5) {
+        m_records.push_back(value);
+        ++i;
+    }
+    
+}
+
+
+
+} // End of namespace glib
