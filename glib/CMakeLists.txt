@@ -5,3 +5,6 @@ add_library(utility
 	utility.cpp utility.h
 	io.cpp io.h)
 add_library(bigint bigint.cpp bigint.h)
+add_library(data
+	datatable.cpp datatable.h
+)
