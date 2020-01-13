@@ -20,8 +20,6 @@ add_subdirectory("gGfx")
 add_subdirectory("glib")
 add_subdirectory("rpg")
 add_subdirectory("rts")
-add_subdirectory("tests")
-#add_subdirectory("e")
 
 
 enable_testing()
