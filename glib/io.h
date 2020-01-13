@@ -16,6 +16,8 @@
 #include <sstream>
 #include <vector>
 
+#include "utility.h"
+
 
 namespace glib {
 namespace IO {
@@ -70,10 +72,34 @@ public:
     Parser& operator=(const Parser&)    = delete;
     Parser& operator=(Parser&&)         = delete;
 
-    virtual record readRecord() = 0;
-    virtual std::string_view readToken() = 0;
+    //virtual record readRecord() = 0;
+    //virtual std::string_view readToken() = 0;
 };
 
+
+class ParserCSV : Parser {
+public:
+    using record = std::vector<std::string>;
+
+    ParserCSV(const std::string_view& path);
+    ~ParserCSV();
+    ParserCSV(const ParserCSV&)             = delete;
+    ParserCSV(ParserCSV&&)                  = delete;
+    ParserCSV& operator=(const ParserCSV&)  = delete;
+    ParserCSV& operator=(ParserCSV&&)       = delete;
+
+    std::map<std::string, gint> readHeader();
+    record readRecord();
+    std::string_view readToken();
+
+private:
+    std::ifstream m_inf;
+    std::string m_path;
+    Tokenizer* m_tokenizer;
+    std::map<std::string, gint> m_header;
+    gint m_length = 0;
+
+};
 
 class ParserJSON : public Parser {
 public:
@@ -85,7 +111,7 @@ public:
     ParserJSON& operator=(ParserJSON&&)         = delete;
 
     record readRecord();
-    std::string_view readToken() override       { return strip(m_tokenizer->next()); };
+    std::string_view readToken()               { return strip(m_tokenizer->next()); };
 
 private:
     std::ifstream m_inf;

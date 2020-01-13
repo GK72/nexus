@@ -77,6 +77,65 @@ void Tokenizer::clear()
     m_isEnd = false;
 }
 
+ParserCSV::ParserCSV(const std::string_view& path)
+{
+    m_path = path;
+    m_inf = std::ifstream(m_path);
+    m_tokenizer = new Tokenizer(std::vector<std::string>{";"}, "\n");
+}
+
+ParserCSV::~ParserCSV()
+{
+    delete m_tokenizer;
+}
+
+ParserCSV::record ParserCSV::readRecord()
+{
+    std::string str;
+    std::stringstream ss;
+    record fields;
+
+    if (getline(m_inf, str)) {
+        ss.clear();
+        ss.str(str);
+
+        m_tokenizer->setString(str);
+        for (gint i = 0; i < m_length; ++i) {
+            fields.push_back(readToken().data());
+        }
+    }
+
+    return fields;
+}
+
+std::string_view ParserCSV::readToken()
+{
+    return m_tokenizer->next();
+}
+
+std::map<std::string, gint> ParserCSV::readHeader()
+{
+    std::string str;
+    std::stringstream ss;
+    std::map<std::string, gint> header;
+
+    if (getline(m_inf, str)) {
+        ss.clear();
+        ss.str(str);
+
+        std::string value;
+        gint count = 0;
+        m_tokenizer->setString(str);
+        while ((value = readToken()).size() > 0) {
+            header.insert({value, count});
+            ++count;
+        }
+    }
+
+    m_length = header.size();
+    return header;
+}
+
 ParserJSON::ParserJSON(const std::string_view& path)
 {
     m_path = path;
