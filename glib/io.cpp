@@ -127,7 +127,9 @@ std::map<std::string, gint> ParserCSV::readHeader()
         gint count = 0;
         m_tokenizer->setString(str);
         while ((value = readToken()).size() > 0) {
-            header.insert({value, count});
+            if (auto [it, success] = header.insert({ value, count }); !success) {
+                header.insert({ value += "#", count });
+            }
             ++count;
         }
     }
