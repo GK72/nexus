@@ -41,9 +41,7 @@ int main(int argc, char* argv[])
     }
 
     try {
-        std::string path = "D:\\dev\\data\\ledger_transactions.csv";
-        datatable_test(path);
-        //datatable_test(args.get("path").getValue());
+        datatable_test(args.get("path").getValue());
     }
     catch (const glib::InactiveArgException& e) {
         std::cout << e.what();

@@ -21,6 +21,9 @@ namespace glib {
 
 using gint = size_t;
 
+struct TableView;
+
+
 class DataTable {
 public:
     DataTable(std::string_view path);
@@ -30,8 +33,18 @@ public:
     DataTable& operator=(const DataTable& rhs)  = delete;
     DataTable& operator=(DataTable&& rhs)       = delete;
 
-    void print();
+    void display();
     void read();
+
+    template <class Condition = std::equal_to<>>
+    TableView filterAndSelect(const std::string& target, const std::string& criteria
+                             ,const std::vector<std::string>& selection
+                             ,Condition condition = Condition());
+
+    template <class Filter>
+    TableView& filterRecords(TableView& view, Filter filter);
+
+    TableView& selectFields(TableView& view, const std::vector<std::string>& selection);
 
 private:
     std::string name;
@@ -40,6 +53,17 @@ private:
     std::vector<IO::ParserCSV::record> m_records;
 
 };
+
+
+struct TableView {
+    DataTable* data = nullptr;
+    std::vector<gint> records;
+    std::vector<std::string> fields;
+
+};
+
+
+TableView selectFields(const std::vector<std::string>& selection);
 
 
 
