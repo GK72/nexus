@@ -15,5 +15,5 @@ void datatable_test(std::string_view path)
     std::cout << "Datatable testing... (path: " << path << ")\n";
     glib::DataTable data(path);
     data.read();
-    data.print();
+    data.display();
 }
