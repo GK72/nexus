@@ -79,6 +79,7 @@ public:
 
 class ParserCSV : Parser {
 public:
+    // TODO: use std::any instead of std::string
     using record = std::vector<std::string>;
 
     ParserCSV(const std::string_view& path);

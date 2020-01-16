@@ -33,6 +33,8 @@ public:
     DataTable& operator=(const DataTable& rhs)  = delete;
     DataTable& operator=(DataTable&& rhs)       = delete;
 
+    std::string_view at(gint recIdx, const std::string& field) const;
+
     void display();
     void read();
 
@@ -42,28 +44,37 @@ public:
                              ,Condition condition = Condition());
 
     template <class Filter>
-    TableView& filterRecords(TableView& view, Filter filter);
+    TableView& filterRecords(TableView& view, Filter filter, const std::string& by);
 
     TableView& selectFields(TableView& view, const std::vector<std::string>& selection);
+
+    void update(const TableView& view, const std::string& value, const std::string& field = "");
 
 private:
     std::string name;
     IO::ParserCSV* m_reader;
-    std::map<std::string, gint> m_header;
-    std::vector<IO::ParserCSV::record> m_records;
+    // TODO: use std::any instead of std::string
+    std::map<std::string, IO::ParserCSV::record> m_data;
+
+    gint m_nRow = 0;
 
 };
 
 
 struct TableView {
+    TableView(DataTable* pData);
+
     DataTable* data = nullptr;
     std::vector<gint> records;
     std::vector<std::string> fields;
 
+    void display() const;
+    DataTable materialize();
+
+private:
+    void displayHeader() const;
+    void displayView() const;
 };
-
-
-TableView selectFields(const std::vector<std::string>& selection);
 
 
 

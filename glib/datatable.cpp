@@ -21,36 +21,30 @@ DataTable::~DataTable()
     delete m_reader;
 }
 
+std::string_view DataTable::at(gint recIdx, const std::string& field) const
+{
+    return m_data.at(field)[recIdx];
+}
+
 void DataTable::display()
 {
     gint maxWidth = 100;
     gint currentWidth = 0;
 
-    //TableView view = filterAndSelect("Date", "2014.01.07", { "Price" }, std::less<>());
-    TableView view = filterAndSelect("Date", "2014.01.07", { "Price" });
-
-    for (const auto& header : view.fields) {
-        std::cout << header << ' ';
-    }
-    std::cout << '\n';
-
-    for (const auto& recIdx : view.records) {
-        for (const auto& fieldIdx : view.fields) {
-            auto rec = m_records.at(recIdx);
-            auto field = rec.at(m_header.at(fieldIdx));
-            std::cout << field << ' ';
-        }
-        std::cout << '\n';
-    }
+    TableView view = filterAndSelect("Date", "2014.01.07", { "Date", "Price" } /* , std::less<>() */);
+    view.display();
 }
 
 void DataTable::read()
 {
-    m_header = m_reader->readHeader();
+    std::map<std::string, gint> header = m_reader->readHeader();
     IO::ParserCSV::record value;
     while ((value = m_reader->readRecord()).size() > 0) {
-        m_records.push_back(value);
+        for (const auto& h : header) {
+            m_data[h.first].push_back(value.at(h.second));
+        }
     }
+    m_nRow = m_data.begin()->second.size();
 }
 
 template <class Condition>
@@ -59,52 +53,69 @@ TableView DataTable::filterAndSelect(const std::string& target, const std::strin
                                     ,Condition condition)
 {
     return filterRecords(
-        selectFields(TableView(), selection)
-        , [&](auto x) -> bool {
-            return condition(
-                x.at(m_header.at(target))
-                ,criteria);
-        }
+        selectFields(TableView(this), selection)
+        , [&](auto x) -> bool { return condition(x, criteria); }
+        , target
     );
 }
 
 template <class Filter>
-TableView& DataTable::filterRecords(TableView& view, Filter filter)
+TableView& DataTable::filterRecords(TableView& view, Filter filter, const std::string& by)
 {
-    if (!view.data) {
-        view.data = this;
-    }
-    else if (view.data != this) {
-        throw std::runtime_error("View refers to another DataTable");
-    }
-
-    for (gint i = 0; i < m_records.size(); ++i) {
-        if (filter(m_records[i])) {
+    for (gint i = 0; i < m_nRow; ++i) {
+        if (filter(m_data.at(by)[i])) {
             view.records.push_back(i);
         }
     }
-
     return view;
 }
 
 TableView& DataTable::selectFields(TableView& view, const std::vector<std::string>& selection)
 {
-    if (!view.data) {
-        view.data = this;
-    }
-    else {
-        throw std::runtime_error("View refers to another DataTable");
-    }
-
-    for (const auto& header : m_header) {
+    for (const auto& header : m_data) {
         for (const auto& s : selection) {
             if (header.first == s) {
                 view.fields.push_back(header.first);
             }
         }
     }
-
     return view;
+}
+
+TableView::TableView(DataTable* pData) : data(pData)
+{
+
+}
+
+void TableView::display() const
+{
+    displayHeader();
+    displayView();
+}
+
+void TableView::displayHeader() const
+{
+    for (const auto& header : fields) {
+        std::cout << header << ' ';
+    }
+    std::cout << '\n';
+}
+
+void TableView::displayView() const
+{
+    for (const auto& recIdx : records) {
+        for (const auto& fieldIdx : fields) {
+            std::cout << data->at(recIdx, fieldIdx) << ' ';
+        }
+        std::cout << '\n';
+    }
+}
+
+DataTable TableView::materialize()
+{
+    // TODO: creating a new DataTable from the current view
+    _g_NIE("TableView::materialize");
+    return DataTable("");
 }
 
 
