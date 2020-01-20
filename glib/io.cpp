@@ -31,15 +31,16 @@ std::string_view strip(std::string_view sv, std::vector<std::string>&& vec)
     return sv;
 }
 
-Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string_view& end)
+Tokenizer::Tokenizer(const std::vector<std::string>& delims, std::string_view end)
     : m_delims(delims)
 {
     m_nDelims = delims.size();
     m_endMark = end;
 }
 
-std::string_view Tokenizer::next()
+std::string Tokenizer::next()
 {
+    std::string token;
     if (!m_isEnd) {
         m_posEnd = m_str.find(m_delims[m_idxDelim], m_posStart);
 
@@ -56,15 +57,15 @@ std::string_view Tokenizer::next()
             }
         }
 
-        m_token = m_str.substr(m_posStart, m_posEnd - m_posStart);
+        token = m_str.substr(m_posStart, m_posEnd - m_posStart);
         m_posStart = m_posEnd + 1;
         m_idxDelim = ++m_idxDelim % m_nDelims;
     }
     else {
-        m_token = "";
+        token = "";
     }
 
-    return m_token;
+    return token;
 }
 
 void Tokenizer::clear()
@@ -73,11 +74,10 @@ void Tokenizer::clear()
     m_posEnd = 0;
     m_idxDelim = 0;
     m_str = "";
-    m_token = "";
     m_isEnd = false;
 }
 
-ParserCSV::ParserCSV(const std::string_view& path)
+ParserCSV::ParserCSV(std::string_view path)
 {
     m_path = path;
     m_inf = std::ifstream(m_path);
@@ -101,14 +101,14 @@ ParserCSV::record ParserCSV::readRecord()
 
         m_tokenizer->setString(str);
         for (gint i = 0; i < m_length; ++i) {
-            fields.push_back(readToken().data());
+            fields.emplace_back(readToken());
         }
     }
 
     return fields;
 }
 
-std::string_view ParserCSV::readToken()
+std::string ParserCSV::readToken()
 {
     return m_tokenizer->next();
 }
@@ -138,7 +138,7 @@ std::map<std::string, gint> ParserCSV::readHeader()
     return header;
 }
 
-ParserJSON::ParserJSON(const std::string_view& path)
+ParserJSON::ParserJSON(std::string_view path)
 {
     m_path = path;
     m_inf = std::ifstream(m_path);
@@ -201,6 +201,19 @@ void ParserJSON::readKeyValuePair(record& rec)
     std::string key;
     while ((key = std::string(readToken())).size() > 0) {
         rec[key] = std::string(readToken());
+    }
+}
+
+std::string RType::getTypeName() const
+{
+    switch (type)
+    {
+    case glib::IO::RType::Type::EMPTY:              return "Empty";         break;
+    case glib::IO::RType::Type::RECORD:             return "Record";        break;
+    case glib::IO::RType::Type::LIST:               return "List";          break;
+    case glib::IO::RType::Type::VALUE_STRING:       return "String";        break;
+    case glib::IO::RType::Type::VALUE_INT:          return "Int";           break;
+    default:                                        return "Unknown";       break;
     }
 }
 

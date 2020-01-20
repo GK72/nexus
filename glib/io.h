@@ -37,10 +37,10 @@ public:
 
 class Tokenizer {
 public:
-    Tokenizer(const std::vector<std::string>& delims, const std::string_view& end);
-    std::string_view next();
-    void setString(const std::string_view& str) { clear(); m_str = str; }
-    void setQuote(const std::string_view& sv) { m_quote = sv; }
+    Tokenizer(const std::vector<std::string>& delims, std::string_view end);
+    std::string next();
+    void setString(std::string_view str)        { clear(); m_str = str; }
+    void setQuote(std::string_view sv)          { m_quote = sv; }
     void clear();
 
 private:
@@ -49,7 +49,6 @@ private:
 
     std::string_view m_sv;
     std::string m_str;
-    std::string m_token;            // TODO: remove
     gint m_posStart = 0;
     gint m_posEnd = 0;
     gint m_idxDelim = 0;
@@ -79,10 +78,9 @@ public:
 
 class ParserCSV : Parser {
 public:
-    // TODO: use std::any instead of std::string
-    using record = std::vector<std::string>;
+    using record = std::vector<RType>;
 
-    ParserCSV(const std::string_view& path);
+    ParserCSV(std::string_view path);
     ~ParserCSV();
     ParserCSV(const ParserCSV&)             = delete;
     ParserCSV(ParserCSV&&)                  = delete;
@@ -91,7 +89,7 @@ public:
 
     std::map<std::string, gint> readHeader();
     record readRecord();
-    std::string_view readToken();
+    std::string readToken();
 
 private:
     std::ifstream m_inf;
@@ -104,7 +102,7 @@ private:
 
 class ParserJSON : public Parser {
 public:
-    ParserJSON(const std::string_view& path);
+    ParserJSON(std::string_view path);
     ~ParserJSON();
     ParserJSON(const ParserJSON&)               = delete;
     ParserJSON(ParserJSON&&)                    = delete;
@@ -133,13 +131,21 @@ public:
         ,VALUE_INT
     };
 
-    RType& operator=(const Parser::record& rec)         { value = rec; typeName = "record"; type = Type::RECORD; return *this; }
-    RType& operator=(const std::vector<RType>& vec)     { value = vec; typeName = "list"  ; type = Type::LIST  ; return *this; }
-    RType& operator=(const std::string& str)            { value = str; typeName = "string"; type = Type::VALUE_STRING; return *this; }
-    RType& operator=(const std::string_view& sv)        { value = sv ; typeName = "string"; type = Type::VALUE_STRING; return *this; }
-    RType& operator=(int num)                           { value = num; typeName = "int   "; type = Type::VALUE_INT; return *this; }
+    RType() {}
+    RType(const RType&) = default;
+    RType(const Parser::record& rec)                    { value = rec; type = Type::RECORD; }
+    RType(const std::vector<RType>& vec)                { value = vec; type = Type::LIST; }
+    RType(const std::string& str)                       { value = str; type = Type::VALUE_STRING; }
+    RType(std::string_view sv)                          { value = sv ; type = Type::VALUE_STRING; }
+    RType(int num)                                      { value = num; type = Type::VALUE_INT; }
 
-    [[nodiscard]] const std::string& getTypeName() const    { return typeName; }
+    RType& operator=(const Parser::record& rec)         { value = rec; type = Type::RECORD; return *this; }
+    RType& operator=(const std::vector<RType>& vec)     { value = vec; type = Type::LIST  ; return *this; }
+    RType& operator=(const std::string& str)            { value = str; type = Type::VALUE_STRING; return *this; }
+    RType& operator=(std::string_view sv)               { value = sv ; type = Type::VALUE_STRING; return *this; }
+    RType& operator=(int num)                           { value = num; type = Type::VALUE_INT; return *this; }
+
+    [[nodiscard]] std::string getTypeName() const;
     [[nodiscard]] const auto getValue() const               { return value; }
     [[nodiscard]] const auto asRecord() const               { return cast<Parser::record>(); }
     [[nodiscard]] const auto asList() const                 { return cast<std::vector<RType>>(); }
@@ -147,16 +153,20 @@ public:
     [[nodiscard]] const auto asInt() const                  { return cast<int>(); }
 
     [[nodiscard]]
-    const RType getKey(const std::string_view &key) const   { return asRecord().at(key.data()); }
+    const RType getKey(std::string_view key) const          { return asRecord().at(key.data()); }
 
 private:
-    std::string typeName = "empty";
     Type type = Type::EMPTY;
     std::any value;
 
     template <typename T> T cast() const {
-        try { return std::any_cast<T>(value); }
-        catch (const std::bad_any_cast& ex) { glib::dumpError(ex); }
+        try {
+            return std::any_cast<T>(value);
+        }
+        catch (const std::bad_any_cast& ex) {
+            glib::dumpError(ex);
+        }
+        return T{};
     }
 
 };
