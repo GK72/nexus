@@ -65,7 +65,10 @@ endif"
 " noremap <C-n> :NERDTreeToggle<CR>     " ctrl+n open/closes nerd tree
 " let g:NERDTreeQuitOnOpen = 1          " quit nerd tree on file open
 let g:NERDTreeWinPos = "right""
-
+autocmd vimenter * NERDTree             " Auto open NERDTree
+autocmd vimenter * wincmd p             " Focus on main window
+" Close NVim if the only open window is NERDTree
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
 " A - switching between files
 nnoremap <F4> :A<CR>                    " header / source
