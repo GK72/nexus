@@ -16,7 +16,7 @@
         "_UNICODE"
       ],
       "intelliSenseMode": "windows-msvc-x64",
-      "compilerSwitches": "/std:c++17"
+      "compilerSwitches": "/std:c++17 /Wall"
     }
   ]
 }
