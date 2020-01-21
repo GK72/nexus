@@ -36,11 +36,37 @@ template <class T> void runMeasures(int sizeinit, int sizemax, int inc, int nRun
             for (const auto& e : deque) { tmp += e.value[0]; }}, nRuns), "Deque - read", size, true);
 
         std::cout << getMeasureStats(measure([&]() {
-            for (gint i = 0; i < size; ++i) { vec.erase(vec.begin()); }}, nRuns), "Vector - push_back", size, true);
+            for (auto& e : vec) { ++e.value[0]; }}, nRuns), "Vector - write", size, true);
         std::cout << getMeasureStats(measure([&]() {
-            for (gint i = 0; i < size; ++i) { list.pop_front(); }}, nRuns), "List - push_back", size, true);
+            for (auto& e : list) { ++e.value[0]; }}, nRuns), "List - write", size, true);
         std::cout << getMeasureStats(measure([&]() {
-            for (gint i = 0; i < size; ++i) { deque.pop_front(); }}, nRuns), "Deque - push_back", size, true);
+            for (auto& e : deque) { ++e.value[0]; }}, nRuns), "Deque - write", size, true);
+
+        std::cout << getMeasureStats(measure([&]() {
+            for (gint i = 0; i < size; ++i) { vec.erase(vec.begin()); }}, nRuns), "Vector - pop_front", size, true);
+        std::cout << getMeasureStats(measure([&]() {
+            for (gint i = 0; i < size; ++i) { list.pop_front(); }}, nRuns), "List - pop_front", size, true);
+        std::cout << getMeasureStats(measure([&]() {
+            for (gint i = 0; i < size; ++i) { deque.pop_front(); }}, nRuns), "Deque - pop_front", size, true);
+
+
+        std::cout << getMeasureStats(measure([&]() {
+            auto half = vec.begin();
+            std::advance(half, vec.size() / 2);
+            vec.erase(vec.begin(), half);
+        }, nRuns), "Vector - split_half", size, true);
+
+        std::cout << getMeasureStats(measure([&]() {
+            auto half = list.begin();
+            std::advance(half, list.size() / 2);
+            list.erase(list.begin(), half);
+        }, nRuns), "List - split_half", size, true);
+
+        std::cout << getMeasureStats(measure([&]() {
+            auto half = deque.begin();
+            std::advance(half, deque.size() / 2);
+            deque.erase(deque.begin(), half);
+        }, nRuns), "Deque - split_half", size, true);
     }
 }
 
@@ -53,5 +79,7 @@ int main(int argc, char* args[])
     int nRuns = std::stoi(args[4]);
 
     runMeasures<Data256>(sizeinit, sizemax, inc, nRuns, "Data256");
+
+
 
 }
