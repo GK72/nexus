@@ -94,70 +94,7 @@ protected:
 //                           Performance measuring                            //
 // ************************************************************************** //
 
-template <class T> struct vectorloop_postfixInc {
-    void operator()(T& c) {
-        gint size = c.size();
-        for (gint i = 0; i != size; i++) {
-            c[i] = ~c[i];
-        }
-    }
-};
-
-template <class T> struct vectorloop_prefixInc {
-    void operator()(T& c) {
-        gint size = c.size();
-        for (gint i = 0; i != size; ++i) {
-            c[i] = ~c[i];
-        }
-    }
-};
-
-template <class T> struct vectorloop_iterator {
-    void operator()(T& c) {
-        gint size = c.size();
-        for (auto it = c.begin(); it != c.end(); ++it) {
-            *it = ~*it;
-        }
-    }
-};
-
-template <class T> struct vectorautoloop {
-    void operator()(T& c) {
-        gint size = c.size();
-        for (auto &e : c) {
-            e = ~e;
-        }
-    }
-};
-
-template <class T> struct vectorforeach {
-    void operator()(T& c) {
-        gint size = c.size();
-        std::for_each(c.begin(), c.end(), [](auto& e){e = ~e;});
-    }
-};
-
-
-// Performance measuring in a given container
-// Function can be a functor (function object), a named function or a lambda
-template <class Time = std::chrono::nanoseconds
-    ,class Container
-    ,class Function>
-std::vector<Time> measureCont(Function func, Container &cont, gint runcount = 1) {
-    std::vector<Time> timeresults;
-    for (gint i = 0; i < runcount; ++i) {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        func(cont);
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto td = std::chrono::duration_cast<Time>(t2 - t1);
-        timeresults.push_back(td);
-    }
-    return timeresults;
-}
-
-// Performance measuring
-// Function can be a functor (function object), a named function or a lambda
-template <class Time = std::chrono::nanoseconds
+template <class Time = std::chrono::microseconds
     ,class Function>
 std::vector<Time> measure(Function func, gint runcount = 1) {
     std::vector<Time> timeresults;
@@ -171,8 +108,8 @@ std::vector<Time> measure(Function func, gint runcount = 1) {
     return timeresults;
 }
 
-template <class Time = std::chrono::nanoseconds>
-std::string getMeasureStats(std::vector<Time>&& vec, std::string&& label
+template <class Time = std::chrono::microseconds>
+std::string getMeasureStats(std::vector<Time>&& vec, const std::string&& label
                           , gint containerSize, bool csv = false) {
     std::string str;
     gint size = vec.size();
@@ -207,18 +144,41 @@ std::string getMeasureStats(std::vector<Time>&& vec, std::string&& label
     return str;
 }
 
-//  ***  (F as function, C as container)
-//  ***  Function pointer
-//  ***  template <class C> void function(void (*func)(C &c), T &cont)  { func(cont); }
-//  ***  Usage: function(function, c) 
-//  ***  
-//  ***  Function object with class instantiation
-//  ***  template <class F, class C> void functor(C &c)                 { F a; a(c); }
-//  ***  Usage: function<functor<C>>(c)
-//  ***  
-//  ***  Function object 
-//  ***  template <class F, class C> void functor(F f, C& c)            { f(c); }
-//  ***  Usage: function(functor<C>(), c)
+template <class Time = std::chrono::microseconds>
+std::string getMeasureStats(std::vector<Time>&& vec, const std::string& label)
+{
+    std::string res;
+    if constexpr (std::is_same<Time, std::chrono::nanoseconds>::value)       { res = "ns"; }
+    else if constexpr (std::is_same<Time, std::chrono::microseconds>::value) { res = "us"; }
+    else if constexpr (std::is_same<Time, std::chrono::milliseconds>::value) { res = "ms"; }
+
+    gint size = vec.size();
+    if (size == 1) {
+        return label + " took " + std::to_string(vec[0].count()) + ' ' + res + '\n';
+    }
+
+    Time min = vec[0];
+    Time max = vec[0];
+    Time avg = Time{ 0 };
+    Time med = Time{ 0 };
+
+    for (const auto& elem : vec) {
+        if (elem < min) min = elem;
+        if (elem > max) max = elem;
+        avg += elem;
+    }
+    avg /= size;
+
+    std::sort(begin(vec), end(vec));
+    med = vec.at(size / 2);
+
+    return "Name         : " + label + '\n' +
+           "Best time    : " + std::to_string(min.count()) + ' ' + res + '\n' +
+           "Worst time   : " + std::to_string(max.count()) + ' ' + res + '\n' +
+           "Average time : " + std::to_string(avg.count()) + ' ' + res + '\n' +
+           "Median time  : " + std::to_string(med.count()) + ' ' + res + '\n' +
+           "# measures   : " + std::to_string(size) + "\n\n";
+}
 
 
 // ************************************************************************** //
