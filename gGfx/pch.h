@@ -8,7 +8,7 @@
 #include <string>
 #include <thread>
 
-#ifdef _MSC_BUILD
+#ifdef _WIN32
 #include <Windows.h>
 #elif __linux__
 #include "curses.h"
