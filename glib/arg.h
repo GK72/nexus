@@ -1,6 +1,7 @@
 #pragma once
 #include <any>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -26,25 +27,37 @@ public:
 
 struct Arg {
     std::string name;
-    std::string value;
+    std::any value;
     std::string description;
     bool isRequired = false;
-    bool isOption = false;
+    bool isFlag = false;
     bool isActive = false;
 
-    Arg::Arg(const std::string& name);
-    Arg::Arg(const std::string& name, const std::string& description);
-    Arg::Arg(const std::string& name, const std::string& description, const std::string& defaultValue);
-    Arg::Arg(const std::string& name, const std::string& description, bool required, bool option);
-    std::string_view getValue(const std::string& defaultValue = "") const;
+    Arg(const std::string& name, const std::string& description)
+        : name(name), description(description) {}
+
+    template <class T = std::string>
+    T getValue(std::optional<T> defaultValue = {}) const {
+        if (isActive) {
+            return std::any_cast<T>(value);
+        }
+        else if (defaultValue.has_value()) {
+            return defaultValue.value();
+        }
+        throw InactiveArgException(name);
+    }
 };
 
 class ArgParser {
 public:
     ArgParser(int argc, char* argv[]);
     void add(const Arg& arg);
-    Arg  get(const std::string_view& name);
     void process();
+
+    template <class T = std::string>
+    T get(const std::string& name, std::optional<T> defaultValue = {}) const {
+        return m_args.at(name).getValue<T>(defaultValue);
+    }
 
 private:
     int m_argc;
@@ -57,6 +70,43 @@ private:
     void parseArgs();
     void setOptions();
 };
+
+class ArgFactory {
+public:
+    static Arg create(const std::string& name, const std::string& description = "") {
+        return Arg(name, description);
+    }
+    static Arg createFlag(const std::string& name, const std::string& description = "") {
+        Arg arg(name, description);
+        arg.isFlag = true;
+        return arg;
+    }
+    static Arg createMandatory(const std::string& name, const std::string& description = "") {
+        Arg arg(name, description);
+        arg.isRequired = true;
+        return arg;
+    }
+
+    ArgFactory(ArgParser* parser) : m_parser(parser) {}
+
+    void add(const std::string& name, const std::string& description = "") {
+        m_parser->add(Arg(name, description));
+    }
+    void addFlag(const std::string& name, const std::string& description = "") {
+        Arg arg(name, description);
+        arg.isFlag = true;
+        m_parser->add(arg);
+    }
+    Arg addMandatory(const std::string& name, const std::string& description = "") {
+        Arg arg(name, description);
+        arg.isRequired = true;
+        m_parser->add(arg);
+    }
+
+private:
+    ArgParser* m_parser;
+};
+
 
 
 } // End of namespace glib
