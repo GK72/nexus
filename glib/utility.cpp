@@ -31,7 +31,11 @@ void dumpError(const std::exception& ex, const std::string_view& sv)
     }
 }
 
-void print(const std::string_view& sv) {
+void printn() {
+    std::cout << '\n';
+}
+
+void printn(const std::string_view& sv) {
     std::cout << sv << '\n';
 }
 

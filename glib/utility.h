@@ -31,9 +31,15 @@ void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
-void print(const std::string_view& sv);
+void printn();
+void printn(const std::string_view& sv);
 
-template <class ...Ts> void printm(const std::string& separator, Ts&&... args) {
+template <class T, class ...Ts> std::string joinStr(std::string separator, T&& first, Ts&&... args) {
+    return first + (... + (separator + args));
+}
+
+template <class T, class ...Ts> void print(const std::string& separator, T&& first, Ts&&... args) {
+    std::cout << first;
     (std::cout << ... << (separator + args)) << '\n';
 }
 
@@ -89,97 +95,6 @@ public:
 protected:
     Subscriber() {}
 };
-
-// ************************************************************************** //
-//                           Performance measuring                            //
-// ************************************************************************** //
-
-template <class Time = std::chrono::microseconds
-    ,class Function>
-std::vector<Time> measure(Function func, gint runcount = 1) {
-    std::vector<Time> timeresults;
-    for (gint i = 0; i < runcount; ++i) {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        func();
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto td = std::chrono::duration_cast<Time>(t2 - t1);
-        timeresults.push_back(td);
-    }
-    return timeresults;
-}
-
-template <class Time = std::chrono::microseconds>
-std::string getMeasureStats(std::vector<Time>&& vec, const std::string&& label
-                          , gint containerSize, bool csv = false) {
-    std::string str;
-    gint size = vec.size();
-    Time min = vec[0];
-    Time max = vec[0];
-    Time avg = Time{ 0 };
-
-    for (const auto& elem : vec) {
-        if (elem < min) min = elem;
-        if (elem > max) max = elem;
-        avg += elem;
-    }
-    avg /= size;
-
-    if (!csv) {
-        str = "Name         : " + label + '\n' +
-            "Best time    : " + std::to_string(min.count()) + '\n' +
-            "Worst time   : " + std::to_string(max.count()) + '\n' +
-            "Average time : " + std::to_string(avg.count()) + '\n' +
-            "Size         : " + std::to_string(containerSize) + '\n' +
-            "# measures   : " + std::to_string(size) + "\n\n";
-    }
-    else {
-        str = label + ',' +
-            std::to_string(min.count()) + ',' +
-            std::to_string(max.count()) + ',' +
-            std::to_string(avg.count()) + ',' +
-            std::to_string(containerSize) + ',' +
-            std::to_string(size) + '\n';
-    }
-
-    return str;
-}
-
-template <class Time = std::chrono::microseconds>
-std::string getMeasureStats(std::vector<Time>&& vec, const std::string& label)
-{
-    std::string res;
-    if constexpr (std::is_same<Time, std::chrono::nanoseconds>::value)       { res = "ns"; }
-    else if constexpr (std::is_same<Time, std::chrono::microseconds>::value) { res = "us"; }
-    else if constexpr (std::is_same<Time, std::chrono::milliseconds>::value) { res = "ms"; }
-
-    gint size = vec.size();
-    if (size == 1) {
-        return label + " took " + std::to_string(vec[0].count()) + ' ' + res + '\n';
-    }
-
-    Time min = vec[0];
-    Time max = vec[0];
-    Time avg = Time{ 0 };
-    Time med = Time{ 0 };
-
-    for (const auto& elem : vec) {
-        if (elem < min) min = elem;
-        if (elem > max) max = elem;
-        avg += elem;
-    }
-    avg /= size;
-
-    std::sort(begin(vec), end(vec));
-    med = vec.at(size / 2);
-
-    return "Name         : " + label + '\n' +
-           "Best time    : " + std::to_string(min.count()) + ' ' + res + '\n' +
-           "Worst time   : " + std::to_string(max.count()) + ' ' + res + '\n' +
-           "Average time : " + std::to_string(avg.count()) + ' ' + res + '\n' +
-           "Median time  : " + std::to_string(med.count()) + ' ' + res + '\n' +
-           "# measures   : " + std::to_string(size) + "\n\n";
-}
-
 
 // ************************************************************************** //
 //                               Access functions                             //
