@@ -9,8 +9,10 @@
 #include <functional>
 
 
-#include "utility.h"
+#include "datatable.h"
 #include "io.h"
+#include "pfm.hpp"
+#include "utility.h"
 #include "arg.h"
 
 #ifdef _WIN32
@@ -18,15 +20,39 @@
 #endif
 
 #ifdef __linux__
-//#include "curses.h"
+
 #endif
 //#include "libgs.h"              // DLL library
 
-void datatable_test(std::string_view path);
+void datatable_test(std::string_view path)
+{
+    std::cout << "Datatable testing... (path: " << path << ")\n";
+    glib::DataTable data(path);
+    data.read();
+    data.display();
+}
+
+struct S {
+    char x[256];
+};
+
+int perfTest() {
+    glib::pfm::pfm pfm(10);
+    pfm.add(glib::pfm::multiInsert<int>, "Multi Insert");
+    pfm.add(glib::pfm::backInserterCopy<int>, "Back Inserter - Copy");
+    pfm.add(glib::pfm::backInserterMove<int>, "Back Inserter - Move");
+    pfm.add(glib::pfm::multiInsert<S>, "Multi Insert (D256)");
+    pfm.add(glib::pfm::backInserterCopy<S>, "Back Inserter - Copy (D256)");
+    pfm.add(glib::pfm::backInserterMove<S>, "Back Inserter - Move (D256)");
+    pfm.run();
+    pfm.printCSV();
+    return 0;
+}
 
 int run(const glib::ArgParser& args)
 {
-    datatable_test(args.get<std::string>("path"));
+    //datatable_test(args.get<std::string>("path"));
+    perfTest();
     return 0;
 }
 
@@ -50,7 +76,7 @@ int main(int argc, char* argv[])
 
     try { args.process(); }
     catch (const std::runtime_error& e) {
-        glib::print(e.what());
+        glib::printn(e.what());
         return 1;
     }
 
@@ -58,15 +84,14 @@ int main(int argc, char* argv[])
 
     try {
         if (args.get<bool>("measure")) {
-            //std::function<int(glib::ArgParser)> func = std::bind(run, args);
-            auto func = std::bind(run, args);
-            glib::print("", glib::getMeasureStats(glib::measure(func, 10), "Test"));
+            std::function<void()> func( [&args]() { run(args); });
+            glib::printn(glib::pfm::getMeasureStats(glib::pfm::measure(func, 10), "Test").toString());
         }
         else {
             return run(args);
         }
     }
     catch (const std::runtime_error & e) {
-        glib::print(e.what());
+        glib::printn(e.what());
     }
 }
