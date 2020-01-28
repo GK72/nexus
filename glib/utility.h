@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-09-17                       **
+// ** gkpro @ 2020-01-28                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **          Utility library header          **
@@ -15,6 +15,7 @@
 #include <random>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 
@@ -27,22 +28,58 @@ namespace glib {
 using gint = size_t;
 using pDim = std::vector<gint>;                   // For passing dimensions as parameter
 
+
+// ********************************************************************************************** //
+//                                            Functions                                           //
+// ********************************************************************************************** //
+
 void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
+gint subtractClip(gint lhs, gint rhs);
+std::string padBoth(const std::string& str, gint count, const char ch = ' ');
+std::string padEnd(const std::string& str, gint count, const char ch = ' ');
+std::string padBegin(const std::string& str, gint count, const char ch = ' ');
+
 void printn();
 void printn(const std::string_view& sv);
 
-template <class T, class ...Ts> std::string joinStr(std::string separator, T&& first, Ts&&... args) {
-    return first + (... + (separator + args));
+// ********************************************************************************************** //
+//                                       Templated functions                                      //
+// ********************************************************************************************** //
+
+template <class ...Ts> struct Visitor : Ts... {
+    template <class ...Ts> Visitor(Ts&& ...t) : Ts(std::forward<Ts>(t))... {}
+    using Ts::operator()...;
+};
+
+template<class ...Ts> Visitor(Ts...) -> Visitor<std::decay_t<Ts>...>;
+
+template <class T> std::string toString(T&& in) {
+    Visitor vis{
+        [](const int x)                         { return std::to_string(x); },
+        [](const gint x)                        { return std::to_string(x); },
+        [](const char* x)                       { return std::string(x); },
+        [](const std::string& x)                { return x; },
+        [](const std::chrono::microseconds& x)  { return std::to_string(x.count()) + " us"; },
+        [](const std::chrono::milliseconds& x)  { return std::to_string(x.count()) + " ms"; },
+        [](const std::chrono::nanoseconds&  x)  { return std::to_string(x.count()) + " ns"; }
+    };
+    return vis(std::forward<T>(in));
 }
 
-template <class T, class ...Ts> void print(const std::string& separator, T&& first, Ts&&... args) {
-    std::cout << first;
-    (std::cout << ... << (separator + args)) << '\n';
+
+template <class T, class ...Ts>
+std::string joinStr(std::string separator, T&& first, Ts&&... args) {
+    return toString(first) + (... + (separator + toString(args)));
 }
 
+template <class T, class ...Ts>
+void print(const std::string& separator, T&& first, Ts&&... args) {
+    std::cout << toString(first);
+    (std::cout << ... << (separator + toString(args))) << '\n';
+}
 
 template <class T> T swapEndian32(T& x) {
     return (x << 24) & 0xFF000000 |
@@ -51,6 +88,10 @@ template <class T> T swapEndian32(T& x) {
            (x >> 24) & 0x000000FF ;
 }
 
+
+// ********************************************************************************************** //
+//                                             Classes                                            //
+// ********************************************************************************************** //
 
 class Random {
 public:
@@ -96,26 +137,22 @@ protected:
     Subscriber() {}
 };
 
-// ************************************************************************** //
-//                               Access functions                             //
-// ************************************************************************** //
+// ********************************************************************************************** //
+//                                         Access functions                                       //
+// ********************************************************************************************** //
 
-template <class T> struct iterator
-{
+template <class T> struct iterator {
     iterator();
     iterator(T* p);
     bool operator!=(iterator rhs);
     T& operator*();
-
     iterator& operator++();
     iterator operator++(int);
-
 
     T* p;
 };
 
-struct index
-{
+struct index {
 public:
     index(const std::vector<gint>& dims);
     gint at(const std::vector<gint>& vec) const;
@@ -128,9 +165,9 @@ private:
     gint _local = 0;
 };
 
-// ************************************************************************** //
-//                                 Exceptions                                 //
-// ************************************************************************** //
+// ********************************************************************************************** //
+//                                           Exceptions                                           //
+// ********************************************************************************************** //
 
 class NotImplementedException : public std::runtime_error {
 public:
@@ -140,7 +177,6 @@ public:
 class IOErrorException : public std::runtime_error {
 public:
     IOErrorException(const char* filename) : std::runtime_error("IO Error") {}
-
 };
 
 
