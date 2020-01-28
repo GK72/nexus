@@ -1,8 +1,8 @@
 // **********************************************
-// ** gkpro @ 2019-09-11                       **
+// ** gkpro @ 2020-01-20                       **
 // **                                          **
-// **      Datatable testing application       **
-// **       --- G-Library testing ---          **
+// **           ---  G-Library  ---            **
+// **         Datatable Implementation         **
 // **                                          **
 // **********************************************
 
@@ -21,7 +21,7 @@ DataTable::~DataTable()
     delete m_reader;
 }
 
-std::string_view DataTable::at(gint recIdx, const std::string& field) const
+glib::IO::RType DataTable::at(gint recIdx, const std::string& field) const
 {
     return m_data.at(field)[recIdx];
 }
@@ -63,19 +63,26 @@ template <class Filter>
 TableView& DataTable::filterRecords(TableView& view, Filter filter, const std::string& by)
 {
     for (gint i = 0; i < m_nRow; ++i) {
-        if (filter(m_data.at(by)[i])) {
+        if (filter(m_data.at(by)[i].asString())) {
             view.records.push_back(i);
         }
     }
     return view;
 }
 
-TableView& DataTable::selectFields(TableView& view, const std::vector<std::string>& selection)
+TableView& DataTable::selectFields(TableView&& view, const std::vector<std::string>& selection)
 {
-    for (const auto& header : m_data) {
-        for (const auto& s : selection) {
-            if (header.first == s) {
-                view.fields.push_back(header.first);
+    if (selection.empty()) {
+        for (const auto& header : m_data) {
+            view.fields.push_back(header.first);
+        }
+    }
+    else {
+        for (const auto& header : m_data) {
+            for (const auto& s : selection) {
+                if (header.first == s) {
+                    view.fields.push_back(header.first);
+                }
             }
         }
     }
@@ -105,7 +112,7 @@ void TableView::displayView() const
 {
     for (const auto& recIdx : records) {
         for (const auto& fieldIdx : fields) {
-            std::cout << data->at(recIdx, fieldIdx) << ' ';
+            std::cout << data->at(recIdx, fieldIdx).asString() << ' ';
         }
         std::cout << '\n';
     }

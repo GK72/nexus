@@ -1,8 +1,8 @@
 // **********************************************
-// ** gkpro @ 2019-09-11                       **
+// ** gkpro @ 2020-01-20                       **
 // **                                          **
-// **      Datatable testing application       **
-// **       --- G-Library testing ---          **
+// **           ---  G-Library  ---            **
+// **             Datatable Header             **
 // **                                          **
 // **********************************************
 
@@ -33,7 +33,7 @@ public:
     DataTable& operator=(const DataTable& rhs)  = delete;
     DataTable& operator=(DataTable&& rhs)       = delete;
 
-    std::string_view at(gint recIdx, const std::string& field) const;
+    glib::IO::RType at(gint recIdx, const std::string& field) const;
 
     void display();
     void read();
@@ -46,14 +46,13 @@ public:
     template <class Filter>
     TableView& filterRecords(TableView& view, Filter filter, const std::string& by);
 
-    TableView& selectFields(TableView& view, const std::vector<std::string>& selection);
+    TableView& selectFields(TableView&& view, const std::vector<std::string>& selection);
 
     void update(const TableView& view, const std::string& value, const std::string& field = "");
 
 private:
     std::string name;
     IO::ParserCSV* m_reader;
-    // TODO: use std::any instead of std::string
     std::map<std::string, IO::ParserCSV::record> m_data;
 
     gint m_nRow = 0;
