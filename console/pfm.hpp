@@ -14,8 +14,7 @@
 
 #include "utility.h"
 
-namespace glib::pfm
-{
+namespace glib::pfm {
 
 using gint = size_t;
 
@@ -42,7 +41,7 @@ void backInserterMove() {
 
 
 template <class Time = std::chrono::microseconds, class Function>
-    std::vector<Time> measure(Function func, gint runcount = 1) {
+std::vector<Time> measure(Function func, gint runcount = 1) {
     std::vector<Time> timeresults;
     for (gint i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
@@ -64,27 +63,19 @@ struct MeasureStats {
     gint noOfMeasures { 0 };
 
     std::string toString() const {
-        std::string res;
-        if constexpr (std::is_same<Time, std::chrono::nanoseconds>::value) { res = "ns"; }
-        else if constexpr (std::is_same<Time, std::chrono::microseconds>::value) { res = "us"; }
-        else if constexpr (std::is_same<Time, std::chrono::milliseconds>::value) { res = "ms"; }
-
-        return "Name         : " + name + '\n' +
-               "Best time    : " + std::to_string(best.count())    + ' ' + res + '\n' +
-               "Worst time   : " + std::to_string(worst.count())   + ' ' + res + '\n' +
-               "Average time : " + std::to_string(average.count()) + ' ' + res + '\n' +
-               "Median time  : " + std::to_string(median.count())  + ' ' + res + '\n' +
-               "# measures   : " + std::to_string(noOfMeasures);
+        constexpr gint pad = 13;
+        return joinStr("\n",
+            joinStr(" ", padEnd("Name", pad),           ":", name),
+            joinStr(" ", padEnd("Best time", pad),      ":", best),
+            joinStr(" ", padEnd("Worst time", pad),     ":", worst),
+            joinStr(" ", padEnd("Average time", pad),   ":", average),
+            joinStr(" ", padEnd("Median time", pad),    ":", median),
+            joinStr(" ", padEnd("# measure", pad),      ":", noOfMeasures)
+        );
     }
 
     std::string toCSV() const {
-        return glib::joinStr(","
-            ,name
-            ,std::to_string(best.count())
-            ,std::to_string(worst.count())
-            ,std::to_string(average.count())
-            ,std::to_string(median.count())
-            ,std::to_string(noOfMeasures));
+        return joinStr(",", name, best, worst, average, median, noOfMeasures);
     }
 };
 

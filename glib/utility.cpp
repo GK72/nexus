@@ -31,6 +31,25 @@ void dumpError(const std::exception& ex, const std::string_view& sv)
     }
 }
 
+gint subtractClip(gint lhs, gint rhs) {
+    return lhs < rhs ? 0 : lhs - rhs;
+}
+
+std::string padBoth(const std::string& str, gint count, const char ch) {
+    gint pad = subtractClip(count, str.size()) / 2;
+    std::string padL(pad, ch);
+    std::string padR(pad + (str.size() % 2 ? 1 : 0), ch);
+    return padL + str + padR;
+}
+
+std::string padEnd(const std::string& str, gint count, const char ch) {
+    return str + std::string(subtractClip(count, str.size()), ch);
+}
+
+std::string padBegin(const std::string& str, gint count, const char ch) {
+    return std::string(subtractClip(count, str.size()), ch) + str;
+}
+
 void printn() {
     std::cout << '\n';
 }
