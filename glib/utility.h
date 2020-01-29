@@ -54,9 +54,6 @@ inline void printn() {
     std::cout << '\n'; 
 }
 
-inline void printn(std::string_view sv) {
-    std::cout << sv << '\n';
-}
 
 // ********************************************************************************************** //
 //                                       Templated functions                                      //
@@ -92,6 +89,11 @@ template <class T, class ...Ts>
 void print(const std::string& separator, T&& first, Ts&&... args) {
     std::cout << toString(first);
     (std::cout << ... << (separator + toString(args))) << '\n';
+}
+
+template <class T>
+void printn(T t) {
+    std::cout << toString(t) << '\n';
 }
 
 template <class T> T swapEndian32(T& x) {
