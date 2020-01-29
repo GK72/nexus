@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-09-17                       **
+// ** gkpro @ 2020-01-29                       **
 // **                                          **
 // **     Console application entry point      **
 // **       --- G-Library testing ---          **
@@ -32,20 +32,20 @@ void datatable_test(std::string_view path)
     data.display();
 }
 
-struct S {
+struct D256 {
     char x[256];
 };
 
+struct D1024 {
+    char x[1024];
+};
+
 int perfTest() {
-    glib::pfm::pfm pfm(10);
-    pfm.add(glib::pfm::multiInsert<int>, "Multi Insert");
-    pfm.add(glib::pfm::backInserterCopy<int>, "Back Inserter - Copy");
-    pfm.add(glib::pfm::backInserterMove<int>, "Back Inserter - Move");
-    pfm.add(glib::pfm::multiInsert<S>, "Multi Insert (D256)");
-    pfm.add(glib::pfm::backInserterCopy<S>, "Back Inserter - Copy (D256)");
-    pfm.add(glib::pfm::backInserterMove<S>, "Back Inserter - Move (D256)");
+    glib::pfm::pfm pfm(100);
+    glib::pfm::msrContainer<int, std::vector> msr(10000);
+    pfm.add(msr, "Vector measuring");
     pfm.run();
-    pfm.printCSV();
+    pfm.print();
     return 0;
 }
 
