@@ -54,7 +54,7 @@ template <class T> Matrix<T> edot(const Matrix<T>& lhs, const Matrix<T>& rhs);
 // ************************************************************************** //
 
 template <class T> class Matrix {
-    using iType = iterator<T>;                          // Iterator type
+    using iType = Iterator<T>;                          // Iterator type
 
 public:
     Matrix();
@@ -118,14 +118,14 @@ public:
 
 private:
     T* elem;
-    gint n;									// Rows
-    gint m;									// Columns
+    gint n;                                 // Rows
+    gint m;                                 // Columns
     gint length = n * m;
     
     iType it;
-    index idx;
+    Index idx;
 
-    char ws = ' ';							// Whitespace
+    char ws = ' ';                          // Whitespace
 
     // Private functions
 
