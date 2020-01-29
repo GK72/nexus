@@ -14,7 +14,7 @@
 
 namespace glib {
 
-template <class T> using iType = iterator<T>;
+template <class T> using iType = Iterator<T>;
 
 template <class T> std::ostream& operator<< (std::ostream& out, const Matrix<T>& rhs) {
     for (gint i = 0; i < rhs.n; ++i) {

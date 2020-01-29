@@ -31,31 +31,12 @@ void dumpError(const std::exception& ex, const std::string_view& sv)
     }
 }
 
-gint subtractClip(gint lhs, gint rhs) {
-    return lhs < rhs ? 0 : lhs - rhs;
-}
-
-std::string padBoth(const std::string& str, gint count, const char ch) {
+std::string padBoth(const std::string& str, gint count, const char ch)
+{
     gint pad = subtractClip(count, str.size()) / 2;
     std::string padL(pad, ch);
     std::string padR(pad + (str.size() % 2 ? 1 : 0), ch);
     return padL + str + padR;
-}
-
-std::string padEnd(const std::string& str, gint count, const char ch) {
-    return str + std::string(subtractClip(count, str.size()), ch);
-}
-
-std::string padBegin(const std::string& str, gint count, const char ch) {
-    return std::string(subtractClip(count, str.size()), ch) + str;
-}
-
-void printn() {
-    std::cout << '\n';
-}
-
-void printn(const std::string_view& sv) {
-    std::cout << sv << '\n';
 }
 
 void printLog(const std::string_view& msg)
@@ -66,7 +47,8 @@ void printLog(const std::string_view& msg)
 }
 
 
-std::string ipv6Formatter(std::string ipv6) {
+std::string ipv6Formatter(std::string ipv6)
+{
     gint p = 0;
     gint q = 0;
     std::vector<std::string> segments;
@@ -103,56 +85,46 @@ Random::Random()
     m_mt = std::mt19937(m_rd());
 }
 
-Random* Random::getInstance() {
+Random* Random::getInstance()
+{
     if (m_instance == nullptr) {
         m_instance = new Random();
     }
     return m_instance;
 }
-int Random::randomInt(int min, int max) {
+
+int Random::randomInt(int min, int max)
+{
     std::uniform_int_distribution<> dist(min, max);
     return dist(m_mt);
 }
 
 
-void Publisher::attach(Subscriber* sub) {
+void Publisher::attach(Subscriber* sub)
+{
     _subs.push_back(sub);
 }
 
-void Publisher::detach(Subscriber* sub) {
+void Publisher::detach(Subscriber* sub)
+{
     _subs.erase(std::find(_subs.begin(), _subs.end(), sub));
 }
 
-void Publisher::notify(Event&& evt) {
+void Publisher::notify(Event&& evt)
+{
     for (auto& e : _subs) e->trigger(evt);
 }
 
-template <class T> iterator<T>::iterator()                          { p = nullptr; }
-template <class T> iterator<T>::iterator(T* p)                      : p(p) {}
-template <class T> bool iterator<T>::operator!=(iterator rhs)       { return p != rhs.p; }
-template <class T> T& iterator<T>::operator*()                      { return *p; }
-template <class T> iterator<T>& iterator<T>::operator++()           { ++p; return *this; }
-template <class T> iterator<T> iterator<T>::operator++(int)
+gint Index::at(const std::vector<gint>& vec) const
 {
-    iterator<T> t(p);
-    ++(*p);
-    return t;
-}
-
-index::index(const std::vector<gint>& dim) : dims(dim) {}
-
-gint index::at(const std::vector<gint>& vec) const
-{
-    _global = vec[vec.size() - 1];
+    m_global = vec[vec.size() - 1];
     gint dm = 1;
     for (gint i = vec.size(); i > 1; --i) {
-        dm *= dims[i-1];
-        _global = vec[i-2] * dm + _global;
+        dm *= m_dims[i-1];
+        m_global = vec[i-2] * dm + m_global;
     }
-    return _global;
+    return m_global;
 }
-
-gint index::at(gint x, gint y) const { return x * dims[1] + y; }
 
 
 

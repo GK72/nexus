@@ -37,13 +37,26 @@ void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
-gint subtractClip(gint lhs, gint rhs);
-std::string padBoth(const std::string& str, gint count, const char ch = ' ');
-std::string padEnd(const std::string& str, gint count, const char ch = ' ');
-std::string padBegin(const std::string& str, gint count, const char ch = ' ');
+inline gint subtractClip(gint lhs, gint rhs) {
+    return lhs < rhs ? 0 : lhs - rhs;
+}
+inline std::string padBoth(const std::string& str, gint count, const char ch = ' ');
 
-void printn();
-void printn(const std::string_view& sv);
+inline std::string padBegin(const std::string& str, gint count, const char ch = ' ') {
+    return std::string(subtractClip(count, str.size()), ch) + str;
+}
+
+inline std::string padEnd(const std::string& str, gint count, const char ch = ' ') {
+    return str + std::string(subtractClip(count, str.size()), ch);
+}
+
+inline void printn() {
+    std::cout << '\n'; 
+}
+
+inline void printn(std::string_view sv) {
+    std::cout << sv << '\n';
+}
 
 // ********************************************************************************************** //
 //                                       Templated functions                                      //
@@ -141,28 +154,32 @@ protected:
 //                                         Access functions                                       //
 // ********************************************************************************************** //
 
-template <class T> struct iterator {
-    iterator();
-    iterator(T* p);
-    bool operator!=(iterator rhs);
-    T& operator*();
-    iterator& operator++();
-    iterator operator++(int);
+template <class T> struct Iterator {
+    Iterator()                              { p = nullptr; }
+    Iterator(T* p)                          : p(p) {}
+    bool operator!=(Iterator rhs)           { return p != rhs.p; }
+    T& operator*()                          { return *p; }
+    Iterator& operator++()                  { ++p; return *this; }
+    Iterator operator++(int) {
+        Iterator<T> t(p);
+        ++(*p);
+        return t;
+    }
 
     T* p;
 };
 
-struct index {
+class Index {
 public:
-    index(const std::vector<gint>& dims);
+    Index(const std::vector<gint>& dims) : m_dims(dims) {}
     gint at(const std::vector<gint>& vec) const;
-    gint at(gint x, gint y) const;
+    gint at(gint x, gint y) const { return x * m_dims[1] + y; }
 
 private:
-    std::vector<gint> dims;
-    mutable gint _global = 0;
-    gint _tile = 0;
-    gint _local = 0;
+    std::vector<gint> m_dims;
+    mutable gint m_global = 0;
+    gint m_tile = 0;
+    gint m_local = 0;
 };
 
 // ********************************************************************************************** //
