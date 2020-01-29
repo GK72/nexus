@@ -1,29 +1,47 @@
+// **********************************************
+// ** gkpro @ 2020-01-29                       **
+// **                                          **
+// **           ---  G-Library  ---            **
+// **            Arguments header              **
+// **                                          **
+// **********************************************
+
 #pragma once
 #include <any>
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
+
+namespace glib::ex {
+
+class ValuelessArgException : public std::runtime_error {
+public:
+    ValuelessArgException(const std::string& arg)
+        : std::runtime_error("No value for argument: " + arg + '\n') {}
+};
+
+class ArgParsingException : public std::runtime_error {
+public:
+    ArgParsingException(const std::string& msg)
+        : std::runtime_error("Parsing error: " + msg + '\n') {}
+};
+
+class InactiveArgException : public std::runtime_error {
+public:
+    InactiveArgException(const std::string& msg)
+        : std::runtime_error("Inactive argument error: " + msg + '\n') {}
+};
+
+
+} // End of namespace glib::ex
 
 namespace glib {
 
 using gint = size_t;
 
-class ValuelessArgException : public std::runtime_error {
-public:
-    ValuelessArgException(const std::string& arg) : std::runtime_error("No value for argument: " + arg + '\n') {}
-};
-
-class ArgParsingException : public std::runtime_error {
-public:
-    ArgParsingException(const std::string& msg) : std::runtime_error("Parsing error: " + msg + '\n') {}
-};
-
-class InactiveArgException : public std::runtime_error {
-public:
-    InactiveArgException(const std::string& msg) : std::runtime_error("Inactive argument error: " + msg + '\n') {}
-};
 
 struct Arg {
     std::string name;
@@ -44,7 +62,7 @@ struct Arg {
         else if (defaultValue.has_value()) {
             return defaultValue.value();
         }
-        throw InactiveArgException(name);
+        throw ex::InactiveArgException(name);
     }
 };
 
