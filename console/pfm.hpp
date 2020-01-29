@@ -1,8 +1,8 @@
 // **********************************************
-// ** gkpro @ 2020-01-27                       **
+// ** gkpro @ 2020-01-29                       **
 // **                                          **
-// **         Performance measuring            **
-// **                                          **
+// **         Performance Measuring            **
+// **              Header-Only                 **
 // **                                          **
 // **********************************************
 
@@ -18,30 +18,28 @@ namespace glib::pfm {
 
 using gint = size_t;
 
-template <class T>
-void multiInsert() {
-    std::vector<T> vec(100000);
-    std::vector<T> vec2(1);
-    vec2.insert(vec2.end(), vec.begin(), vec.end());
-}
 
-template <class T>
-void backInserterCopy() {
-    std::vector<T> vec(100000);
-    std::vector<T> vec2(1);
-    std::copy(vec.begin(), vec.end(), std::back_inserter(vec2));
-}
+template <class T, template <class T> class Cont>
+class msrContainer
+{
+public:
+    msrContainer(gint count) : m_count(count) {}
 
-template <class T>
-void backInserterMove() {
-    std::vector<T> vec(10000);
-    std::vector<T> vec2(1);
-    std::move(vec.begin(), vec.end(), std::back_inserter(vec2));
-}
+    void operator()() {
+        for (gint i = 0; i < m_count; ++i) {
+            ctn.push_back(T{});
+        }
+    };
+
+private:
+    Cont<T> ctn;
+    gint m_count;
+};
 
 
 template <class Time = std::chrono::microseconds, class Function>
-std::vector<Time> measure(Function func, gint runcount = 1) {
+std::vector<Time> measure(Function func, gint runcount = 1)
+{
     std::vector<Time> timeresults;
     for (gint i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
@@ -54,7 +52,8 @@ std::vector<Time> measure(Function func, gint runcount = 1) {
 }
 
 template <class Time = std::chrono::microseconds>
-struct MeasureStats {
+struct MeasureStats
+{
     std::string name;
     Time best { 0 };
     Time worst { 0 };
