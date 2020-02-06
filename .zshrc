@@ -98,4 +98,4 @@ bindkey -s '^o' 'lfcd\n'
 
 ~/.startup.sh
 
-source ./zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ~/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
