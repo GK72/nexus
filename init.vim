@@ -14,6 +14,7 @@ Plug 'tmhedberg/SimpylFold'
 Plug 'octol/vim-cpp-enhanced-highlight'
 Plug 'vim-scripts/a.vim'
 Plug 'rhysd/git-messenger.vim'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
 call plug#end()
 
@@ -29,7 +30,7 @@ set autoindent              " indent a new line the same amount as the line just
 set copyindent              " copy indent from the previous line
 set number                  " add line numbers
 set wildmode=longest,list   " get bash-like tab completions
-set cc=100                  " set an 80 column border for good coding style
+set cc=120                  " set an 80 column border for good coding style
 set showcmd                 " show command in bottom bar
 set background=dark
 set scrolloff=8             " Start scrolling when we're 8 lines away from margins
@@ -65,10 +66,7 @@ endif"
 " noremap <C-n> :NERDTreeToggle<CR>     " ctrl+n open/closes nerd tree
 " let g:NERDTreeQuitOnOpen = 1          " quit nerd tree on file open
 let g:NERDTreeWinPos = "right""
-autocmd vimenter * NERDTree             " Auto open NERDTree
-autocmd vimenter * wincmd p             " Focus on main window
-" Close NVim if the only open window is NERDTree
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
 
 " A - switching between files
 nnoremap <F4> :A<CR>                    " header / source
