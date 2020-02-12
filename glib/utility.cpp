@@ -126,6 +126,13 @@ gint Index::at(const std::vector<gint>& vec) const
     return m_global;
 }
 
+void ThreadPool::joinAll()
+{
+    for (auto& t : m_threads) {
+        t.join();
+    }
+}
+
 
 
 } //End of namespace glib
