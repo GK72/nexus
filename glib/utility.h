@@ -10,14 +10,18 @@
 #include <algorithm>
 #include <chrono>
 #include <exception>
+#include <functional>
 #include <iostream>
 #include <iomanip>
+#include <map>
 #include <random>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <type_traits>
 #include <vector>
 
+#include "func.hpp"
 
 namespace glib {
 
@@ -60,7 +64,7 @@ inline void printn() {
 // ********************************************************************************************** //
 
 template <class ...Ts> struct Visitor : Ts... {
-    template <class ...Ts> Visitor(Ts&& ...t) : Ts(std::forward<Ts>(t))... {}
+    template <class ...Params> Visitor(Params&& ...t) : Ts(std::forward<Params>(t))... {}
     using Ts::operator()...;
 };
 
@@ -150,6 +154,27 @@ public:
 
 protected:
     Subscriber() {}
+};
+
+
+
+class ThreadPool {
+public:
+    template <class F> void add(F func) {
+        m_threads.emplace_back(func);
+    }
+    void joinAll();
+    void message(const std::string& msg, int id) {
+        m_messages[id].push_back(msg);
+    }
+
+    std::vector<std::string> getMessages(int id) {
+        return m_messages[id];
+    }
+
+private:
+    std::vector<std::thread> m_threads;
+    std::map<int, std::vector<std::string>> m_messages;
 };
 
 // ********************************************************************************************** //
