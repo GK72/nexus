@@ -13,5 +13,6 @@ add_subdirectory("gGfx")
 add_subdirectory("glib")
 add_subdirectory("rpg")
 add_subdirectory("rts")
+add_subdirectory("gclib")
 
 #enable_testing()
