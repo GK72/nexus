@@ -6,8 +6,8 @@ Plug 'Valloric/YouCompleteMe', { 'do': './install.py --clang-completer'  }
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'jiangmiao/auto-pairs'
-Plug 'scrooloose/nerdtree'
-Plug 'neomake/neomake'                                              " Code syntax checker
+Plug 'scrooloose/nerdtree'                                          " File explorer
+Plug 'neomake/neomake'                                              " For async running
 Plug 'terryma/vim-multiple-cursors'
 Plug 'machakann/vim-highlightedyank'
 Plug 'tmhedberg/SimpylFold'
@@ -15,9 +15,15 @@ Plug 'octol/vim-cpp-enhanced-highlight'
 Plug 'vim-scripts/a.vim'
 Plug 'rhysd/git-messenger.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-repeat'
+Plug 'tpope/vim-commentary'
+Plug 'vim-scripts/ReplaceWithRegister'
+Plug 'christoomey/vim-sort-motion'
+Plug 'vim-scripts/FuzzyFinder'
+Plug 'vim-scripts/L9'
 
 call plug#end()
-
 
 set showmatch               " show matching brackets
 set ignorecase              " case insensitive matching
@@ -38,10 +44,10 @@ set scrolloff=8             " Start scrolling when we're 8 lines away from margi
 set lcs=trail:·,tab:»·
 set list
 "set cursorline
+set relativenumber
 filetype plugin indent on   " allows auto-indenting depending on file type
 syntax on                   " syntax highlighting
 color desert
-
 
 let g:deoplete#enable_at_startup = 1
 let g:airline_powerline_fonts=1
@@ -51,30 +57,30 @@ let g:doxygen_enhanced_color=1
 let g:load_doxygen_syntax=1
 let g:cpp_class_scope_highlight = 1
 
-"set termguicolors
 
-" ================ Suggestions ======================
+" ==================== Suggestions ========================
 " show wild menu (menu of suggestions) when typing commands in command mode
 set path+=**
 set wildmenu
 set showcmd"
 
 if &encoding != 'utf-8'
-    set encoding=utf-8                  "Necessary to show Unicode glyphs
+    set encoding=utf-8
 endif"
 
+" ====================== NERDTree =========================
 " noremap <C-n> :NERDTreeToggle<CR>     " ctrl+n open/closes nerd tree
 " let g:NERDTreeQuitOnOpen = 1          " quit nerd tree on file open
 let g:NERDTreeWinPos = "right""
-
+autocmd vimenter * NERDTree
+autocmd VimEnter * wincmd p
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
 " A - switching between files
 nnoremap <F4> :A<CR>                    " header / source
 inoremap <F4> <ESC>:A<CR>a
 nnoremap <F2> :IH<CR>                   "file under cursor
 inoremap <F2> <ESC>:IH<CR>
-
-
 
 " ################ YouCompleteMe ####################
 let g:ycm_show_diagnostics_ui = 0
