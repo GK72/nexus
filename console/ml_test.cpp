@@ -14,6 +14,7 @@
 #include "utility.h"
 
 using vec = std::vector<int>;
+using gint = size_t;
 
 void ml_test()
 {

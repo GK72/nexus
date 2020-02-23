@@ -14,14 +14,13 @@
 #include <iostream>
 #include <iomanip>
 #include <map>
+#include <mutex>
 #include <random>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <type_traits>
 #include <vector>
-
-#include "func.hpp"
 
 namespace glib {
 
@@ -63,15 +62,15 @@ inline void printn() {
 //                                       Templated functions                                      //
 // ********************************************************************************************** //
 
-template <class ...Ts> struct Visitor : Ts... {
-    template <class ...Params> Visitor(Params&& ...t) : Ts(std::forward<Params>(t))... {}
+template <class ...Ts> struct Lambdas : Ts... {
+    Lambdas(Ts&& ...t) : Ts(std::forward<Ts>(t))... {}
     using Ts::operator()...;
 };
 
-template<class ...Ts> Visitor(Ts...) -> Visitor<std::decay_t<Ts>...>;
+template<class ...Ts> Lambdas(Ts...) -> Lambdas<std::decay_t<Ts>...>;
 
 template <class T> std::string toString(T&& in) {
-    Visitor vis{
+    Lambdas vis{
         [](const int x)                         { return std::to_string(x); },
         [](const gint x)                        { return std::to_string(x); },
         [](const char* x)                       { return std::string(x); },
@@ -164,17 +163,11 @@ public:
         m_threads.emplace_back(func);
     }
     void joinAll();
-    void message(const std::string& msg, int id) {
-        m_messages[id].push_back(msg);
-    }
-
-    std::vector<std::string> getMessages(int id) {
-        return m_messages[id];
-    }
+    void message(const std::string& msg, int id);
 
 private:
     std::vector<std::thread> m_threads;
-    std::map<int, std::vector<std::string>> m_messages;
+    std::mutex m_mx;
 };
 
 // ********************************************************************************************** //
