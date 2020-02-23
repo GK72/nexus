@@ -6,6 +6,7 @@
 // **********************************************
 
 #include <cstdint>
+#include <ctime>
 #include "utility.h"
 #include "utility_t.hpp"
 #include "gmath.h"
@@ -43,7 +44,9 @@ void printLog(const std::string_view& msg)
 {
     auto timestamp = std::chrono::system_clock::now();
     time_t time = std::chrono::system_clock::to_time_t(timestamp);
-    std::cerr << "[LOG] " << std::put_time(std::localtime(&time), "%T") << " - " << msg;
+    std::cerr << "[LOG] " << std::to_string(time) << " - " << msg;
+    //std::cerr << "[LOG] " << glib::joinStr(" - ", std::to_string(time), msg);
+
 }
 
 
@@ -132,6 +135,11 @@ void ThreadPool::joinAll()
         t.join();
     }
 }
+
+void ThreadPool::message(const std::string& msg, int id) {
+        std::scoped_lock lock(m_mx);
+        glib::print("# ", id, msg);
+    }
 
 
 

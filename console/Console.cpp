@@ -42,17 +42,56 @@ struct D1024 {
 
 int perfTest() {
     glib::pfm::pfm pfm(100);
-    glib::pfm::msrContainer<int, std::vector> msr(10000);
+    glib::pfm::msrContainer<int, std::vector> msr(100000);
     pfm.add(msr, "Vector measuring");
     pfm.run();
     pfm.print();
     return 0;
 }
 
+int thread() {
+    auto time_start = std::chrono::high_resolution_clock::now();
+
+    glib::ThreadPool tp;
+
+    for (int i = 0; i < 2; ++i) {
+        tp.add([&tp, time_start, i] {
+            std::chrono::milliseconds elapsed{ 0 };
+            while (elapsed < std::chrono::milliseconds(3000)) {
+                auto time2 = std::chrono::high_resolution_clock::now();
+                elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(time2 - time_start);
+                std::string msg = glib::joinStr(" ", "Working...", elapsed);
+                tp.message(msg, i + 1);
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+            });
+    }
+
+    tp.joinAll();
+
+    return 0;
+}
+
+int func(int x) {
+    return x + 1;
+}
+
+int callable() {
+    //auto f = glib::Callable(func);
+    //auto f = [](auto x) { return x + 10; };
+    //auto b = glib::BoxedCallable(f);
+    //glib::printn(b(1));
+
+    return 0;
+}
+
+
 int run(const glib::ArgParser& args)
 {
     //datatable_test(args.get<std::string>("path"));
-    perfTest();
+    //perfTest();
+    thread();
+    //callable();
     return 0;
 }
 

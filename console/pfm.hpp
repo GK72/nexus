@@ -19,7 +19,7 @@ namespace glib::pfm {
 using gint = size_t;
 
 
-template <class T, template <class T> class Cont>
+template <class T, template <class > class Cont>
 class msrContainer
 {
 public:
