@@ -1,6 +1,7 @@
 add_library(gmath gmath.cpp gmath.h)
 add_library(bigint bigint.cpp bigint.h)
 add_library(data datatable.cpp datatable.h)
+add_library(date datetime.cpp datetime.h)
 add_library(io io.cpp io.h)
 add_library(arg arg.cpp arg.h)
 add_library(utility utility.cpp utility.h)
