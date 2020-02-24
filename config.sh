@@ -1,37 +1,61 @@
-curl -L https://github.com/gokcehan/lf/releases/download/r13/lf-linux-amd64.tar.gz | tar xzC ~/.local/bin
-chmod +x lf
-sudo mv lf /usr/local/bin
-# https://github.com/gokcehan/lf/wiki/Tutorial
+#!/bin/bash
 
+# Checking environment
 
-# NeoVIM
-sudo apt install neovim
-mkdir ~/.config/nvim
-touch ~/.config/nvim/init.vim
+# ---------- CMAKE ----------
+echo -n "Checking cmake..."
+command -v cmake >/dev/null 2>&1 && echo "   OK" || sudo apt-get install ccmake
 
-# Plugin Manager
-curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+# ---------- CCMAKE ---------
+echo -n "Checking ccmake..."
+command -v ccmake >/dev/null 2>&1 && echo "   OK" || sudo apt-get install cmake-curses-gui
 
-# Plugins
-echo "
-call plug#begin('~/.local/share/nvim/plugged')
+# ---------- CCACHE ---------
+echo -n "Checking ccache..."
+command -v ccache >/dev/null 2>&1 && echo "   OK" || sudo apt-get install ccache
 
-Plug 'davidhalter/jedi-vim'                                         " Python auto-completion
-Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-Plug 'vim-airline/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
-Plug 'jiangmiao/auto-pairs'
-Plug 'scrooloose/nerdtree'
-Plug 'neomake/neomake'                                              " Code syntax checker
-Plug 'terryma/vim-multiple-cursors'
-Plug 'machakann/vim-highlightedyank'
-Plug 'tmhedberg/SimpylFold'
+# --------- DOXYGEN ---------
+echo -n "Checking doxygen..."
+command -v doxygen >/dev/null 2>&1 && echo "   OK" || {
+    sudo apt-get install doxygen
+    sudo apt-get install graphviz
+}
 
-call plug#end()
-" >> ~/.config/init.vim
+# ---------- CATCH2 ---------
+echo -n "Checking Catch2..."
+if [[ -e /usr/local/lib/cmake/Catch2/Catch2Targets.cmake ]]; then
+    echo "   OK"
+else
+    cd ~/repos
+    git clone https://github.com/catchorg/Catch2.git
+    cmake -Bbuild -H. -DBUILD_TESTING=OFF
+    sudo cmake --build build/ --target install
+fi
 
-let g:deoplete#enable_at_startup = 1
+# ------------ LF -----------
+echo -n "Checking lf..."
+command -v lf >/dev/null 2>&1 && echo "   OK" || {
+    curl -L https://github.com/gokcehan/lf/releases/download/r13/lf-linux-amd64.tar.gz | tar xzC ~/.local/bin
+    chmod +x ~/.local/bin/lf
+    sudo mv ~/.local/bin/lf /usr/local/bin
+}
 
-./nvim.appimage --appimage-extract
-sudo cp -r ~/squashfs-root/usr/* /usr/
+# ---------- NEOVIM ---------
+echo -n "Checking nvim..."
+command -v nvim >/dev/null 2>&1 && echo "   OK" || {
+    curl -fsSL https://github.com/neovim/neovim/releases/download/v0.4.3/nvim.appimage -o ~/nvim.appimage
+    ./nvim.appimage --appimage-extract
+    sudo cp -r ~/squashfs-root/usr/* /usr/
+
+    mkdir ~/.config/nvim
+    touch ~/.config/nvim/init.vim
+
+    # Plugin Manager
+    curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+    # Cleaning up
+    echo "Cleaning up temporary files..."
+    rm -rf ~/squashfs-root
+    rm -rf ~/nvim.appimage
+}
