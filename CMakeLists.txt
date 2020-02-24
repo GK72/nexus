@@ -8,6 +8,10 @@ project("gLib")
 
 set(CMAKE_CXX_STANDARD 17)
 
+include(cmake/settings.cmake)
+include(cmake/doxygen.cmake)
+enable_doxygen()
+
 add_subdirectory("src")
 add_subdirectory("tests")
 
