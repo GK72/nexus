@@ -8,12 +8,7 @@ project("gLib")
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory("console")
-add_subdirectory("gGfx")
-add_subdirectory("gclib")
-add_subdirectory("glib")
-add_subdirectory("rpg")
-add_subdirectory("rts")
+add_subdirectory("src")
 add_subdirectory("tests")
 
 enable_testing()
