@@ -1,6 +1,26 @@
 #!/bin/bash
 
+# Environment setup script
+# gkpro @ 2020-02-25
+
+# TODO:
+# Check if the system is Ubuntu
+# Parameterize script
+
+
 # Checking environment
+
+# ---------- SHELL ----------
+# ZSH
+command -v zsh >/dev/null 2?&1 && echo "   OK" || sudo apt-get install zsh
+
+# Theme: Powerlevel10k
+git clone https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/themes/powerlevel10k
+
+# Zsh syntax highlighting
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
+echo "source ${(q-)PWD}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
+source ./zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # ---------- CMAKE ----------
 echo -n "Checking cmake..."
@@ -54,8 +74,13 @@ command -v nvim >/dev/null 2>&1 && echo "   OK" || {
     curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
+    sudo find /usr/share/nvim -type d -exec chmod 755 {} +
+
     # Cleaning up
     echo "Cleaning up temporary files..."
     rm -rf ~/squashfs-root
     rm -rf ~/nvim.appimage
 }
+
+ Oh My Zsh
+ sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
