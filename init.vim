@@ -1,7 +1,6 @@
 call plug#begin('~/.local/share/nvim/plugged')
 
 Plug 'davidhalter/jedi-vim'                                         " Python auto-completion
-Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'Valloric/YouCompleteMe', { 'do': './install.py --clang-completer'  }
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
@@ -14,16 +13,20 @@ Plug 'tmhedberg/SimpylFold'
 Plug 'octol/vim-cpp-enhanced-highlight'
 Plug 'vim-scripts/a.vim'
 Plug 'rhysd/git-messenger.vim'
-Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-repeat'
 Plug 'tpope/vim-commentary'
-Plug 'vim-scripts/ReplaceWithRegister'
 Plug 'christoomey/vim-sort-motion'
 Plug 'vim-scripts/FuzzyFinder'
 Plug 'vim-scripts/L9'
+Plug 'vim-scripts/ReplaceWithRegister'
+Plug 'airblade/vim-gitgutter'
+Plug 'tpope/vim-fugitive'
+Plug 'rdnetto/YCM-Generator', { 'branch': 'stable' }
 
 call plug#end()
+
+color desert
 
 set showmatch               " show matching brackets
 set ignorecase              " case insensitive matching
@@ -36,18 +39,18 @@ set autoindent              " indent a new line the same amount as the line just
 set copyindent              " copy indent from the previous line
 set number                  " add line numbers
 set wildmode=longest,list   " get bash-like tab completions
-set cc=120                  " set an 80 column border for good coding style
+set cc=120                  " set  column border for good coding style
+set cursorline
 set showcmd                 " show command in bottom bar
 set background=dark
 set scrolloff=8             " Start scrolling when we're 8 lines away from margins
 "set termguicolors
 set lcs=trail:·,tab:»·
 set list
-"set cursorline
 set relativenumber
+
 filetype plugin indent on   " allows auto-indenting depending on file type
 syntax on                   " syntax highlighting
-color desert
 
 let g:deoplete#enable_at_startup = 1
 let g:airline_powerline_fonts=1
@@ -81,6 +84,10 @@ nnoremap <F4> :A<CR>                    " header / source
 inoremap <F4> <ESC>:A<CR>a
 nnoremap <F2> :IH<CR>                   "file under cursor
 inoremap <F2> <ESC>:IH<CR>
+
+" Some coloring
+highlight cursorline cterm=bold ctermbg=234
+highlight colorcolumn ctermbg=235
 
 " ################ YouCompleteMe ####################
 let g:ycm_show_diagnostics_ui = 0
