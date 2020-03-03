@@ -24,6 +24,7 @@ command -v apt >/dev/null 2>&1 && {
     INSTALL_CCACHE="sudo apt-get install ccache"
     INSTALL_DOXYGEN="sudo apt-get install doxygen"
     INSTALL_GRAPHVIZ="sudo apt-get install graphviz"
+    INSTALL_TIMEWARRIOR="sudo apt-get install timewarrior"
 }
 
 ###############################################################################
@@ -41,6 +42,10 @@ command -v zsh >/dev/null 2>&1 && printPad OK 30 || {
         git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
         echo "source ${(q-)PWD}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
         source ./zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+        git clone https://github.com/zsh-users/zsh-autosuggestions \
+            ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
     } || printPad "Failed!" 30
 }
 
@@ -105,6 +110,12 @@ command -v nvim >/dev/null 2>&1 && printPad OK 30 || {
     printf "Cleaning up temporary files...\n"
     rm -rf ~/squashfs-root
     rm -rf ~/nvim.appimage
+}
+
+# Shell extensions
+printf "Checking shell extensions..."
+command -v timew >/dev/null 2>&1 && printpad OK 30 || {
+    "${INSTALL_TIMEWARRIOR}"
 }
 
 printf "\nEnvironment setup has finished.\n"
