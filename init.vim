@@ -84,6 +84,8 @@ nnoremap <F4> :A<CR>                    " header / source
 inoremap <F4> <ESC>:A<CR>a
 nnoremap <F2> :IH<CR>                   "file under cursor
 inoremap <F2> <ESC>:IH<CR>
+" Use ESC to exit insert mode in :term
+tnoremap <C-\><C-\> <C-\><C-n>
 
 " Some coloring
 highlight cursorline cterm=bold ctermbg=234

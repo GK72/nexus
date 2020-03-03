@@ -48,6 +48,7 @@ COMPLETION_WAITING_DOTS="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git)
+plugins=(zsh-autosuggestions)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -59,11 +60,11 @@ source $ZSH/oh-my-zsh.sh
 # export LANG=en_US.UTF-8
 
 # Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='nvim'
+else
+  export EDITOR='nvim'
+fi
 
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
@@ -76,11 +77,16 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-#
 
 # Inline vim editor
 autoload edit-command-line; zle -N edit-command-line
 bindkey '^e' edit-command-line
+
+###############################################################################
+#               Enviroment independent shell customizations                   #
+###############################################################################
+
+# Functions
 
 # Use LF for cd and bind key to CTRL-O
 lfcd () {
@@ -92,10 +98,45 @@ lfcd () {
         [ -d "$dir" ] && [ "$dir" != "$(pwd)" ] && cd "$dir"
     fi
 }
+
 bindkey -s '^o' 'lfcd\n'
 
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh    # Prompt customization
+function findinfiles() {
+    noparam=0
+    while getopts 'i:' flag; do
+        case "${flag}" in
+            i) shift
+               find . -type f -print0 | xargs -0 grep -i "$1" -n
+               noparam=1
+               ;;
+        esac
+    done
 
-~/.startup.sh
+    if [ $noparam -eq 0  ] ; then
+        find . -type f -print0 | xargs -0 grep "$1" -n
+    fi
+}
+
+function colormap() {
+    for i in {0..255}; do print -Pn "%K{$i} %k%F{$i}${(l:3::0:)i}%f " ${${(M)$((i%8)):#7}:+$'\n'}; done
+}
+
+# Aliases
+alias ff='findinfiles'
+alias tws='timew start'
+alias twt='timew stop'
+alias twss='timew summary'
+alias twc='timew continue'
+alias rsyncp="rsync -avz --info=progress2"
+
+# Variables
+
+# <EMPTY>
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 source ~/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ~/.gkrc
+
+test -r $d && eval "$(dircolors ~/.dircolors)"
