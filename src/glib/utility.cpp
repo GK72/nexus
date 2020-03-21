@@ -32,14 +32,6 @@ void dumpError(const std::exception& ex, const std::string_view& sv)
     }
 }
 
-std::string padBoth(const std::string& str, gint count, const char ch)
-{
-    gint pad = subtractClip(count, str.size()) / 2;
-    std::string padL(pad, ch);
-    std::string padR(pad + (str.size() % 2 ? 1 : 0), ch);
-    return padL + str + padR;
-}
-
 void printLog(const std::string_view& msg)
 {
     auto timestamp = std::chrono::system_clock::now();
