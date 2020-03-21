@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2020-01-28                       **
+// ** gkpro @ 2020-03-21                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **          Utility library header          **
@@ -40,21 +40,12 @@ void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
-inline gint subtractClip(gint lhs, gint rhs) {
+[[nodiscard]] inline gint subtractClip(gint lhs, gint rhs) {
     return lhs < rhs ? 0 : lhs - rhs;
-}
-inline std::string padBoth(const std::string& str, gint count, const char ch = ' ');
-
-inline std::string padBegin(const std::string& str, gint count, const char ch = ' ') {
-    return std::string(subtractClip(count, str.size()), ch) + str;
-}
-
-inline std::string padEnd(const std::string& str, gint count, const char ch = ' ') {
-    return str + std::string(subtractClip(count, str.size()), ch);
 }
 
 inline void printn() {
-    std::cout << '\n'; 
+    std::cout << '\n';
 }
 
 
@@ -69,22 +60,25 @@ template <class ...Ts> struct Lambdas : Ts... {
 
 template<class ...Ts> Lambdas(Ts...) -> Lambdas<std::decay_t<Ts>...>;
 
-template <class T> std::string toString(T&& in) {
+template <class T>
+[[nodiscard]] std::string toString(T&& in) {
     Lambdas vis{
-        [](const int x)                         { return std::to_string(x); },
-        [](const gint x)                        { return std::to_string(x); },
-        [](const char* x)                       { return std::string(x); },
-        [](const std::string& x)                { return x; },
-        [](const std::chrono::microseconds& x)  { return std::to_string(x.count()) + " us"; },
-        [](const std::chrono::milliseconds& x)  { return std::to_string(x.count()) + " ms"; },
-        [](const std::chrono::nanoseconds&  x)  { return std::to_string(x.count()) + " ns"; }
+         [](const int x)                         { return std::to_string(x); }
+        ,[](const long x)                        { return std::to_string(x); }
+        ,[](const gint x)                        { return std::to_string(x); }
+        ,[](const char* x)                       { return std::string(x); }
+        ,[](std::string_view x)                  { return std::string(x); }
+        ,[](const std::string& x)                { return x; }
+        ,[](const std::chrono::microseconds& x)  { return std::to_string(x.count()) + " us"; }
+        ,[](const std::chrono::milliseconds& x)  { return std::to_string(x.count()) + " ms"; }
+        ,[](const std::chrono::nanoseconds&  x)  { return std::to_string(x.count()) + " ns"; }
     };
     return vis(std::forward<T>(in));
 }
 
 
 template <class T, class ...Ts>
-std::string joinStr(std::string separator, T&& first, Ts&&... args) {
+[[nodiscard]] std::string joinStr(std::string separator, T&& first, Ts&&... args) {
     return toString(first) + (... + (separator + toString(args)));
 }
 
@@ -97,6 +91,27 @@ void print(const std::string& separator, T&& first, Ts&&... args) {
 template <class T>
 void printn(T t) {
     std::cout << toString(t) << '\n';
+}
+
+template <class T>
+[[nodiscard]] std::string padBoth(const T& t, gint count, const char ch = ' ')
+{
+    gint pad = subtractClip(count, toString(t).size()) / 2;
+    std::string padL(pad, ch);
+    std::string padR(pad + (toString(t).size() % 2 ? 1 : 0), ch);
+    return padL + toString(t) + padR;
+}
+
+template <class T>
+[[nodiscard]] std::string padBegin(const T& t, gint count, const char ch = ' ')
+{
+    return std::string(subtractClip(count, toString(t).size()), ch) + toString(t);
+}
+
+template <class T>
+[[nodiscard]] std::string padEnd(const T& t, gint count, const char ch = ' ')
+{
+    return toString(t) + std::string(subtractClip(count, toString(t).size()), ch);
 }
 
 template <class T> T swapEndian32(T& x) {
