@@ -50,7 +50,7 @@ void ArgParser::parseArgs()
 {
     for (gint i = 0; i < m_inArgs.size(); ++i) {
         try {
-            Arg& arg = m_args.at(m_inArgs[i].substr(2));
+            Arg& arg = m_args.at(m_inArgs[i]);
             arg.isActive = true;
             if (!arg.isFlag) {
                 ++i;
