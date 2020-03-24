@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Environment setup script
-# gkpro @ 2020-03-08
+# gkpro @ 2020-03-23
 
 function printPad() {
     # Move the cursor forward N columns:    \033[<N>C
@@ -35,6 +35,7 @@ function install() {
         INSTALL_CMAKE="sudo apt-get install ccmake"
         INSTALL_CCMAKE="sudo apt-get install cmake-curses-gui"
         INSTALL_CCACHE="sudo apt-get install ccache"
+        INSTALL_CPPCHECK="sudo apt-get install cppcheck"
         INSTALL_DOXYGEN="sudo apt-get install doxygen"
         INSTALL_GRAPHVIZ="sudo apt-get install graphviz"
         INSTALL_TIMEWARRIOR="sudo apt-get install timewarrior"
@@ -74,6 +75,9 @@ function install() {
 
     printf "Checking ccache..."
     command -v ccache >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CCACHE}"
+
+    printf "Checking cppcheck..."
+    command -v cppcheck >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CPPCHECK}"
 
     # Doxygen
     printf "Checking doxygen..."
