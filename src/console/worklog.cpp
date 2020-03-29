@@ -15,9 +15,10 @@ static const auto pathDir       = glib::joinStr("/", getenv("HOME"), ".worklog")
 static const auto filename      = "data";
 static const auto fullpathData  = glib::joinStr("/", pathDir, filename);
 
-static constexpr auto rangeDivider = "-";
+constexpr char eof = 26;
+constexpr auto rangeDivider = "-";
 
-auto fn_getline = [](auto& inf, std::string& str) -> auto& { return std::getline(inf, str); };
+constexpr auto fn_getline = [](auto& inf, std::string& str) -> auto& { return std::getline(inf, str); };
 
 auto getTime() {
     return glib::datetime::getCurrentEpoch<std::chrono::seconds>().count();
@@ -40,7 +41,11 @@ auto strSplit(std::string_view str, std::string_view split) {
 
 class FileReader {
 public:
-    FileReader(const std::string& path);
+    explicit FileReader(const std::string& path);
+    FileReader(const FileReader&)               = delete;
+    FileReader(FileReader&&)                    = delete;
+    FileReader& operator=(const FileReader&)    = delete;
+    FileReader& operator=(FileReader&&)         = delete;
     ~FileReader() { _inf.close(); }
 
     template <class Tokenizer, class InputProcessor>
@@ -72,7 +77,7 @@ bool FileReader::read(Tokenizer tokenizer, InputProcessor process)
 class WorkLog {
     using range = std::tuple<glib::datetime::Date<>, long, long>;
 public:
-    WorkLog(const std::string& path);
+    explicit WorkLog(const std::string& path);
 
     void checkIn();
     void checkOut();
@@ -98,9 +103,8 @@ private:
 
 WorkLog::WorkLog(const std::string& path)
     : _path(path)
-{
-    _state = read();
-}
+    , _state(read())
+{}
 
 void WorkLog::checkIn() {
     if (_state == State::CLOSED) {
@@ -157,10 +161,10 @@ void WorkLog::createEntries() {
             long start = 0;
             long end   = 0;
 
-            if (parts[0].size() > 0) {
+            if (!parts[0].empty()) {
                 start = std::stol(parts[0].data());
 
-                if (parts[1].size() > 0) {
+                if (!parts[1].empty()) {
                 end = std::stol(parts[1].data());
                 }
                 else {
@@ -168,7 +172,7 @@ void WorkLog::createEntries() {
                 }
 
                 using namespace glib::datetime;
-                _range.push_back({ Date<>(epochToDate(start)), start, end});
+                _range.emplace_back(epochToDate(start), start, end);
             }
         }
     );
@@ -176,7 +180,7 @@ void WorkLog::createEntries() {
 
 void WorkLog::printSummary() {
     std::vector<std::pair<glib::datetime::Date<>, long>> summary;
-    long duration = 0;
+    auto duration = 0l;
     auto prevDate = glib::datetime::Date(1, 1, 1);
 
     for (const auto& [date, start, end] : _range) {
@@ -184,12 +188,12 @@ void WorkLog::printSummary() {
             duration += end - start;
         }
         else {
-            summary.push_back({ prevDate, duration });
+            summary.emplace_back(prevDate, duration);
             duration = end - start;
         }
         prevDate = date;
     }
-    summary.push_back({ prevDate, duration });
+    summary.emplace_back(prevDate, duration);
 
     summary.erase(summary.begin());
     for (const auto& [date, duration] : summary) {
@@ -204,11 +208,10 @@ void WorkLog::printSummary() {
 
 WorkLog::State WorkLog::read() {
     auto inf = FileReader(_path);
-    char eof = 26;
-    State state;
+    auto state = State::CORRUPTED;
 
     inf.read(
-        [eof](auto& inf, std::string& str) -> auto& { return std::getline(inf, str, eof); },
+        [](auto& inf, std::string& str) -> auto& { return std::getline(inf, str, eof); },
         [&state](auto& str)
         {
             if (*++str.rbegin() == '-') {
@@ -217,15 +220,13 @@ WorkLog::State WorkLog::read() {
             else if (*++str.rbegin() == '\n') {
                 state = State::CLOSED;
             }
-            else {
-                state = State::CORRUPTED;
-            }
         }
     );
 
     return state;
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
 glib::ArgParser parseArgs(int argc, char* args[]) {
     auto argparser = glib::ArgParser(argc, args);
     auto argfactory = glib::ArgFactory(&argparser);
