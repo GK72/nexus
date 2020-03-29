@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Environment setup script
-# gkpro @ 2020-03-23
+# gkpro @ 2020-03-29
 
 function printPad() {
     # Move the cursor forward N columns:    \033[<N>C
@@ -39,6 +39,7 @@ function install() {
         INSTALL_DOXYGEN="sudo apt-get install doxygen"
         INSTALL_GRAPHVIZ="sudo apt-get install graphviz"
         INSTALL_TIMEWARRIOR="sudo apt-get install timewarrior"
+        INSTALL_LINUX_TOOLS_GENERIC="sudo apt-get install linux-tools-generic"
     }
 
     ###############################################################################
@@ -78,6 +79,9 @@ function install() {
 
     printf "Checking cppcheck..."
     command -v cppcheck >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CPPCHECK}"
+
+    printf "Checking perf..."
+    command -v perf >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_LINUX_TOOLS_GENERIC}"
 
     # Doxygen
     printf "Checking doxygen..."
