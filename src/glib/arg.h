@@ -119,6 +119,8 @@ public:
         Arg arg(name, description);
         arg.isRequired = true;
         m_parser->add(arg);
+
+        return arg;
     }
 
 private:
