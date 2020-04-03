@@ -1,28 +1,31 @@
 call plug#begin('~/.local/share/nvim/plugged')
 
-Plug 'davidhalter/jedi-vim'                                         " Python auto-completion
 Plug 'Valloric/YouCompleteMe', { 'do': './install.py --clang-completer'  }
+Plug 'airblade/vim-gitgutter'
+Plug 'christoomey/vim-sort-motion'
+Plug 'davidhalter/jedi-vim'                                         " Python auto-completion
+Plug 'derekwyatt/vim-fswitch'
+Plug 'jiangmiao/auto-pairs'
+Plug 'machakann/vim-highlightedyank'
+Plug 'neomake/neomake'                                              " For async running
+Plug 'octol/vim-cpp-enhanced-highlight'
+Plug 'rdnetto/YCM-Generator', { 'branch': 'stable' }
+Plug 'rhysd/git-messenger.vim'
+Plug 'scrooloose/nerdtree'                                          " File explorer
+Plug 'szw/vim-tags'
+Plug 'terryma/vim-multiple-cursors'
+Plug 'tmhedberg/SimpylFold'
+Plug 'tpope/vim-commentary'
+Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-repeat'
+Plug 'tpope/vim-surround'
+Plug 'tveskag/nvim-blame-line'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'jiangmiao/auto-pairs'
-Plug 'scrooloose/nerdtree'                                          " File explorer
-Plug 'neomake/neomake'                                              " For async running
-Plug 'terryma/vim-multiple-cursors'
-Plug 'machakann/vim-highlightedyank'
-Plug 'tmhedberg/SimpylFold'
-Plug 'octol/vim-cpp-enhanced-highlight'
-Plug 'vim-scripts/a.vim'
-Plug 'rhysd/git-messenger.vim'
-Plug 'tpope/vim-surround'
-Plug 'tpope/vim-repeat'
-Plug 'tpope/vim-commentary'
-Plug 'christoomey/vim-sort-motion'
 Plug 'vim-scripts/FuzzyFinder'
 Plug 'vim-scripts/L9'
 Plug 'vim-scripts/ReplaceWithRegister'
-Plug 'airblade/vim-gitgutter'
-Plug 'tpope/vim-fugitive'
-Plug 'rdnetto/YCM-Generator', { 'branch': 'stable' }
+Plug 'vim-scripts/a.vim'
 
 call plug#end()
 
@@ -74,22 +77,45 @@ endif"
 " ====================== NERDTree =========================
 " noremap <C-n> :NERDTreeToggle<CR>     " ctrl+n open/closes nerd tree
 " let g:NERDTreeQuitOnOpen = 1          " quit nerd tree on file open
-let g:NERDTreeWinPos = "right""
-autocmd vimenter * NERDTree
-autocmd VimEnter * wincmd p
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+" let g:NERDTreeWinPos = "right""
+" autocmd vimenter * NERDTree
+" autocmd VimEnter * wincmd p
+" autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
-" A - switching between files
-nnoremap <F4> :A<CR>                    " header / source
-inoremap <F4> <ESC>:A<CR>a
-nnoremap <F2> :IH<CR>                   "file under cursor
-inoremap <F2> <ESC>:IH<CR>
 " Use ESC to exit insert mode in :term
 tnoremap <C-\><C-\> <C-\><C-n>
 
 " Some coloring
 highlight cursorline cterm=bold ctermbg=234
 highlight colorcolumn ctermbg=235
+
+
+function! ClangCheckImpl(cmd)
+    if &autowrite | wall | endif
+    echo "Running " . a:cmd . " ..."
+    let l:output = system(a:cmd)
+    cexpr l:output
+    cwindow
+    let w:quickfix_title = a:cmd
+    if v:shell_error != 0
+        cc
+    endif
+    let g:clang_check_last_cmd = a:cmd
+endfunction
+
+function! ClangCheck()
+    let l:filename = expand('%')
+    if l:filename =~ '\.\(cpp\|cxx\|cc\|c\)$'
+        call ClangCheckImpl("clang-check " . l:filename)
+    elseif exists("g:clang_check_last_cmd")
+        call ClangCheckImpl(g:clang_check_last_cmd)
+    else
+        echo "Can't detect file's compilation arguments and no previous clang-check invocation!"
+    endif
+endfunction
+
+nmap <silent> <F5> :call ClangCheck()<CR><CR>
+
 
 " ################ YouCompleteMe ####################
 let g:ycm_show_diagnostics_ui = 0
