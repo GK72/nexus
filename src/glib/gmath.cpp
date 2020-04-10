@@ -17,8 +17,8 @@ namespace glib {
 template <class T> using iType = Iterator<T>;
 
 template <class T> std::ostream& operator<< (std::ostream& out, const Matrix<T>& rhs) {
-    for (gint i = 0; i < rhs.n; ++i) {
-        for (gint j = 0; j < rhs.m; ++j) {
+    for (size_t i = 0; i < rhs.n; ++i) {
+        for (size_t j = 0; j < rhs.m; ++j) {
             out << rhs.at(i, j) << rhs.ws;
         }
         out << '\n';
@@ -27,7 +27,7 @@ template <class T> std::ostream& operator<< (std::ostream& out, const Matrix<T>&
 }
 
 template <class T> std::istream& operator>> (std::istream& in, Matrix<T>& rhs) {
-    for (gint i = 0; i < rhs.length; ++i) {
+    for (size_t i = 0; i < rhs.length; ++i) {
         in >> rhs.elem[i];
     }
     return in;
@@ -35,7 +35,7 @@ template <class T> std::istream& operator>> (std::istream& in, Matrix<T>& rhs) {
 
 template <class T> Matrix<T> operator+ (const T& lhs, const Matrix<T>& rhs) {
     Matrix<T> res(rhs.n, rhs.m);
-    for (gint i = 0; i < rhs.length; ++i) {
+    for (size_t i = 0; i < rhs.length; ++i) {
         res.elem[i] = lhs + rhs.elem[i];
     }
     return res;
@@ -48,7 +48,7 @@ template <class T> Matrix<T> operator+ (const Matrix<T>& lhs, const T& rhs) {
 template <class T> Matrix<T> operator+ (const Matrix<T>& lhs, const Matrix<T>& rhs) {
     if (lhs.n == rhs.n && lhs.m == rhs.m) {
         Matrix<T> res(lhs.n, rhs.m);
-        for (gint i = 0; i < lhs.length; ++i) {
+        for (size_t i = 0; i < lhs.length; ++i) {
             res[i] = lhs[i] + rhs[i];
         }
         return lhs;
@@ -58,7 +58,7 @@ template <class T> Matrix<T> operator+ (const Matrix<T>& lhs, const Matrix<T>& r
 
 template <class T> Matrix<T> operator- (const T& lhs, const Matrix<T>& rhs) {
     Matrix<T> res(rhs.n, rhs.m);
-    for (gint i = 0; i < rhs.length; ++i) {
+    for (size_t i = 0; i < rhs.length; ++i) {
         res.elem[i] = lhs - rhs.elem[i];
     }
     return res;
@@ -71,7 +71,7 @@ template <class T> Matrix<T> operator- (const Matrix<T>& lhs, const T& rhs) {
 template <class T> Matrix<T> operator- (const Matrix<T>& lhs, const Matrix<T>& rhs) {
     if (lhs.n == rhs.n && lhs.m == rhs.m) {
         Matrix<T> res(lhs.n, rhs.m);
-        for (gint i = 0; i < lhs.length; ++i) {
+        for (size_t i = 0; i < lhs.length; ++i) {
             res[i] = lhs[i] - rhs[i];
         }
         return lhs;
@@ -81,7 +81,7 @@ template <class T> Matrix<T> operator- (const Matrix<T>& lhs, const Matrix<T>& r
 
 template <class T> Matrix<T> operator* (const T& lhs, const Matrix<T>& rhs) {
     Matrix<T> res(rhs.n, rhs.m);
-    for (gint i = 0; i < rhs.length; ++i) {
+    for (size_t i = 0; i < rhs.length; ++i) {
         res.elem[i] = lhs * rhs.elem[i];
     }
     return res;
@@ -95,10 +95,10 @@ template <class T> Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& r
     if (lhs.m == rhs.n) {
         T sum;
         Matrix<T> res(lhs.n, rhs.m);
-        for (gint i = 0; i < res.n; ++i) {
-            for (gint j = 0; j < res.m; ++j) {
+        for (size_t i = 0; i < res.n; ++i) {
+            for (size_t j = 0; j < res.m; ++j) {
                 sum = 0;
-                for (gint k = 0; k < lhs.m; ++k) {
+                for (size_t k = 0; k < lhs.m; ++k) {
                     sum += lhs.at(i, k) * rhs.at(k, j);
                 }
                 res.at(i, j) = sum;
@@ -111,7 +111,7 @@ template <class T> Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& r
 
 template <class T> Matrix<T> epow(const Matrix<T>& lhs, double exp) {
     Matrix<T> res(lhs.n, lhs.m);
-    for (gint i = 0; i < lhs.length; ++i) {
+    for (size_t i = 0; i < lhs.length; ++i) {
         res.elem[i] = std::pow(lhs.elem[i], exp);
     }
     return res;
@@ -119,7 +119,7 @@ template <class T> Matrix<T> epow(const Matrix<T>& lhs, double exp) {
 
 template <class T> Matrix<T> elog(const Matrix<T>& lhs) {
     Matrix<T> res(lhs.n, lhs.m);
-    for (gint i = 0; i < lhs.length; ++i) {
+    for (size_t i = 0; i < lhs.length; ++i) {
         res.elem[i] = std::log10(lhs.elem[i]);
     }
     return res;
@@ -127,7 +127,7 @@ template <class T> Matrix<T> elog(const Matrix<T>& lhs) {
 template <class T> Matrix<T> edot(const Matrix<T>& lhs, const Matrix<T>& rhs) {
     if (lhs.n == rhs.n && lhs.m == rhs.m) {
         Matrix<T> res(lhs.n, lhs.m);
-        for (gint i = 0; i < lhs.length; ++i) {
+        for (size_t i = 0; i < lhs.length; ++i) {
             res.elem[i] = lhs.elem[i] * rhs.elem[i];
         }
         return res;
@@ -138,14 +138,14 @@ template <class T> Matrix<T> edot(const Matrix<T>& lhs, const Matrix<T>& rhs) {
 // ************************************************************************** //
 
 template <class T> Matrix<T>::Matrix()                                  : Matrix(1, 1) {}
-template <class T> Matrix<T>::Matrix(gint n)                            : Matrix(n, 1) {}
-template <class T> Matrix<T>::Matrix(gint n, gint m)                    : idx(pDim{n, m}) { init(n, m); }
+template <class T> Matrix<T>::Matrix(size_t n)                            : Matrix(n, 1) {}
+template <class T> Matrix<T>::Matrix(size_t n, size_t m)                    : idx(pDim{n, m}) { init(n, m); }
 template <class T> Matrix<T>::~Matrix()                                 { delete[] elem; }
 template <class T> Matrix<T>::Matrix(const Matrix &rhs) :
     idx(pDim{rhs.n, rhs.m})
 {
     resize(rhs.n, rhs.m);
-    for (gint i = 0; i < length; ++i) {
+    for (size_t i = 0; i < length; ++i) {
         elem[i] = rhs.elem[i];
     }
 }
@@ -168,7 +168,7 @@ template <class T> Matrix<T>& Matrix<T>::operator=(const Matrix& rhs) {
     length = n * m;
 
     elem = new T[length];
-    for (gint i = 0; i < length; ++i) {
+    for (size_t i = 0; i < length; ++i) {
         elem[i] = rhs.elem[i];
     }
     return *this;
@@ -191,14 +191,14 @@ template<class T> void Matrix<T>::importIDX(const char* filename) {
     //   - The 3rd byte codes the type of the data: see bitmasks
     //   - The 4th byte codes the number of dimensions of the vector/matrix: 1 for vectors, 2 for matrices
     // The integers are 32 bit and in high endian format - MSB first
-    
+
     const unsigned int bms_ubyte  = 0x0000'0800;          // unsigned byte 
     const unsigned int bms_byte   = 0x0000'0900;          // signed byte 
     const unsigned int bms_short  = 0x0000'0B00;          // short (2 bytes) 
     const unsigned int bms_int    = 0x0000'0C00;          // int (4 bytes) 
     const unsigned int bms_flot   = 0x0000'0D00;          // float (4 bytes) 
     const unsigned int bms_double = 0x0000'0E00;          // double (8 bytes)
-    
+
     // Opening file in binary mode
 
     std::ifstream inf;
@@ -208,14 +208,14 @@ template<class T> void Matrix<T>::importIDX(const char* filename) {
     uint32_t magic = 0;
     uint32_t items = 0;
     char datasize = 1;
-    
+
     // Reading header
 
     inf.read(reinterpret_cast<char*>(&magic), sizeof magic);    swapEndian32(magic);
     inf.read(reinterpret_cast<char*>(&items), sizeof items);    swapEndian32(items);
     unsigned char dims = magic & 0x000000FF;
     unsigned int bms_datatype = magic & bms_ubyte;
-    
+
     // Dimensions of the matrix
 
     uint32_t dim_n = items;
@@ -233,7 +233,7 @@ template<class T> void Matrix<T>::importIDX(const char* filename) {
     // Reading data
 
     unsigned char byte;
-    gint i = 0;
+    size_t i = 0;
 
     while (inf.read(reinterpret_cast<char*>(&byte), datasize) && i < items) {
         elem[i] = byte;
@@ -245,21 +245,21 @@ template<class T> void Matrix<T>::exportTXT(const char* file) {
     std::ofstream outf(file, std::ios::out);
     std::stringstream ss;
     std::ios::sync_with_stdio(false);
-    for (gint i = 0; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i) {
         outf << getRow(i);
     }
     outf.close();
     std::ios::sync_with_stdio(true);
 }
 
-template<class T> void Matrix<T>::init(gint _n, gint _m) {
+template<class T> void Matrix<T>::init(size_t _n, size_t _m) {
     n = _n;
     m = _m;
     length = n * m;
     elem = new T[length];
 }
 
-template<class T> void Matrix<T>::resize(gint n, gint m) {
+template<class T> void Matrix<T>::resize(size_t n, size_t m) {
     delete[] elem;
     init(n, m);
 }
@@ -267,8 +267,8 @@ template<class T> void Matrix<T>::resize(gint n, gint m) {
 // Transpose
 template <class T> Matrix<T> Matrix<T>::tr() {
     Matrix<T> res(m, n);
-    for (gint i = 0; i < res.n; ++i) {
-        for (gint j = 0; j < res.m; ++j) {
+    for (size_t i = 0; i < res.n; ++i) {
+        for (size_t j = 0; j < res.m; ++j) {
             res.at(i, j) = this->at(j, i);
         }
     }
@@ -277,7 +277,7 @@ template <class T> Matrix<T> Matrix<T>::tr() {
 
 template <class T> void Matrix<T>::set(const Matrix<T>& in) {
     if (in.n == n && in.m == m) {
-        for (gint i = 0; i < length; ++i) {
+        for (size_t i = 0; i < length; ++i) {
             elem[i] = in.elem[i];
         }
     }
@@ -292,17 +292,17 @@ template <class T> iType<T> Matrix<T>::end()                        { return iTy
 
 template <class T> T  Matrix<T>::at(pDim d) const                   { return elem[idx.at(d)]; }
 template <class T> T& Matrix<T>::at(pDim d)                         { return elem[idx.at(d)]; }
-template <class T> T  Matrix<T>::at(gint x, gint y) const           { return elem[x * m + y]; }
-template <class T> T& Matrix<T>::at(gint x, gint y)                 { return elem[x * m + y]; }
-template <class T> const T& Matrix<T>::operator[] (gint i) const    { return elem[i]; }
-template <class T>       T& Matrix<T>::operator[] (gint i)          { return elem[i]; }
-template <class T> gint Matrix<T>::getLength()                      { return length; }
-template <class T> gint Matrix<T>::getN()                           { return n; }
-template <class T> gint Matrix<T>::getM()                           { return m; }
+template <class T> T  Matrix<T>::at(size_t x, size_t y) const       { return elem[x * m + y]; }
+template <class T> T& Matrix<T>::at(size_t x, size_t y)             { return elem[x * m + y]; }
+template <class T> const T& Matrix<T>::operator[] (size_t i) const  { return elem[i]; }
+template <class T>       T& Matrix<T>::operator[] (size_t i)        { return elem[i]; }
+template <class T> size_t Matrix<T>::getLength()                    { return length; }
+template <class T> size_t Matrix<T>::getN()                         { return n; }
+template <class T> size_t Matrix<T>::getM()                         { return m; }
 
-template <class T> Matrix<T> Matrix<T>::getRow(gint r) {
+template <class T> Matrix<T> Matrix<T>::getRow(size_t r) {
     Matrix<T> row(1, m);
-    for (gint i = 0; i < m; ++i) {
+    for (size_t i = 0; i < m; ++i) {
         row.elem[i] = elem[idx.at(r, i)];
     }
     //memcpy(&row.elem, &elem[idx.at(r, 0)], sizeof row.elem[0] * m);
@@ -319,9 +319,9 @@ inline double estDerivative(double x)       { return (x + epsilon - (x - epsilon
                                                    / (2 * epsilon); }
 
 template <class T> Matrix<T> sigmoid(Matrix<T>& x) {
-    gint length = x.getLength();
+    size_t length = x.getLength();
     Matrix<T> res(x.getN(), x.getM());
-    for (gint i = 0; i < length; i++)    {
+    for (size_t i = 0; i < length; i++)    {
         res[i] = sigmoid(x[i]);
     }
     return res;

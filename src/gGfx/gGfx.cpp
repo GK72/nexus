@@ -265,7 +265,7 @@ void EngineConW::printr(std::string str)
 
 // ************************************************************************** //
 
-void Sprite::init(gint w, gint h)
+void Sprite::init(size_t w, size_t h)
 {
     width = w;
     height = h;

@@ -31,7 +31,6 @@ using DefDateImpl = DateImpl_Speed;
 using DefTimeImpl = TimeImpl_Speed;
 #endif
 
-using gint = size_t;
 
 constexpr auto days_in_4_years = 365 * 4 + 1;
 constexpr auto days_in_months = std::array{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -61,7 +60,7 @@ enum class name_days {
     ,SUNDAY
 };
 
-bool isDateValid(gint year, gint month, gint day);
+bool isDateValid(size_t year, size_t month, size_t day);
 std::pair<char, char> splitToMonthAndDays(short days);
 
 template <class Time> Time getCurrentEpoch() {
@@ -81,9 +80,9 @@ public:
     [[nodiscard]] char day()    const;
 
 private:
-    gint m_rep;
+    size_t m_rep;
 
-    static gint calculate(int year, char month, char day);
+    static size_t calculate(int year, char month, char day);
 };
 
 

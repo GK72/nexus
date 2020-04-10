@@ -44,8 +44,8 @@ void printLog(const std::string_view& msg)
 
 std::string ipv6Formatter(std::string ipv6)
 {
-    gint p = 0;
-    gint q = 0;
+    size_t p = 0;
+    size_t q = 0;
     std::vector<std::string> segments;
     std::string out;
 
@@ -110,11 +110,11 @@ void Publisher::notify(Event&& evt)
     for (auto& e : _subs) e->trigger(evt);
 }
 
-gint Index::at(const std::vector<gint>& vec) const
+size_t Index::at(const std::vector<size_t>& vec) const
 {
     m_global = vec[vec.size() - 1];
-    gint dm = 1;
-    for (gint i = vec.size(); i > 1; --i) {
+    size_t dm = 1;
+    for (size_t i = vec.size(); i > 1; --i) {
         dm *= m_dims[i-1];
         m_global = vec[i-2] * dm + m_global;
     }

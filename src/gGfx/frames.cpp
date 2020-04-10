@@ -17,7 +17,7 @@ namespace UI {
 
 Logger* Logger::m_instance = nullptr;
 Frame* Logger::m_output = nullptr;
-gint Logger::m_nLog = 0;
+size_t Logger::m_nLog = 0;
 int Frame::_id = 0;
 
 FrameBasic::FrameBasic(EngineGFX* engineGfx
@@ -34,7 +34,7 @@ FrameBasic::FrameBasic(EngineGFX* engineGfx
     _title = title;
     _borderType = borderType;
     titleLength = _title.size();
-    titlePosX = (gint)_topleft.x + (gint)_extent.x / 2 - titleLength / 2;
+    titlePosX = (size_t)_topleft.x + (size_t)_extent.x / 2 - titleLength / 2;
 }
 
 FrameBasic::~FrameBasic()
@@ -45,16 +45,16 @@ FrameBasic::~FrameBasic()
 void FrameBasic::draw()
 {
     // Drawing horizontal lines
-    gint x = (gint)_extent.x < _gfx->getScreenWidth() ? (gint)_extent.x : _gfx->getScreenWidth();
-    for (gint i = 0; i <= x; ++i) {
-        _gfx->draw((gint)(_topleft.x + i), (gint)_topleft.y, COLOUR::FG_GREY, _borderType);
-        _gfx->draw((gint)(_btmright.x - i), (gint)_btmright.y, COLOUR::FG_GREY, _borderType);
+    size_t x = (size_t)_extent.x < _gfx->getScreenWidth() ? (size_t)_extent.x : _gfx->getScreenWidth();
+    for (size_t i = 0; i <= x; ++i) {
+        _gfx->draw((size_t)(_topleft.x + i), (size_t)_topleft.y, COLOUR::FG_GREY, _borderType);
+        _gfx->draw((size_t)(_btmright.x - i), (size_t)_btmright.y, COLOUR::FG_GREY, _borderType);
     }
     // Drawing vertical lines
-    gint y = (gint)_extent.y < _gfx->getScreenHeight() ? (gint)_extent.y : _gfx->getScreenHeight();
-    for (gint i = 0; i <= y; ++i) {
-        _gfx->draw((gint)_topleft.x, (gint)(_topleft.y + i), COLOUR::FG_GREY, _borderType);
-        _gfx->draw((gint)_btmright.x, (gint)(_btmright.y - i), COLOUR::FG_GREY, _borderType);
+    size_t y = (size_t)_extent.y < _gfx->getScreenHeight() ? (size_t)_extent.y : _gfx->getScreenHeight();
+    for (size_t i = 0; i <= y; ++i) {
+        _gfx->draw((size_t)_topleft.x, (size_t)(_topleft.y + i), COLOUR::FG_GREY, _borderType);
+        _gfx->draw((size_t)_btmright.x, (size_t)(_btmright.y - i), COLOUR::FG_GREY, _borderType);
     }
 
     // Drawing title
@@ -108,8 +108,8 @@ FrameContentText::FrameContentText(Frame* frame, std::string str)
         : _frame(frame), _str(str)
 {
     _formatter = new LinebreakSimple(this);
-    _width = (gint)frame->getSize().x - 1 - _padding * 2;
-    _height = (gint)frame->getSize().y - 1;
+    _width = (size_t)frame->getSize().x - 1 - _padding * 2;
+    _height = (size_t)frame->getSize().y - 1;
     frame->setContent(this);
 }
 
@@ -138,7 +138,7 @@ void FrameContentText::print()
 {
     __str_begin = 0;
 
-    for (gint i = 0; i < __str_lines; ++i) {
+    for (size_t i = 0; i < __str_lines; ++i) {
         __gfx->setCurPosX(static_cast<short>(
             _frame->getTopLeft().x + _frame->getBorderSize() + _padding));
         __gfx->setCurPosY(static_cast<short>(
@@ -160,23 +160,23 @@ void FrameContentText::format()
 
 void LinebreakSimple::format()
 {
-    gint frame_width = _frameContent->getWidth();
+    size_t frame_width = _frameContent->getWidth();
     std::string str = _frameContent->getContent();
-    gint strwidth = str.size();
-    std::vector<gint> linebreaks;
+    size_t strwidth = str.size();
+    std::vector<size_t> linebreaks;
 
     // Interpret \n as linebreak
-    for (gint i = 0; i < strwidth; ++i) {
+    for (size_t i = 0; i < strwidth; ++i) {
         if (str[i] == '\n' && i != strwidth) {
             linebreaks.push_back(i);
         }
     }
 
     // Get the length between linebreaks and continue breaking lines if needed
-    gint lines = linebreaks.size();
-    gint prev_break = 0;
-    gint distance = 0;
-    for (gint i = 0; i < lines; ++i) {
+    size_t lines = linebreaks.size();
+    size_t prev_break = 0;
+    size_t distance = 0;
+    for (size_t i = 0; i < lines; ++i) {
         distance = linebreaks.at(i) - prev_break;
         while (distance > frame_width) {
             linebreaks.push_back(prev_break + frame_width);
@@ -264,8 +264,8 @@ void Menu::addItem(MenuItem* item)
 void Menu::draw(Frame* frame)
 {
     std::string str;
-    gint length = _items.size();
-    for (gint i = 0; i < length; ++i) {
+    size_t length = _items.size();
+    for (size_t i = 0; i < length; ++i) {
         str += _items[i]->toString();
         if (_selection == i) {
             str += " #\n";
@@ -282,12 +282,12 @@ void Menu::execute()
     _items.at(_selection)->execute();
 }
 
-void Menu::setSelection(gint s)
+void Menu::setSelection(size_t s)
 {
     _selection = s;
 }
 
-gint Menu::getSelection()
+size_t Menu::getSelection()
 {
     return _selection;
 }

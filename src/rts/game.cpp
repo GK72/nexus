@@ -14,7 +14,7 @@ std::mutex mx;
 namespace rts {
 
 
-Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
+Game::Game(size_t width, size_t height, size_t fontWidth, size_t fontHeight)
 {
 #ifdef _MSC_BUILD
     m_gfx = new glib::gGfx::EngineConW(this, (int)width, (int)height, (int)fontWidth, (int)fontHeight);
@@ -115,7 +115,7 @@ void Game::trigger(Event& evt)
 
 }
 
-Inhabitant::Inhabitant(gint familyIdParent, std::optional<enu_gender> gender, unsigned short age)
+Inhabitant::Inhabitant(size_t familyIdParent, std::optional<enu_gender> gender, unsigned short age)
 {
     if (!gender.has_value()) {
         m_gender = static_cast<enu_gender>(Random::randomInt(0, 1));
@@ -128,11 +128,11 @@ Inhabitant::Inhabitant(gint familyIdParent, std::optional<enu_gender> gender, un
     m_age = age;
 }
 
-PopulationRM::PopulationRM(gint initPopulationSize)
+PopulationRM::PopulationRM(size_t initPopulationSize)
 {
     m_populationSizeCurrent = initPopulationSize * 2;
 
-    for (gint i = 0; i < initPopulationSize; ++i) {
+    for (size_t i = 0; i < initPopulationSize; ++i) {
         ++m_familyIdLast;
         m_inhabitants.emplace_back(
             new Inhabitant(m_familyIdLast
@@ -150,8 +150,8 @@ PopulationRM::PopulationRM(gint initPopulationSize)
 void PopulationRM::iteratePopulation()
 {
     ++m_iteration;
-    gint length = m_inhabitants.size();
-    for (gint i = 0; i < length; ++i) {
+    size_t length = m_inhabitants.size();
+    for (size_t i = 0; i < length; ++i) {
         ++m_inhabitants[i]->m_age;
 
         //updateStats();
@@ -187,7 +187,7 @@ void PopulationRM::iteratePopulation()
         //m_inhabitants[i]->m_age > m_lifeExpectationAvgYear
 }
 
-void PopulationRM::findMate(gint i)
+void PopulationRM::findMate(size_t i)
 {
     Logger::log("Finding mate... -Not Implemented-"
         + std::to_string(m_iteration)
@@ -206,7 +206,7 @@ void PopulationRM::findMate(gint i)
     }
 }
 
-void PopulationRM::makeChild(gint i)
+void PopulationRM::makeChild(size_t i)
 {
     if (m_inhabitants[i]->m_age >= m_fertilityAgeMinYear
         && m_inhabitants[i]->m_age <= m_fertilityAgeMaxYear
@@ -222,7 +222,7 @@ void PopulationRM::makeChild(gint i)
     }
 }
 
-void PopulationRM::updateStats(gint i)
+void PopulationRM::updateStats(size_t i)
 {
     if (m_inhabitants[i]->m_age == m_fertilityAgeMinYear) {
         --m_stats.nChildren;
@@ -249,7 +249,7 @@ void World::iterate()
     populate();
 }
 
-gint World::getPopulationSize()
+size_t World::getPopulationSize()
 {
     return m_population->getPopulationSize();
 }

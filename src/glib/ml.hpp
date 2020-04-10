@@ -18,7 +18,6 @@
 namespace glib {
 namespace ml {
 
-using glib::gint;
 using matrix = glib::Matrix<double>;
 template <class T> using vec = std::vector<T>;
 
@@ -37,9 +36,9 @@ double costLoR(double x, double y) {
 }
 
 double avgCost(matrix& x, matrix& y, double (*costfunc)(double, double)) {
-    gint length = x.getN();                     // # training data
+    size_t length = x.getN();                     // # training data
     double sum = 0;
-    for (gint i = 0; i < length; ++i) {
+    for (size_t i = 0; i < length; ++i) {
         sum += costfunc(x[i], y[i]);
     }
     return sum / length / 2;
@@ -50,14 +49,14 @@ double dee(double x) {
     return 1;
 }
 double gradientDesc(matrix& x, matrix& y, matrix& theta, double alpha) {
-    gint length = x.getN();
+    size_t length = x.getN();
     matrix temp(theta);
-    for (gint i = 0; i < length; ++i)	{
+    for (size_t i = 0; i < length; ++i)	{
         // TODO: complete partial derivative function (dee)
         // If logistic regression, run sigmoid function before calculating cost
         temp[i] = theta[i] - alpha * dee(avgCost(x, y, costLoR));
     }
-	
+
     return 0;
 }
 
@@ -66,7 +65,7 @@ double gradientDesc(matrix& x, matrix& y, matrix& theta, double alpha) {
 // ************************************************************************** //
 
 struct nnConfig {
-    std::vector<gint> layerSizes;
+    std::vector<size_t> layerSizes;
     // Input layer  : # features
     // Output layer : # classes
 
@@ -80,7 +79,7 @@ public:
     NN(nnConfig cfg) {
         L = cfg.layerSizes.size();
         config = cfg;
-        for (gint i = 0; i < L; ++i) {
+        for (size_t i = 0; i < L; ++i) {
             a.push_back(new matrix(cfg.layerSizes[i]));
         }
         // For consistent layer indexing
@@ -90,7 +89,7 @@ public:
         delta.push_back(nullptr);
         y = new matrix;
 
-        for (gint i = 1; i < L; ++i) {
+        for (size_t i = 1; i < L; ++i) {
             // ith element in a row is the weigth for the ith node in the next layer
             // rows for nodes in the next layer
             // column = weight from node from the prev layer
@@ -118,18 +117,18 @@ public:
         //std::cout << d.min() << ' ' << d.max() << '\n';
 
         for (auto& e : *a[0])               { e = 0; }
-        for (gint i = 1; i < L; ++i) {
+        for (size_t i = 1; i < L; ++i) {
             for (auto& e : *a[i])           { e = d(rng); }
             for (auto& e : *b[i])           { e = d(rng); }
             for (auto& e : *delta[i])       { e = d(rng); }
         }
-        for (gint i = 1; i < L; ++i) {
-            gint length = config.layerSizes[i] * config.layerSizes[i-1];
-            for (gint j = 0; j < length; ++j) {
+        for (size_t i = 1; i < L; ++i) {
+            size_t length = config.layerSizes[i] * config.layerSizes[i-1];
+            for (size_t j = 0; j < length; ++j) {
                 (*w[i])[j] = 0;
             }
         }
-        
+
         // TODO: initialize dee_deltas
 
         initialized = true;
@@ -153,14 +152,14 @@ public:
     }
 
     double costOpt() {
-        
+
         //costLoR();
     }
 
     // Forward propagation
     void fprop() {
         // For every layer
-        for (gint i = 1; i < L; ++i) {
+        for (size_t i = 1; i < L; ++i) {
             matrix z = *w[i] * *a[i-1] + *b[i];
             *a[i] = sigmoid(z);
         }
@@ -169,24 +168,24 @@ public:
     // Backpropagation
     void bprop() {
         *delta[L-1] = *a[L-1] - *y;
-        for (gint i = L - 2; i > 0; --i) {
+        for (size_t i = L - 2; i > 0; --i) {
             // weights * errors, element multiplied by the derivative of activation values
             *delta[i] = edot(w[i+1]->tr() * *delta[i+1], edot(*a[i], 1.0 - *a[i]));
         }
     }
 
     void partialCostDeltas() {
-        for (gint i = 0; i < L - 1; ++i) {
+        for (size_t i = 0; i < L - 1; ++i) {
             *dee_delta[i] = *dee_delta[i] + *delta[i+1] * a[i]->tr();
         }
     }
 
 
     // Getter methods
-    
+
     std::string getNumLayers() {
         std::string str;
-        for (gint i = 0; i < a.size(); ++i) {
+        for (size_t i = 0; i < a.size(); ++i) {
             str += std::to_string(a[i]->getLength()) + ' ';
         }
         return str;
@@ -195,18 +194,18 @@ public:
     std::string getNetState() {
         // TODO (-): Proper tabulated formatting + weights and biases also
         std::string str;
-        gint n = config.layerSizes.size();
-        gint m = 0;
-        gint length;
-        for (gint i = 1; i < n; ++i) {
+        size_t n = config.layerSizes.size();
+        size_t m = 0;
+        size_t length;
+        for (size_t i = 1; i < n; ++i) {
             if (config.layerSizes[i] > m) {
                 m = config.layerSizes[i];
             }
         }
 
-        for (gint j = 0; j < m; ++j) {
+        for (size_t j = 0; j < m; ++j) {
             str += "Neuron " + std::to_string(j + 1) + ": ";
-            for (gint i = 1; i < n; ++i) {
+            for (size_t i = 1; i < n; ++i) {
                 length = a[i]->getLength();
                 if (j < length) {
                     str += std::to_string((*a[i])[j]) + "\t";
@@ -218,10 +217,10 @@ public:
         return str;
     }
 
-    std::string getActivationValues(gint layer) {
+    std::string getActivationValues(size_t layer) {
         std::string str;
-        gint length = a[layer]->getLength();
-        for (gint i = 0; i < length; ++i)    {
+        size_t length = a[layer]->getLength();
+        for (size_t i = 0; i < length; ++i)    {
             str += std::to_string((*a[layer])[i]) + ' ';
         }
         return str;
@@ -235,9 +234,9 @@ private:
     vec<matrix*> delta;             // Error
     vec<matrix*> dee_delta;         // Partial derivatives of error
     matrix* y;                      // Expected values
-    
+
     nnConfig config;                // Network configuration
-    gint L;                         // Number of layers in the network
+    size_t L;                         // Number of layers in the network
     bool initialized = false;
 };
 

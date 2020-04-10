@@ -15,8 +15,6 @@
 
 namespace glib {
 
-using gint = size_t;
-
 struct Point2D;
 class Line2D;
 
@@ -58,8 +56,8 @@ template <class T> class Matrix {
 
 public:
     Matrix();
-    Matrix(gint n);
-    Matrix(gint n, gint m);
+    Matrix(size_t n);
+    Matrix(size_t n, size_t m);
     ~Matrix();
     Matrix(const Matrix &rhs);
     Matrix(Matrix&& rhs) noexcept;
@@ -88,8 +86,8 @@ public:
     void importIDX(const char* file);
     void exportTXT(const char* file);
 
-    void init(gint n, gint m);
-    void resize(gint n, gint m);
+    void init(size_t n, size_t m);
+    void resize(size_t n, size_t m);
 
     // Transpose
     Matrix<T> tr();
@@ -105,23 +103,23 @@ public:
 
     T  at(pDim d) const;
     T& at(pDim d);
-    T  at(gint x, gint y) const;
-    T& at(gint x, gint y);
-    const T& operator[] (gint i) const;
-          T& operator[] (gint i);
-    
-    gint getLength();
-    gint getN();
-    gint getM();
+    T  at(size_t x, size_t y) const;
+    T& at(size_t x, size_t y);
+    const T& operator[] (size_t i) const;
+          T& operator[] (size_t i);
 
-    Matrix<T> getRow(gint r);
+    size_t getLength();
+    size_t getN();
+    size_t getM();
+
+    Matrix<T> getRow(size_t r);
 
 private:
     T* elem;
-    gint n;                                 // Rows
-    gint m;                                 // Columns
-    gint length = n * m;
-    
+    size_t n;                                 // Rows
+    size_t m;                                 // Columns
+    size_t length = n * m;
+
     iType it;
     Index idx;
 

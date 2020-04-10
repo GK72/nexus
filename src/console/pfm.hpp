@@ -16,32 +16,30 @@
 
 namespace glib::pfm {
 
-using gint = size_t;
-
 
 template <class T, template <class > class Cont>
 class msrContainer
 {
 public:
-    msrContainer(gint count) : m_count(count) {}
+    msrContainer(size_t count) : m_count(count) {}
 
     void operator()() {
-        for (gint i = 0; i < m_count; ++i) {
+        for (size_t i = 0; i < m_count; ++i) {
             ctn.push_back(T{});
         }
     };
 
 private:
     Cont<T> ctn;
-    gint m_count;
+    size_t m_count;
 };
 
 
 template <class Time = std::chrono::microseconds, class Function>
-std::vector<Time> measure(Function func, gint runcount = 1)
+std::vector<Time> measure(Function func, size_t runcount = 1)
 {
     std::vector<Time> timeresults;
-    for (gint i = 0; i < runcount; ++i) {
+    for (size_t i = 0; i < runcount; ++i) {
         auto t1 = std::chrono::high_resolution_clock::now();
         func();
         auto t2 = std::chrono::high_resolution_clock::now();
@@ -59,10 +57,10 @@ struct MeasureStats
     Time worst { 0 };
     Time average { 0 };
     Time median { 0 };
-    gint noOfMeasures { 0 };
+    size_t noOfMeasures { 0 };
 
     std::string toString() const {
-        constexpr gint pad = 13;
+        constexpr size_t pad = 13;
         return joinStr("\n",
             joinStr(" ", padEnd("Name", pad),           ":", name),
             joinStr(" ", padEnd("Best time", pad),      ":", best),
@@ -109,7 +107,7 @@ MeasureStats<Time> getMeasureStats(std::vector<Time>&& vec, const std::string& l
 
 class pfm {
 public:
-    pfm(gint runcount) : m_runcount(runcount) {}
+    pfm(size_t runcount) : m_runcount(runcount) {}
 
     void add(const std::function<void()>& func, const std::string& name) {
         m_functions.push_back({name, func});
@@ -138,7 +136,7 @@ public:
 private:
     std::vector<std::pair<std::string, std::function<void()>>> m_functions;
     std::vector<MeasureStats<>> m_stats;
-    gint m_runcount;
+    size_t m_runcount;
 };
 
 
