@@ -1,12 +1,14 @@
-add_executable(test_datetime test_datetime.cpp)
+add_executable(test_glib
+    test_io.cpp
+)
 
-target_include_directories(test_datetime PRIVATE ../glib)
+add_test(test_glib test_glib)
 
-target_link_libraries(test_datetime PRIVATE date)
+target_include_directories(test_glib PRIVATE ../include)
+target_include_directories(test_glib PRIVATE ../src/glib)
 
+target_link_libraries(test_glib io)
 
-add_executable(test_catch test.cpp)
-add_test(test_catch test_catch)
 
 find_package(Catch2 CONFIG REQUIRED)
-target_link_libraries(test_catch Catch2::Catch2)
+target_link_libraries(test_glib Catch2::Catch2)

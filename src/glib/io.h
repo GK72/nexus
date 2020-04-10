@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-10-30                       **
+// ** gkpro @ 2020-04-10                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **                IO header                 **
@@ -34,28 +34,37 @@ public:
     ParseErrorException() : std::runtime_error("Parser Error") {}
 };
 
-
+/**
+ * @brief Creates tokens from a string based on the given delim char(s)
+ *
+ * @todo Currently it does not work with multicharacter delim
+ */
 class Tokenizer {
 public:
-    Tokenizer(const std::vector<std::string>& delims, std::string_view end);
+    Tokenizer(const std::string& delim, const std::string& end = "");
+    Tokenizer(const std::vector<std::string>& delims, const std::string& end = "");
+
     std::string next();
-    void setString(std::string_view str)        { clear(); m_str = str; }
-    void setQuote(std::string_view sv)          { m_quote = sv; }
+
+    void setString(const std::string& str)      { clear(); m_str = str; }
+    void setQuote(const std::string& sv)        { m_quote = sv; }
     void clear();
 
 private:
     std::vector<std::string> m_delims;
-    std::string_view m_endMark;
 
-    std::string_view m_sv;
+    std::string m_endMark;
     std::string m_str;
-    gint m_posStart = 0;
-    gint m_posEnd = 0;
-    gint m_idxDelim = 0;
-    gint m_nDelims;
-    bool m_isEnd = false;
-    std::string m_quote = "\"";
+    std::string m_quote = "";
 
+    gint m_nDelims;
+    gint m_idxDelim = 0;
+    gint m_posStart = 0;
+    gint m_posEnd   = 0;
+
+    bool m_isEnd = false;
+
+    void escapeQuotes();
 };
 
 
