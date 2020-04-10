@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2019-10-30                       **
+// ** gkpro @ 2020-04-10                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **            IO implementation             **
@@ -31,7 +31,14 @@ std::string_view strip(std::string_view sv, std::vector<std::string>&& vec)
     return sv;
 }
 
-Tokenizer::Tokenizer(const std::vector<std::string>& delims, std::string_view end)
+Tokenizer::Tokenizer(const std::string& delim, const std::string& end)
+{
+    m_delims.push_back(delim);
+    m_nDelims = 1;
+    m_endMark = end;
+}
+
+Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string& end)
     : m_delims(delims)
 {
     m_nDelims = delims.size();
@@ -41,29 +48,24 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims, std::string_view en
 std::string Tokenizer::next()
 {
     std::string token;
-    if (!m_isEnd) {
-        m_posEnd = m_str.find(m_delims[m_idxDelim], m_posStart);
+    if (m_isEnd) { return ""; }
 
-        if (m_posEnd == std::string::npos) {
+    m_posEnd = m_str.find(m_delims[m_idxDelim], m_posStart);
+
+    if (m_posEnd == std::string::npos) {
+        if (m_endMark != "") {
             m_posEnd = m_str.find(m_endMark, m_posEnd + 1);
-            m_isEnd = true;
         }
-
-        gint posQuote = m_str.find(m_quote, m_posStart);
-        if (posQuote < m_posEnd) {
-            posQuote = m_str.find(m_quote, posQuote + 1);
-            if (posQuote > m_posEnd) {
-                m_posEnd = m_str.find(m_quote, posQuote);
-            }
-        }
-
-        token = m_str.substr(m_posStart, m_posEnd - m_posStart);
-        m_posStart = m_posEnd + 1;
-        m_idxDelim = ++m_idxDelim % m_nDelims;
+        m_isEnd = true;
     }
-    else {
-        token = "";
+
+    if (!m_quote.empty()) {
+        escapeQuotes();
     }
+
+    token = m_str.substr(m_posStart, m_posEnd - m_posStart);
+    m_posStart = m_posEnd + 1;
+    m_idxDelim = ++m_idxDelim % m_nDelims;
 
     return token;
 }
@@ -71,10 +73,22 @@ std::string Tokenizer::next()
 void Tokenizer::clear()
 {
     m_posStart = 0;
-    m_posEnd = 0;
+    m_posEnd   = 0;
     m_idxDelim = 0;
-    m_str = "";
-    m_isEnd = false;
+    m_str      = "";
+    m_isEnd    = false;
+}
+
+void Tokenizer::escapeQuotes() {
+    gint posQuote = m_str.find(m_quote, m_posStart);
+
+    if (posQuote < m_posEnd) {    // There is a quote in the current token
+        posQuote = m_str.find(m_quote, posQuote + 1);
+        if (posQuote > m_posEnd) {      // There is a delim between the quotes
+            m_posEnd = m_str.find(m_quote, posQuote);
+            m_posEnd = m_str.find(m_delims[m_idxDelim], m_posEnd + 1);
+        }
+    }
 }
 
 ParserCSV::ParserCSV(std::string_view path)
