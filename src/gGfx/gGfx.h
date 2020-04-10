@@ -219,10 +219,10 @@ public:
 private:
     wchar_t* glyph = nullptr;
     short* colour = nullptr;
-    gint width;
-    gint height;
+    size_t width;
+    size_t height;
 
-    void init(gint w, gint h);
+    void init(size_t w, size_t h);
 
 };
 

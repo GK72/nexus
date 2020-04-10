@@ -25,7 +25,7 @@ void ArgParser::add(const Arg& arg)
 
 void ArgParser::argsToString(char* argv[])
 {
-    for (gint i = 1; i < m_argc; ++i) {
+    for (size_t i = 1; i < m_argc; ++i) {
         std::string str(argv[i]);
         m_inArgs.push_back(argv[i]);
     }
@@ -48,7 +48,7 @@ void ArgParser::process()
 
 void ArgParser::parseArgs()
 {
-    for (gint i = 0; i < m_inArgs.size(); ++i) {
+    for (size_t i = 0; i < m_inArgs.size(); ++i) {
         try {
             Arg& arg = m_args.at(m_inArgs[i]);
             arg.isActive = true;

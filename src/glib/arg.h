@@ -40,8 +40,6 @@ public:
 
 namespace glib {
 
-using gint = size_t;
-
 
 struct Arg {
     std::string name;

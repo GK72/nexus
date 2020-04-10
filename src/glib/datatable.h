@@ -19,8 +19,6 @@
 
 namespace glib {
 
-using gint = size_t;
-
 struct TableView;
 
 
@@ -33,7 +31,7 @@ public:
     DataTable& operator=(const DataTable& rhs)  = delete;
     DataTable& operator=(DataTable&& rhs)       = delete;
 
-    glib::IO::RType at(gint recIdx, const std::string& field) const;
+    glib::IO::RType at(size_t recIdx, const std::string& field) const;
 
     void display();
     void read();
@@ -55,7 +53,7 @@ private:
     IO::ParserCSV* m_reader;
     std::map<std::string, IO::ParserCSV::record> m_data;
 
-    gint m_nRow = 0;
+    size_t m_nRow = 0;
 
 };
 
@@ -64,7 +62,7 @@ struct TableView {
     TableView(DataTable* pData);
 
     DataTable* data = nullptr;
-    std::vector<gint> records;
+    std::vector<size_t> records;
     std::vector<std::string> fields;
 
     void display() const;

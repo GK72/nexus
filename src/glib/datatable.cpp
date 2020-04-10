@@ -21,15 +21,15 @@ DataTable::~DataTable()
     delete m_reader;
 }
 
-glib::IO::RType DataTable::at(gint recIdx, const std::string& field) const
+glib::IO::RType DataTable::at(size_t recIdx, const std::string& field) const
 {
     return m_data.at(field)[recIdx];
 }
 
 void DataTable::display()
 {
-    gint maxWidth = 100;
-    gint currentWidth = 0;
+    size_t maxWidth = 100;
+    size_t currentWidth = 0;
 
     TableView view = filterAndSelect("Date", "2014.01.07", { "Date", "Price" } /* , std::less<>() */);
     view.display();
@@ -37,7 +37,7 @@ void DataTable::display()
 
 void DataTable::read()
 {
-    std::map<std::string, gint> header = m_reader->readHeader();
+    std::map<std::string, size_t> header = m_reader->readHeader();
     IO::ParserCSV::record value;
     while ((value = m_reader->readRecord()).size() > 0) {
         for (const auto& h : header) {
@@ -62,7 +62,7 @@ TableView DataTable::filterAndSelect(const std::string& target, const std::strin
 template <class Filter>
 TableView& DataTable::filterRecords(TableView& view, Filter filter, const std::string& by)
 {
-    for (gint i = 0; i < m_nRow; ++i) {
+    for (size_t i = 0; i < m_nRow; ++i) {
         if (filter(m_data.at(by)[i].asString())) {
             view.records.push_back(i);
         }

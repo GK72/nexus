@@ -26,7 +26,7 @@ BigInt& BigInt::operator++(int) {
 }
 
 BigInt& BigInt::operator+=(const BigInt& rhs) {
-    gint size = noDigits();
+    size_t size = noDigits();
     if (noDigits() < rhs.noDigits()) {
         size = rhs.noDigits();
     }
@@ -36,7 +36,7 @@ BigInt& BigInt::operator+=(const BigInt& rhs) {
     }
 
     char carry = 0;
-    for (gint i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         char sum = getDigit(i) + rhs.getDigit(i);
         carry    = sum / BASE;
         char sum = sum % BASE;
@@ -61,7 +61,7 @@ std::string BigInt::toString() const {
         str += '-';
     }
 
-    for (gint i = noDigits() - 1; i >= 0; --i) {
+    for (size_t i = noDigits() - 1; i >= 0; --i) {
         str += getDigit(i);
     }
     return str;

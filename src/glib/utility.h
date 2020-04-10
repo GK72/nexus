@@ -28,8 +28,7 @@ namespace glib {
 #define _g_NIE(msg) throw NotImplementedException(msg)
 #define _g_uNIE throw NotImplementedException("Unknown Exception")
 
-using gint = size_t;
-using pDim = std::vector<gint>;                   // For passing dimensions as parameter
+using pDim = std::vector<size_t>;                   // For passing dimensions as parameter
 
 
 // ********************************************************************************************** //
@@ -40,7 +39,7 @@ void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
-[[nodiscard]] inline gint subtractClip(gint lhs, gint rhs) {
+[[nodiscard]] inline size_t subtractClip(size_t lhs, size_t rhs) {
     return lhs < rhs ? 0 : lhs - rhs;
 }
 
@@ -65,7 +64,7 @@ template <class T>
     Lambdas vis{
          [](const int x)                         { return std::to_string(x); }
         ,[](const long x)                        { return std::to_string(x); }
-        ,[](const gint x)                        { return std::to_string(x); }
+        ,[](const size_t x)                      { return std::to_string(x); }
         ,[](const char* x)                       { return std::string(x); }
         ,[](std::string_view x)                  { return std::string(x); }
         ,[](const std::string& x)                { return x; }
@@ -94,22 +93,22 @@ void printn(T t) {
 }
 
 template <class T>
-[[nodiscard]] std::string padBoth(const T& t, gint count, const char ch = ' ')
+[[nodiscard]] std::string padBoth(const T& t, size_t count, const char ch = ' ')
 {
-    gint pad = subtractClip(count, toString(t).size()) / 2;
+    size_t pad = subtractClip(count, toString(t).size()) / 2;
     std::string padL(pad, ch);
     std::string padR(pad + (toString(t).size() % 2 ? 1 : 0), ch);
     return padL + toString(t) + padR;
 }
 
 template <class T>
-[[nodiscard]] std::string padBegin(const T& t, gint count, const char ch = ' ')
+[[nodiscard]] std::string padBegin(const T& t, size_t count, const char ch = ' ')
 {
     return std::string(subtractClip(count, toString(t).size()), ch) + toString(t);
 }
 
 template <class T>
-[[nodiscard]] std::string padEnd(const T& t, gint count, const char ch = ' ')
+[[nodiscard]] std::string padEnd(const T& t, size_t count, const char ch = ' ')
 {
     return toString(t) + std::string(subtractClip(count, toString(t).size()), ch);
 }
@@ -206,15 +205,15 @@ template <class T> struct Iterator {
 
 class Index {
 public:
-    Index(const std::vector<gint>& dims) : m_dims(dims) {}
-    gint at(const std::vector<gint>& vec) const;
-    gint at(gint x, gint y) const { return x * m_dims[1] + y; }
+    Index(const std::vector<size_t>& dims) : m_dims(dims) {}
+    size_t at(const std::vector<size_t>& vec) const;
+    size_t at(size_t x, size_t y) const { return x * m_dims[1] + y; }
 
 private:
-    std::vector<gint> m_dims;
-    mutable gint m_global = 0;
-    gint m_tile = 0;
-    gint m_local = 0;
+    std::vector<size_t> m_dims;
+    mutable size_t m_global = 0;
+    size_t m_tile = 0;
+    size_t m_local = 0;
 };
 
 // ********************************************************************************************** //
@@ -237,7 +236,7 @@ public:
 
 
 // compile-time endianness swap based on http://stackoverflow.com/a/36937049 
-//template<class T, std::gint... N>
+//template<class T, std::size_t... N>
 //constexpr T bswap_impl(T i, std::index_sequence<N...>) {
 //  return (((i >> N*CHAR_BIT & std::uint8_t(-1)) << (sizeof(T)-1-N)*CHAR_BIT) | ...);
 //}

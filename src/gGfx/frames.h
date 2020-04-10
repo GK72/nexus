@@ -62,7 +62,7 @@ public:
     virtual int getID() const               { return _id; }
     virtual FrameContent* getContent()      = 0;
     virtual std::string getTitle() const    = 0;
-    virtual gint getBorderSize() const      = 0;
+    virtual size_t getBorderSize() const      = 0;
     virtual Point2D getSize() const         = 0; 
     virtual Point2D getTopLeft() const      = 0;
     virtual EngineGFX* getEngine() const    = 0;
@@ -82,10 +82,10 @@ public:
 
     virtual void markForUpdate() = 0;
     virtual void setContent(std::string content) = 0;
-    virtual void setLinebreaks(std::vector<gint> linebreaks) = 0;
+    virtual void setLinebreaks(std::vector<size_t> linebreaks) = 0;
 
     virtual std::string getContent() const = 0;
-    virtual gint getWidth() const = 0;
+    virtual size_t getWidth() const = 0;
 
 protected:
     FrameContent() {}
@@ -113,20 +113,20 @@ public:
     std::string getTitle() const override   { return _title; }
     FrameContent* getContent()              { return _content; }
     EngineGFX* getEngine() const override   { return _gfx; }
-    gint getBorderSize() const override     { return _borderSize; }
+    size_t getBorderSize() const override     { return _borderSize; }
     Point2D getSize() const override        { return _extent; }
     Point2D getTopLeft() const override     { return _topleft; }
 
 private:
     std::string _title;
-    gint titleLength;
-    gint titlePosX;
+    size_t titleLength;
+    size_t titlePosX;
 
     Point2D _topleft;
     Point2D _btmright;
     Point2D _extent;
     wchar_t _borderType;
-    gint _borderSize = 1;
+    size_t _borderSize = 1;
 
     FrameContent* _content = nullptr;
     EngineGFX* _gfx = nullptr;
@@ -143,27 +143,27 @@ public:
     
     void markForUpdate() override                               { _outdated = true; }
     void setContent(std::string content) override               { _str = content; }
-    void setLinebreaks(std::vector<gint> linebreaks) override   { _linebreaks = linebreaks; }
+    void setLinebreaks(std::vector<size_t> linebreaks) override   { _linebreaks = linebreaks; }
 
     std::string getContent() const override                     { return _str; }
-    gint getWidth() const override                              { return _width; }
+    size_t getWidth() const override                              { return _width; }
 
 private:
     bool _outdated = true;
     Frame* _frame = nullptr;
     Formatter* _formatter;
     std::string _str;
-    gint _width;
-    gint _height;
-    gint _padding = 1;
-    std::vector<gint> _linebreaks;
+    size_t _width;
+    size_t _height;
+    size_t _padding = 1;
+    std::vector<size_t> _linebreaks;
 
     // Temporary variables for inner methods
     EngineGFX* __gfx = nullptr;
     std::string __str_line;
-    gint __str_lines = 0;
-    gint __str_begin = 0;
-    gint __str_length = 0;
+    size_t __str_lines = 0;
+    size_t __str_begin = 0;
+    size_t __str_length = 0;
 
     void refresh();
     void print();
@@ -189,16 +189,16 @@ public:
 
 private:
     EngineGFX* _engine;
-    gint _frameCount;
+    size_t _frameCount;
 
     Point2D _lastFramePos;
-    gint _padding = 2;
+    size_t _padding = 2;
 
     struct dimensionLimits {
-        gint minWidth  = 16;
-        gint minHeight = 8;
-        gint maxWidth  = 64;
-        gint maxHeight = 32;
+        size_t minWidth  = 16;
+        size_t minHeight = 8;
+        size_t maxWidth  = 64;
+        size_t maxHeight = 32;
     } frameDimensionLimits;
 
 };
@@ -222,13 +222,13 @@ public:
     void addItem(MenuItem* item);
     void draw(Frame* frame);
     void execute();
-    void setSelection(gint s) ;
-    gint getSelection();
+    void setSelection(size_t s) ;
+    size_t getSelection();
     std::vector<MenuItem*> getItems();
 
 private:
     std::vector<MenuItem*> _items;
-    gint _selection = 0;
+    size_t _selection = 0;
 
 };
 
@@ -257,7 +257,7 @@ protected:
 private:
     static Logger* m_instance;
     static Frame* m_output;
-    static gint m_nLog;
+    static size_t m_nLog;
 };
 
 

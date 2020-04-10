@@ -80,7 +80,7 @@ void Tokenizer::clear()
 }
 
 void Tokenizer::escapeQuotes() {
-    gint posQuote = m_str.find(m_quote, m_posStart);
+    size_t posQuote = m_str.find(m_quote, m_posStart);
 
     if (posQuote < m_posEnd) {    // There is a quote in the current token
         posQuote = m_str.find(m_quote, posQuote + 1);
@@ -114,7 +114,7 @@ ParserCSV::record ParserCSV::readRecord()
         ss.str(str);
 
         m_tokenizer->setString(str);
-        for (gint i = 0; i < m_length; ++i) {
+        for (size_t i = 0; i < m_length; ++i) {
             fields.emplace_back(readToken());
         }
     }
@@ -127,18 +127,18 @@ std::string ParserCSV::readToken()
     return m_tokenizer->next();
 }
 
-std::map<std::string, gint> ParserCSV::readHeader()
+std::map<std::string, size_t> ParserCSV::readHeader()
 {
     std::string str;
     std::stringstream ss;
-    std::map<std::string, gint> header;
+    std::map<std::string, size_t> header;
 
     if (getline(m_inf, str)) {
         ss.clear();
         ss.str(str);
 
         std::string value;
-        gint count = 0;
+        size_t count = 0;
         m_tokenizer->setString(str);
         while ((value = readToken()).size() > 0) {
             if (auto [it, success] = header.insert({ value, count }); !success) {
@@ -167,10 +167,10 @@ ParserJSON::~ParserJSON()
 ParserJSON::record ParserJSON::readRecord()
 {
     record rec;
-    
+
     if (!m_inf.eof()) {
         std::stringstream ss;
-        gint level = 0;
+        size_t level = 0;
         char ch;
         bool doRead = true;
 

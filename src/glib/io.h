@@ -22,8 +22,6 @@
 namespace glib {
 namespace IO {
 
-using gint = size_t;
-
 class RType;
 
 std::string_view trim(std::string_view sv, const std::string& what);
@@ -57,10 +55,10 @@ private:
     std::string m_str;
     std::string m_quote = "";
 
-    gint m_nDelims;
-    gint m_idxDelim = 0;
-    gint m_posStart = 0;
-    gint m_posEnd   = 0;
+    size_t m_nDelims;
+    size_t m_idxDelim = 0;
+    size_t m_posStart = 0;
+    size_t m_posEnd   = 0;
 
     bool m_isEnd = false;
 
@@ -96,7 +94,7 @@ public:
     ParserCSV& operator=(const ParserCSV&)  = delete;
     ParserCSV& operator=(ParserCSV&&)       = delete;
 
-    std::map<std::string, gint> readHeader();
+    std::map<std::string, size_t> readHeader();
     record readRecord();
     std::string readToken();
 
@@ -104,8 +102,8 @@ private:
     std::ifstream m_inf;
     std::string m_path;
     Tokenizer* m_tokenizer;
-    std::map<std::string, gint> m_header;
-    gint m_length = 0;
+    std::map<std::string, size_t> m_header;
+    size_t m_length = 0;
 
 };
 
@@ -155,14 +153,14 @@ public:
     RType& operator=(int num)                           { value = num; type = Type::VALUE_INT; return *this; }
 
     [[nodiscard]] std::string getTypeName() const;
-    [[nodiscard]] const auto getValue() const               { return value; }
-    [[nodiscard]] const auto asRecord() const               { return cast<Parser::record>(); }
-    [[nodiscard]] const auto asList() const                 { return cast<std::vector<RType>>(); }
-    [[nodiscard]] const auto asString() const               { return cast<std::string>(); }
-    [[nodiscard]] const auto asInt() const                  { return cast<int>(); }
+    [[nodiscard]] const auto getValue() const           { return value; }
+    [[nodiscard]] const auto asRecord() const           { return cast<Parser::record>(); }
+    [[nodiscard]] const auto asList() const             { return cast<std::vector<RType>>(); }
+    [[nodiscard]] const auto asString() const           { return cast<std::string>(); }
+    [[nodiscard]] const auto asInt() const              { return cast<int>(); }
 
     [[nodiscard]]
-    const RType getKey(std::string_view key) const          { return asRecord().at(key.data()); }
+    const RType getKey(std::string_view key) const      { return asRecord().at(key.data()); }
 
 private:
     Type type = Type::EMPTY;

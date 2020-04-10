@@ -35,7 +35,7 @@ DateImpl_Compact::DateImpl_Compact(int year, char month, char day) {
     m_rep = isDateValid(year, month, day) ? calculate(year, month, day) : 0;
 }
 
-gint DateImpl_Compact::calculate(int year, char month, char day) {
+size_t DateImpl_Compact::calculate(int year, char month, char day) {
     return year * days_in_months[month - 1] * month + day;
 }
 

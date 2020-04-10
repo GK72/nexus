@@ -72,7 +72,7 @@ class Hero;
 
 class Game : public glib::gGfx::Engine, public Subscriber {
 public:
-    Game(gint width, gint height, gint fontWidth, gint fontHeight);
+    Game(size_t width, size_t height, size_t fontWidth, size_t fontHeight);
     ~Game();
     void run();
 
@@ -94,7 +94,7 @@ private:
     Menu* menu = nullptr;
     Frame* frame = nullptr;
     std::map<std::string, Frame*> frames;
-    
+
     Hero* hero = nullptr;
 };
 

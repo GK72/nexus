@@ -17,7 +17,7 @@ namespace rpg {
 
 int Item::_uid = 0;
 
-Game::Game(gint width, gint height, gint fontWidth, gint fontHeight)
+Game::Game(size_t width, size_t height, size_t fontWidth, size_t fontHeight)
 {
 #ifdef _MSC_BUILD
     gfx = new glib::gGfx::EngineConW(this, (int)width, (int)height, (int)fontWidth, (int)fontHeight);
@@ -36,7 +36,7 @@ Game::~Game()
     delete hero;
     delete gfx;
     if (frame) delete frame;
-    
+
 }
 
 void Game::run()
