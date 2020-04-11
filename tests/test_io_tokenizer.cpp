@@ -1,13 +1,11 @@
-#define CATCH_CONFIG_MAIN
 #include "catch.hpp"
-
 #include "io.h"
 
 using namespace std::literals::string_literals;
 
 namespace glib::test {
 
-TEST_CASE("One delim", "[tokenizer]") {
+TEST_CASE("Tokenizer - One delim", "[tokenizer]") {
     auto tok = glib::IO::Tokenizer(",");
 
     SECTION("Empty") {
@@ -59,7 +57,7 @@ TEST_CASE("One delim", "[tokenizer]") {
     }
 }
 
-TEST_CASE("One delim, multiple chars", "[tokenizer][!mayfail]") {
+TEST_CASE("Tokenizer - One delim, multiple chars", "[tokenizer][!mayfail]") {
     auto tok = glib::IO::Tokenizer("./");
 
     SECTION("Empty") {
@@ -110,7 +108,7 @@ TEST_CASE("One delim, multiple chars", "[tokenizer][!mayfail]") {
     }
 }
 
-TEST_CASE("Two delims", "[tokenizer]") {
+TEST_CASE("Tokenizer - Two delims", "[tokenizer]") {
     auto tok = glib::IO::Tokenizer(std::vector{"{"s, "}"s});
 
     SECTION("Empty") {
@@ -164,7 +162,7 @@ TEST_CASE("Two delims", "[tokenizer]") {
     }
 }
 
-TEST_CASE("Escaping quotes", "[tokenizer]") {
+TEST_CASE("Tokenizer - Escaping quotes", "[tokenizer]") {
     auto tok = glib::IO::Tokenizer(",");
     tok.setQuote("'");
 
