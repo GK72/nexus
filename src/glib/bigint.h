@@ -31,7 +31,7 @@ public:
     BigInt&              operator/=(const BigInt& rhs);
     BigInt&              operator*=(const BigInt& rhs);
     BigInt&              operator++();
-    BigInt&              operator++(int);
+    BigInt               operator++(int);
     BigInt&              operator--();
     BigInt&              operator--(int);
     friend BigInt        operator- (const BigInt& lhs, const BigInt& rhs);

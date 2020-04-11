@@ -41,11 +41,11 @@ struct D1024 {
 };
 
 int perfTest() {
-    glib::pfm::pfm pfm(100);
-    glib::pfm::msrContainer<int, std::vector> msr(100000);
-    pfm.add(msr, "Vector measuring");
-    pfm.run();
-    pfm.print();
+    // glib::pfm::pfm pfm(100);
+    // glib::pfm::msrContainer<int, std::vector> msr(100000);
+    // pfm.add(msr, "Vector measuring");
+    // pfm.run();
+    // pfm.print();
     return 0;
 }
 

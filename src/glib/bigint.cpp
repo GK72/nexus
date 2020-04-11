@@ -12,6 +12,7 @@ namespace glib {
 
 std::ostream& operator<<(std::ostream& out, const BigInt& rhs) {
     out << rhs.toString();
+    return out;
 }
 
 BigInt& BigInt::operator++() {
@@ -19,7 +20,7 @@ BigInt& BigInt::operator++() {
     return *this;
 }
 
-BigInt& BigInt::operator++(int) {
+BigInt BigInt::operator++(int) {
     auto tmp(*this);
     operator++();
     return tmp;
@@ -38,8 +39,9 @@ BigInt& BigInt::operator+=(const BigInt& rhs) {
     char carry = 0;
     for (size_t i = 0; i < size; ++i) {
         char sum = getDigit(i) + rhs.getDigit(i);
-        carry    = sum / BASE;
-        char sum = sum % BASE;
+
+        carry = sum / BASE;
+        sum   = sum % BASE;
         setDigit(i, sum);
     }
 
