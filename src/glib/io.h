@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2020-04-10                       **
+// ** gkpro @ 2020-04-11                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **                IO header                 **
@@ -8,6 +8,7 @@
 
 #pragma once
 #include <any>
+#include <array>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -19,13 +20,23 @@
 #include "utility.h"
 
 
-namespace glib {
-namespace IO {
+namespace glib::IO {
+
+using ParseFile   = std::ifstream;
+using ParseString = std::istringstream;
 
 class RType;
 
 std::string_view trim(std::string_view sv, const std::string& what);
-std::string_view strip(std::string_view sv, std::vector<std::string>&& vec = { "\n", " ", "\"" });
+
+template <size_t N>
+std::string_view trim(std::string_view sv, std::array<std::string, N> arr) {
+    for (const auto& v : arr) {
+        sv = trim(sv, v);
+    }
+    return sv;
+}
+
 
 class ParseErrorException : public std::runtime_error {
 public:
@@ -66,26 +77,9 @@ private:
 };
 
 
-class Parser {
+class ParserCSV {
 public:
-    using record = std::map<std::string, RType>;
-    using container = std::vector<record>;
-
-    Parser() {}
-    virtual ~Parser()                   = default;
-    Parser(const Parser&)               = delete;
-    Parser(Parser&&)                    = delete;
-    Parser& operator=(const Parser&)    = delete;
-    Parser& operator=(Parser&&)         = delete;
-
-    //virtual record readRecord() = 0;
-    //virtual std::string_view readToken() = 0;
-};
-
-
-class ParserCSV : Parser {
-public:
-    using record = std::vector<RType>;
+    using Record = std::vector<RType>;
 
     ParserCSV(std::string_view path);
     ~ParserCSV();
@@ -95,7 +89,7 @@ public:
     ParserCSV& operator=(ParserCSV&&)       = delete;
 
     std::map<std::string, size_t> readHeader();
-    record readRecord();
+    Record readRecord();
     std::string readToken();
 
 private:
@@ -107,24 +101,28 @@ private:
 
 };
 
-class ParserJSON : public Parser {
+template <class Input>
+class ParserJSON {
 public:
-    ParserJSON(std::string_view path);
+    using Record = std::map<std::string, std::any>;
+
+    ParserJSON(const std::string& str);
     ~ParserJSON();
     ParserJSON(const ParserJSON&)               = delete;
     ParserJSON(ParserJSON&&)                    = delete;
     ParserJSON& operator=(const ParserJSON&)    = delete;
     ParserJSON& operator=(ParserJSON&&)         = delete;
 
-    record readRecord();
-    std::string_view readToken()               { return strip(m_tokenizer->next()); };
+    Record readRecord();
 
 private:
-    std::ifstream m_inf;
-    std::string m_path;
+    Input m_input;
     Tokenizer* m_tokenizer;
 
-    void readKeyValuePair(record& rec);
+    std::string readToken();
+    std::string strip(const std::string& str);
+    std::pair<std::any, int> parseValue(const std::string& value);
+    void readKeyValuePair(Record& rec, Record& inner);
 
 };
 
@@ -136,31 +134,39 @@ public:
         ,LIST
         ,VALUE_STRING
         ,VALUE_INT
+        ,VALUE_FLOAT
+        ,VALUE_BOOL
     };
 
     RType() {}
     RType(const RType&) = default;
-    RType(const Parser::record& rec)                    { value = rec; type = Type::RECORD; }
+    // RType(const Parser::record& rec)                    { value = rec; type = Type::RECORD; }
     RType(const std::vector<RType>& vec)                { value = vec; type = Type::LIST; }
     RType(const std::string& str)                       { value = str; type = Type::VALUE_STRING; }
     RType(std::string_view sv)                          { value = sv ; type = Type::VALUE_STRING; }
     RType(int num)                                      { value = num; type = Type::VALUE_INT; }
+    RType(float num)                                    { value = num; type = Type::VALUE_FLOAT; }
+    RType(bool bln)                                     { value = bln; type = Type::VALUE_BOOL; }
 
-    RType& operator=(const Parser::record& rec)         { value = rec; type = Type::RECORD; return *this; }
-    RType& operator=(const std::vector<RType>& vec)     { value = vec; type = Type::LIST  ; return *this; }
-    RType& operator=(const std::string& str)            { value = str; type = Type::VALUE_STRING; return *this; }
-    RType& operator=(std::string_view sv)               { value = sv ; type = Type::VALUE_STRING; return *this; }
-    RType& operator=(int num)                           { value = num; type = Type::VALUE_INT; return *this; }
+    // RType& operator=(const Parser::record& rec)         { value = rec; type = Type::RECORD;         return *this; }
+    RType& operator=(const std::vector<RType>& vec)     { value = vec; type = Type::LIST  ;         return *this; }
+    RType& operator=(const std::string& str)            { value = str; type = Type::VALUE_STRING;   return *this; }
+    RType& operator=(std::string_view sv)               { value = sv ; type = Type::VALUE_STRING;   return *this; }
+    RType& operator=(int num)                           { value = num; type = Type::VALUE_INT;      return *this; }
+    RType& operator=(float num)                         { value = num; type = Type::VALUE_FLOAT;    return *this; }
+    RType& operator=(bool bln)                          { value = bln; type = Type::VALUE_BOOL;     return *this; }
 
-    [[nodiscard]] std::string getTypeName() const;
-    [[nodiscard]] const auto getValue() const           { return value; }
-    [[nodiscard]] const auto asRecord() const           { return cast<Parser::record>(); }
-    [[nodiscard]] const auto asList() const             { return cast<std::vector<RType>>(); }
-    [[nodiscard]] const auto asString() const           { return cast<std::string>(); }
-    [[nodiscard]] const auto asInt() const              { return cast<int>(); }
+    [[nodiscard]] std::string getTypeName()     const;
+    [[nodiscard]] const auto getValue()         const   { return value; }
+    // [[nodiscard]] const auto asRecord()         const   { return cast<Parser::record>(); }
+    [[nodiscard]] const auto asList()           const   { return cast<std::vector<RType>>(); }
+    [[nodiscard]] const auto asString()         const   { return cast<std::string>(); }
+    [[nodiscard]] const auto asInt()            const   { return cast<int>(); }
+    [[nodiscard]] const auto asFloat()          const   { return cast<float>(); }
+    [[nodiscard]] const auto asBool()           const   { return cast<bool>(); }
 
-    [[nodiscard]]
-    const RType getKey(std::string_view key) const      { return asRecord().at(key.data()); }
+    // [[nodiscard]]
+    // const RType getKey(std::string_view key)    const   { return asRecord().at(key.data()); }
 
 private:
     Type type = Type::EMPTY;
@@ -180,5 +186,4 @@ private:
 
 
 
-} // End of namespace IO
-} // End of namespace glib
+} // End of namespace glib::IO

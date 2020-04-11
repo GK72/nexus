@@ -1,17 +1,17 @@
 // **********************************************
-// ** gkpro @ 2020-04-10                       **
+// ** gkpro @ 2020-04-11                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **            IO implementation             **
 // **                                          **
 // **********************************************
 
+#include <cstdlib>
+
 #include "io.h"
 #include "utility.h"
 
-namespace glib {
-namespace IO {
-
+namespace glib::IO {
 
 std::string_view trim(std::string_view sv, const std::string& what)
 {
@@ -21,14 +21,6 @@ std::string_view trim(std::string_view sv, const std::string& what)
         return sv;
     }
     return sv = sv.substr(posStart, posEnd + 1 - posStart);
-}
-
-std::string_view strip(std::string_view sv, std::vector<std::string>&& vec)
-{
-    for (const auto& v : vec) {
-        sv = trim(sv, v);
-    }
-    return sv;
 }
 
 Tokenizer::Tokenizer(const std::string& delim, const std::string& end)
@@ -103,11 +95,11 @@ ParserCSV::~ParserCSV()
     delete m_tokenizer;
 }
 
-ParserCSV::record ParserCSV::readRecord()
+ParserCSV::Record ParserCSV::readRecord()
 {
     std::string str;
     std::stringstream ss;
-    record fields;
+    Record fields;
 
     if (getline(m_inf, str)) {
         ss.clear();
@@ -152,70 +144,97 @@ std::map<std::string, size_t> ParserCSV::readHeader()
     return header;
 }
 
-ParserJSON::ParserJSON(std::string_view path)
+template <class Input>
+ParserJSON<Input>::ParserJSON(const std::string& str)
+    : m_input()
 {
-    m_path = path;
-    m_inf = std::ifstream(m_path);
+    m_input = Input(str);
     m_tokenizer = new Tokenizer(std::vector<std::string>{":", ","}, "}");
 }
 
-ParserJSON::~ParserJSON()
+template <class Input>
+ParserJSON<Input>::~ParserJSON()
 {
     delete m_tokenizer;
 }
 
-ParserJSON::record ParserJSON::readRecord()
+template <class Input>
+std::map<std::string, std::any> ParserJSON<Input>::readRecord()
 {
-    record rec;
-
-    if (!m_inf.eof()) {
-        std::stringstream ss;
-        size_t level = 0;
-        char ch;
-        bool doRead = true;
-
-        while ((ch = m_inf.get()) != '{') {
-            if (!m_inf.good()) {
-                doRead = false;
-                break;
-            }
-        }
-
-        while (doRead) {
-            ss << (ch = m_inf.get());
-            if (ch == '{') {
-                m_inf.unget();
-                ss.get();
-
-                std::string key = ss.str();
-                size_t start = key.find_last_of(",") + 1;
-                ss.str("");
-                ss << key.substr(0, start - 1);     // Because ss.str() resets the position
-
-                size_t end = key.find_last_of(':');
-                if (end == std::string::npos) {
-                    throw ParseErrorException();
-                }
-                key = strip(key.substr(start, end - start));
-                rec[std::string(key)] = readRecord();
-            }
-            else if (ch == '}') {
-                doRead = false;
-                m_tokenizer->setString(ss.str());
-                readKeyValuePair(rec);
-            }
-        }
+    Record record;
+    Record inner;
+    if (m_input.eof()) {
+        return record;
     }
 
-    return rec;
+    std::stringstream ss;
+
+    for (char ch = m_input.get(); (ch = m_input.get()) != '}' && m_input.good();) {
+        if (ch == '{') {
+            inner = readRecord();
+        }
+        ss << ch;
+    }
+
+    m_tokenizer->setString(ss.str());
+    readKeyValuePair(record, inner);
+
+    return record;
 }
 
-void ParserJSON::readKeyValuePair(record& rec)
+template <class Input>
+void ParserJSON<Input>::readKeyValuePair(Record& rec, Record& inner)
 {
     std::string key;
-    while ((key = std::string(readToken())).size() > 0) {
-        rec[key] = std::string(readToken());
+    while ((key = std::string(trim(readToken(), "\""))).size() > 0 && key != "{") {
+        std::string value = readToken();
+        if (!value.empty()) {
+            auto [any, code] = parseValue(value);
+            if (code == 1) {    // Code 1: record
+                rec[key] = std::move(inner);
+            }
+            else {
+                rec[key] = any;
+            }
+        }
     }
+
+    if (key == "{") {
+        rec = std::move(inner);
+    }
+}
+
+template <class Input>
+std::pair<std::any, int> ParserJSON<Input>::parseValue(const std::string& value)
+{
+    if (value.at(0) == '\"') {
+        return { std::any{std::string(trim(value, "\""))}, 0};
+    }
+    if (value.at(0) == '{') {
+        return { std::any{}, 1};
+    }
+    if (value == "true") {
+        return { std::any{true}, 0};
+    }
+    if (value == "false") {
+        return { std::any{false}, 0};
+    }
+    if (value.find(".") != std::string::npos) {
+        return { std::any{std::stod(value)}, 0};
+    }
+    return { std::any{std::stoi(value)}, 0};
+}
+
+template <class Input>
+std::string ParserJSON<Input>::readToken()
+{
+    return strip(m_tokenizer->next());
+}
+
+template <class Input>
+std::string ParserJSON<Input>::strip(const std::string& str)
+{
+    return std::string(trim(str, std::array<std::string, 2>{ "\n", " " }));
 }
 
 std::string RType::getTypeName() const
@@ -232,6 +251,9 @@ std::string RType::getTypeName() const
 }
 
 
+template class ParserJSON<ParseFile>;
+template class ParserJSON<ParseString>;
 
-} // End of namespace IO
-} // End of namespace glib
+
+
+} // End of namespace glib::IO
