@@ -39,6 +39,8 @@ public:
 
 class Formatter {
 public:
+    virtual ~Formatter() = default;
+
     virtual void format() = 0;
 
 protected:
@@ -62,8 +64,8 @@ public:
     virtual int getID() const               { return _id; }
     virtual FrameContent* getContent()      = 0;
     virtual std::string getTitle() const    = 0;
-    virtual size_t getBorderSize() const      = 0;
-    virtual Point2D getSize() const         = 0; 
+    virtual size_t getBorderSize() const    = 0;
+    virtual Point2D getSize() const         = 0;
     virtual Point2D getTopLeft() const      = 0;
     virtual EngineGFX* getEngine() const    = 0;
 
@@ -77,6 +79,8 @@ protected:
 
 class FrameContent {
 public:
+    virtual ~FrameContent() = default;
+
     virtual void draw() = 0;
     virtual void format() = 0;
 
@@ -110,12 +114,12 @@ public:
     void setContent(FrameContent* content) override;
     void setContent(std::string content_name) override;
 
-    std::string getTitle() const override   { return _title; }
-    FrameContent* getContent()              { return _content; }
-    EngineGFX* getEngine() const override   { return _gfx; }
-    size_t getBorderSize() const override     { return _borderSize; }
-    Point2D getSize() const override        { return _extent; }
-    Point2D getTopLeft() const override     { return _topleft; }
+    std::string getTitle()     const override   { return _title; }
+    FrameContent* getContent()       override   { return _content; }
+    EngineGFX* getEngine()     const override   { return _gfx; }
+    size_t getBorderSize()     const override   { return _borderSize; }
+    Point2D getSize()          const override   { return _extent; }
+    Point2D getTopLeft()       const override   { return _topleft; }
 
 private:
     std::string _title;
@@ -140,13 +144,13 @@ public:
     ~FrameContentText();
     void draw() override;
     void format() override;
-    
+
     void markForUpdate() override                               { _outdated = true; }
     void setContent(std::string content) override               { _str = content; }
-    void setLinebreaks(std::vector<size_t> linebreaks) override   { _linebreaks = linebreaks; }
+    void setLinebreaks(std::vector<size_t> linebreaks) override { _linebreaks = linebreaks; }
 
     std::string getContent() const override                     { return _str; }
-    size_t getWidth() const override                              { return _width; }
+    size_t getWidth() const override                            { return _width; }
 
 private:
     bool _outdated = true;

@@ -8,3 +8,5 @@ add_library(utility utility.cpp utility.h)
 
 target_link_libraries(data PRIVATE utility)
 target_link_libraries(data PRIVATE io)
+
+include_directories(${CMAKE_HOME_DIRECTORY}/include)

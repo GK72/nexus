@@ -19,7 +19,7 @@ int listdir(const char* path) {
 
     struct dirent* dp;
     struct stat st;
-    while (dp = readdir(dir)) {
+    while ((dp = readdir(dir))) {
         stat(dp->d_name, &st);
         char* type;
         time_t t = st.st_mtime;

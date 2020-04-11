@@ -14,7 +14,7 @@ target_link_libraries (worklog PRIVATE date)
 target_include_directories(worklog PRIVATE ${CMAKE_HOME_DIRECTORY}/include)
 target_include_directories(worklog PRIVATE ../glib)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if (UNIX)
     target_link_libraries(main PRIVATE pthread)
     target_link_libraries(worklog PRIVATE pthread)
 endif()
