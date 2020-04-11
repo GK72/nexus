@@ -38,7 +38,7 @@ void DataTable::display()
 void DataTable::read()
 {
     std::map<std::string, size_t> header = m_reader->readHeader();
-    IO::ParserCSV::record value;
+    IO::ParserCSV::Record value;
     while ((value = m_reader->readRecord()).size() > 0) {
         for (const auto& h : header) {
             m_data[h.first].push_back(value.at(h.second));

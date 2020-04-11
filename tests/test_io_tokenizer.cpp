@@ -188,7 +188,6 @@ TEST_CASE("Tokenizer - Escaping quotes", "[tokenizer]") {
         CHECK(tok.next() == " and bla 'and, quote'");
         CHECK(tok.next() == " final bla");
     }
-
 }
 
 }    // namespace glib::test

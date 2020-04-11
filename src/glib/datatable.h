@@ -51,7 +51,7 @@ public:
 private:
     std::string name;
     IO::ParserCSV* m_reader;
-    std::map<std::string, IO::ParserCSV::record> m_data;
+    std::map<std::string, IO::ParserCSV::Record> m_data;
 
     size_t m_nRow = 0;
 
