@@ -190,4 +190,63 @@ TEST_CASE("Tokenizer - Escaping quotes", "[tokenizer]") {
     }
 }
 
+TEST_CASE("Tokenizer - by explicit sentinel value", "[tokenizer]") {
+    auto tok = glib::IO::Tokenizer(std::vector{":"s, ","s});
+    tok.setQuote("'");
+
+    SECTION("one sentinel") {
+        tok.setString("{key: value, list: [1, 2]}");
+        CHECK(tok.next()    == "{key");
+        CHECK(tok.next()    == " value");
+        CHECK(tok.next()    == " list");
+        CHECK(tok.next("]") == " [1, 2");
+    }
+
+    SECTION("two sentinels") {
+        tok.setString("{key: value, list: [1, 2]},{key2: value2, list2: [3, 4]}");
+        CHECK(tok.next()    == "{key");
+        CHECK(tok.next()    == " value");
+        CHECK(tok.next()    == " list");
+        CHECK(tok.next("]") == " [1, 2");
+
+        CHECK(tok.next()    == "}");
+
+        CHECK(tok.next()    == "{key2");
+        CHECK(tok.next()    == " value2");
+        CHECK(tok.next()    == " list2");
+        CHECK(tok.next("]") == " [3, 4");
+    }
+}
+
+TEST_CASE("Tokenizer - escapers", "[tokenizer]") {
+    auto tok = glib::IO::Tokenizer(",");
+    tok.setEscapers({{{"["},{"]"}}});
+    tok.setQuote("\"");
+
+    SECTION("single delim, one pair of escaper") {
+        tok.setString("a,b,[1,2,3,4],c,d");
+        CHECK(tok.next() == "a");
+        CHECK(tok.next() == "b");
+        CHECK(tok.next() == "1,2,3,4");
+        CHECK(tok.next() == "c");
+        CHECK(tok.next() == "d");
+    }
+
+    SECTION("single delim, one pair of escaper, quoted") {
+        tok.setString("a,b,[1,2,\"3,4\"],c,d");
+        CHECK(tok.next() == "a");
+        CHECK(tok.next() == "b");
+
+        auto lst = tok.next();
+        CHECK(lst == "1,2,\"3,4\"");
+        CHECK(tok.next() == "c");
+        CHECK(tok.next() == "d");
+
+        tok.setString(lst);
+        CHECK(tok.next() == "1");
+        CHECK(tok.next() == "2");
+        CHECK(tok.next() == "\"3,4\"");
+    }
+}
+
 }    // namespace glib::test

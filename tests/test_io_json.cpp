@@ -116,10 +116,6 @@ TEST_CASE("JSON - one record with recursive record, multiple keys", "[JSON parse
 
     auto rec = json.readRecord();
 
-    for (const auto& [key, value] : rec) {
-        std::cout << "Key   : " << key << '\n';
-    }
-
     SECTION("Empty") {
         CHECK(rec.size() == 5);
         CHECK(std::any_cast<std::string>(rec.at("string")) == "a string");
@@ -132,5 +128,112 @@ TEST_CASE("JSON - one record with recursive record, multiple keys", "[JSON parse
         CHECK(std::any_cast<std::string>(inner.at("inner_2")) == "another inner record");
     }
 }
+
+TEST_CASE("JSON - one record, with list", "[JSON parser - read]") {
+    REQUIRE(__PATH_ROOT_REPO != ""s);
+
+    SECTION("Only a list") {
+        const std::string testInput = "\
+        {\
+            \"list\": [ 1, 3.3 ]\
+        }\
+        ";
+
+        ParserJSON<ParseString> json(testInput);
+
+        auto rec = json.readRecord();
+        auto list = std::any_cast<std::vector<std::any>>(rec.at("list"));
+
+        REQUIRE(list.size() == 2);
+        CHECK(std::any_cast<int>        (list[0]) == 1);
+        CHECK(std::any_cast<double>     (list[1]) == 3.3);
+    }
+
+    SECTION("Two lists") {
+        const std::string testInput = "\
+        {\
+            \"list\": [ 2, 4.4 ],\
+            \"list2\": [ true, false, \"true\" ]\
+        }\
+        ";
+
+        ParserJSON<ParseString> json(testInput);
+
+        auto rec = json.readRecord();
+        auto list = std::any_cast<std::vector<std::any>>(rec.at("list"));
+        auto list2 = std::any_cast<std::vector<std::any>>(rec.at("list2"));
+
+        REQUIRE(list.size() == 2);
+        REQUIRE(list2.size() == 3);
+
+        CHECK(std::any_cast<int>        (list[0]) == 2);
+        CHECK(std::any_cast<double>     (list[1]) == 4.4);
+        CHECK(std::any_cast<bool>       (list2[0]) == true);
+        CHECK(std::any_cast<bool>       (list2[1]) == false);
+        CHECK(std::any_cast<std::string>(list2[2]) == "true");
+    }
+
+    SECTION("A list at the end") {
+        const std::string testInput = "\
+        {\
+            \"string\": \"a string\",\
+            \"int\": 3,\
+            \"float\": 5.5,\
+            \"bool\": true,\
+            \"list\": [ 3, 0, 5.6, \"a string\", false]\
+        }\
+        ";
+
+        ParserJSON<ParseString> json(testInput);
+
+        auto rec = json.readRecord();
+
+        REQUIRE(rec.size() == 5);
+        CHECK(std::any_cast<std::string>(rec.at("string")) == "a string");
+        CHECK(std::any_cast<int>        (rec.at("int"))    == 3);
+        CHECK(std::any_cast<double>     (rec.at("float"))  == 5.5);
+        CHECK(std::any_cast<bool>       (rec.at("bool"))   == true);
+
+        auto list = std::any_cast<std::vector<std::any>>(rec.at("list"));
+        REQUIRE(list.size() == 5);
+        CHECK(std::any_cast<int>        (list[0]) == 3);
+        CHECK(std::any_cast<int>        (list[1]) == 0);
+        CHECK(std::any_cast<double>     (list[2]) == 5.6);
+        CHECK(std::any_cast<std::string>(list[3]) == "a string");
+        CHECK(std::any_cast<bool>       (list[4]) == false);
+    }
+
+    SECTION("A list in the middle") {
+        const std::string testInput = "\
+        {\
+            \"string\": \"a string\",\
+            \"int\": 1,\
+            \"list\": [ 5, 0, 8.8, \"a string\", false],\
+            \"float\": 1.1,\
+            \"bool\": true,\
+        }\
+        ";
+
+        ParserJSON<ParseString> json(testInput);
+
+        auto rec = json.readRecord();
+
+        REQUIRE(rec.size() == 5);
+        CHECK(std::any_cast<std::string>(rec.at("string")) == "a string");
+        CHECK(std::any_cast<int>        (rec.at("int"))    == 1);
+        CHECK(std::any_cast<double>     (rec.at("float"))  == 1.1);
+        CHECK(std::any_cast<bool>       (rec.at("bool"))   == true);
+
+        auto list = std::any_cast<std::vector<std::any>>(rec.at("list"));
+        REQUIRE(list.size() == 5);
+        CHECK(std::any_cast<int>        (list[0]) == 5);
+        CHECK(std::any_cast<int>        (list[1]) == 0);
+        CHECK(std::any_cast<double>     (list[2]) == 8.8);
+        CHECK(std::any_cast<std::string>(list[3]) == "a string");
+        CHECK(std::any_cast<bool>       (list[4]) == false);
+    }
+}
+
+
 
 }    // namespace glib::test
