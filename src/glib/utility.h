@@ -28,6 +28,12 @@ namespace glib {
 #define _g_NIE(msg) throw NotImplementedException(msg)
 #define _g_uNIE throw NotImplementedException("Unknown Exception")
 
+#ifndef NDEBUG
+#define DBGMSG(msg, value) glib::print("", "[DBG] ", __FILE__, ":", __FUNCTION__, ":", __LINE__,  "  \"", msg, "\"  = ", value);
+#else
+#define DBGMSG(msg, value) ((void)0)
+#endif
+
 using pDim = std::vector<size_t>;                   // For passing dimensions as parameter
 
 

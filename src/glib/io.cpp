@@ -13,6 +13,8 @@
 
 namespace glib::IO {
 
+using namespace std::literals::string_literals;
+
 std::string_view trim(std::string_view sv, const std::string& what)
 {
     size_t posStart = sv.find_first_not_of(what);
@@ -40,7 +42,32 @@ Tokenizer::Tokenizer(const std::vector<std::string>& delims, const std::string& 
 std::string Tokenizer::next()
 {
     std::string token;
-    if (m_isEnd) { return ""; }
+    std::string escapedToken = "";
+    if (m_isEnd || m_str.empty()) {
+        return "";
+    }
+
+    // TODO: make this compile time conditional i.e. static inheritance
+    //       or make this default behaviour
+    if (m_ignoreWhitespace) {
+        while (m_posStart < m_str.size() && std::isspace(m_str.at(m_posStart))) {
+            ++m_posStart;
+        };
+    }
+
+    if (m_posStart >= m_str.size()) {
+        return "";
+    }
+
+    auto esc = std::find_if(
+        std::begin(m_escapers),
+        std::end(m_escapers),
+        [this](const auto& x) { return x.first.at(0) == m_str.at(m_posStart); }
+    );
+
+    if (esc != std::end(m_escapers)) {
+        escapedToken = next(esc->second);                           DBGMSG("esc token", escapedToken);
+    }
 
     m_posEnd = m_str.find(m_delims[m_idxDelim], m_posStart);
 
@@ -52,12 +79,39 @@ std::string Tokenizer::next()
     }
 
     if (!m_quote.empty()) {
-        escapeQuotes();
+        escapeQuotes(m_delims[m_idxDelim]);
     }
 
     token = m_str.substr(m_posStart, m_posEnd - m_posStart);
     m_posStart = m_posEnd + 1;
     m_idxDelim = ++m_idxDelim % m_nDelims;
+
+    if (escapedToken != "") {
+        return escapedToken;
+    }
+    return token;
+}
+
+std::string Tokenizer::next(std::string_view sentinel)
+{
+    std::string token;
+    if (m_isEnd) { return ""; }
+
+    m_posEnd = m_str.find(sentinel, m_posStart);
+
+    if (m_posEnd == std::string::npos) {
+        if (m_endMark != "") {
+            m_posEnd = m_str.find(m_endMark, m_posEnd + 1);
+        }
+        m_isEnd = true;
+    }
+
+    if (!m_quote.empty()) {
+        escapeQuotes(sentinel);
+    }
+
+    token = m_str.substr(m_posStart, m_posEnd - m_posStart);
+    m_posStart = m_posEnd + 1;
 
     return token;
 }
@@ -71,14 +125,14 @@ void Tokenizer::clear()
     m_isEnd    = false;
 }
 
-void Tokenizer::escapeQuotes() {
+void Tokenizer::escapeQuotes(std::string_view quoteEnd) {
     size_t posQuote = m_str.find(m_quote, m_posStart);
 
     if (posQuote < m_posEnd) {    // There is a quote in the current token
         posQuote = m_str.find(m_quote, posQuote + 1);
         if (posQuote > m_posEnd) {      // There is a delim between the quotes
             m_posEnd = m_str.find(m_quote, posQuote);
-            m_posEnd = m_str.find(m_delims[m_idxDelim], m_posEnd + 1);
+            m_posEnd = m_str.find(quoteEnd, m_posEnd + 1);
         }
     }
 }
@@ -150,6 +204,8 @@ ParserJSON<Input>::ParserJSON(const std::string& str)
 {
     m_input = Input(str);
     m_tokenizer = new Tokenizer(std::vector<std::string>{":", ","}, "}");
+    m_tokenizer->setEscapers({ {{"["s}, {"]"s} }});
+    m_tokenizer->setIgnoreWhitespace(true);
 }
 
 template <class Input>
@@ -169,8 +225,11 @@ std::map<std::string, std::any> ParserJSON<Input>::readRecord()
 
     std::stringstream ss;
 
-    for (char ch = m_input.get(); (ch = m_input.get()) != '}' && m_input.good();) {
-        if (ch == '{') {
+    for (char ch; (ch = m_input.get()), doRead(ch);) {
+        if (ch == '\"') {
+            m_quoted = !m_quoted;
+        }
+        if (ch == '{' && !m_quoted) {
             inner = readRecord();
         }
         ss << ch;
@@ -180,6 +239,13 @@ std::map<std::string, std::any> ParserJSON<Input>::readRecord()
     readKeyValuePair(record, inner);
 
     return record;
+}
+
+template <class Input>
+inline bool ParserJSON<Input>::doRead(char ch)
+{
+    return m_input.good()
+        && (m_quoted || ch != '}');
 }
 
 template <class Input>
@@ -205,6 +271,21 @@ void ParserJSON<Input>::readKeyValuePair(Record& rec, Record& inner)
 }
 
 template <class Input>
+std::vector<std::any> ParserJSON<Input>::parseList(const std::string& value)
+{
+    auto tok = Tokenizer(",", "]");
+    tok.setString(value.substr(1));
+
+    std::vector<std::any> vec;
+
+    for (auto str = tok.next(); str != ""; str = tok.next()) {
+        vec.push_back(parseValue(strip(str)).first);
+    }
+
+    return vec;
+}
+
+template <class Input>
 std::pair<std::any, int> ParserJSON<Input>::parseValue(const std::string& value)
 {
     if (value.at(0) == '\"') {
@@ -212,6 +293,9 @@ std::pair<std::any, int> ParserJSON<Input>::parseValue(const std::string& value)
     }
     if (value.at(0) == '{') {
         return { std::any{}, 1};
+    }
+    if (value.at(0) == '[') {
+        return { std::any{ parseList(value) }, 2};
     }
     if (value == "true") {
         return { std::any{true}, 0};

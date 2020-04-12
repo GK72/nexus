@@ -50,17 +50,23 @@ public:
  */
 class Tokenizer {
 public:
+    using Escaper = std::pair<std::string, std::string>;
+
     Tokenizer(const std::string& delim, const std::string& end = "");
     Tokenizer(const std::vector<std::string>& delims, const std::string& end = "");
 
     std::string next();
+    std::string next(std::string_view sentinel);
 
-    void setString(const std::string& str)      { clear(); m_str = str; }
-    void setQuote(const std::string& sv)        { m_quote = sv; }
+    void setEscapers(const std::vector<Escaper>& escs)      { m_escapers = escs; }
+    void setIgnoreWhitespace(bool b)                        { m_ignoreWhitespace = b; }
+    void setString(const std::string& str)                  { clear(); m_str = str; }
+    void setQuote(const std::string& sv)                    { m_quote = sv; }
     void clear();
 
 private:
     std::vector<std::string> m_delims;
+    std::vector<Escaper>     m_escapers;
 
     std::string m_endMark;
     std::string m_str;
@@ -71,9 +77,10 @@ private:
     size_t m_posStart = 0;
     size_t m_posEnd   = 0;
 
-    bool m_isEnd = false;
+    bool m_isEnd            = false;
+    bool m_ignoreWhitespace = false;
 
-    void escapeQuotes();
+    void escapeQuotes(std::string_view quoteEnd);
 };
 
 
@@ -116,12 +123,16 @@ public:
     Record readRecord();
 
 private:
-    Input m_input;
+    Input      m_input;
     Tokenizer* m_tokenizer;
+    bool       m_quoted = false;
 
-    std::string readToken();
-    std::string strip(const std::string& str);
+    bool doRead(char ch);
     std::pair<std::any, int> parseValue(const std::string& value);
+    std::vector<std::any>    parseList(const std::string& value);
+    std::string              readToken();
+    std::string              strip(const std::string& str);
+
     void readKeyValuePair(Record& rec, Record& inner);
 
 };
