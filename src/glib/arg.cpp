@@ -15,7 +15,7 @@ ArgParser::ArgParser(int argc, char* argv[])
 {
     m_argc = argc;
     argsToString(argv);
-    m_args.insert({ "help", ArgFactory::createFlag("Help", "Displays help") });
+    m_args.insert({ "--help", ArgFactory::createFlag("Help", "Displays help") });
 }
 
 void ArgParser::add(const Arg& arg)
@@ -25,6 +25,7 @@ void ArgParser::add(const Arg& arg)
 
 void ArgParser::argsToString(char* argv[])
 {
+    m_exeName = argv[0];
     for (size_t i = 1; i < m_argc; ++i) {
         std::string str(argv[i]);
         m_inArgs.push_back(argv[i]);
@@ -41,7 +42,7 @@ void ArgParser::process()
     parseArgs();
     checkArgs();
     setOptions();
-    if (m_args.at("help").getValue<bool>()) {
+    if (m_args.at("--help").getValue<bool>()) {
         displayHelp();
     }
 }

@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    if (args.get<bool>("help")) { return 0; }
+    if (args.get<bool>("--help")) { return 0; }
 
     try {
         if (args.get<bool>("measure")) {

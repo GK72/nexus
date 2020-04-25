@@ -75,10 +75,13 @@ public:
         return m_args.at(name).getValue<T>(defaultValue);
     }
 
+    [[nodiscard]] std::string getExeName() const        { return m_exeName; }
+
 private:
     int m_argc;
     std::vector<std::string> m_inArgs;
     std::map<std::string, Arg> m_args;
+    std::string m_exeName;
 
     void argsToString(char* argv[]);
     void checkArgs();
