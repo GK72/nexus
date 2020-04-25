@@ -32,6 +32,7 @@ function install() {
         printf "Using apt package manager\n"
         INSTALL_ZSH="sudo apt-get install zsh"
         INSTALL_GCC="sudo apt-get install gcc"
+        INSTALL_AG="sudo apt-get install silversearcher-ag"
         INSTALL_CMAKE="sudo apt-get install ccmake"
         INSTALL_CCMAKE="sudo apt-get install cmake-curses-gui"
         INSTALL_CCACHE="sudo apt-get install ccache"
