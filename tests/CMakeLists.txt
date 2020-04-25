@@ -2,6 +2,7 @@ add_executable(test_glib
     test.cpp
     test_io_tokenizer.cpp
     test_io_json.cpp
+    test_utility.cpp
 )
 
 target_include_directories(test_glib PRIVATE ${CMAKE_HOME_DIRECTORY}/include)

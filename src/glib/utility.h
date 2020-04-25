@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2020-03-21                       **
+// ** gkpro @ 2020-04-25                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **          Utility library header          **
@@ -36,10 +36,20 @@ namespace glib {
 
 using pDim = std::vector<size_t>;                   // For passing dimensions as parameter
 
+//                                        ----------------                                        //
+// ---------------------------------------==[ Concepts ]==--------------------------------------- //
+//                                        ----------------                                        //
 
-// ********************************************************************************************** //
-//                                            Functions                                           //
-// ********************************************************************************************** //
+template <class T>
+concept Range = requires(T& t) {
+    std::begin(t);
+    std::end(t);
+};
+
+
+//                                     ----------------------                                     //
+// ------------------------------------==[ Free Functions ]==------------------------------------ //
+//                                     ----------------------                                     //
 
 void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
@@ -54,9 +64,10 @@ inline void printn() {
 }
 
 
-// ********************************************************************************************** //
-//                                       Templated functions                                      //
-// ********************************************************************************************** //
+
+//                                  ---------------------------                                   //
+// ---------------------------------==[ Templated Functions ]==---------------------------------- //
+//                                  ---------------------------                                   //
 
 template <class ...Ts> struct Lambdas : Ts... {
     Lambdas(Ts&& ...t) : Ts(std::forward<Ts>(t))... {}
@@ -65,9 +76,11 @@ template <class ...Ts> struct Lambdas : Ts... {
 
 template<class ...Ts> Lambdas(Ts...) -> Lambdas<std::decay_t<Ts>...>;
 
+// ----== String functions ==----
+
 template <class T>
 [[nodiscard]] std::string toString(T&& in) {
-    Lambdas vis{
+    Lambdas stringify{
          [](const int x)                         { return std::to_string(x); }
         ,[](const long x)                        { return std::to_string(x); }
         ,[](const size_t x)                      { return std::to_string(x); }
@@ -78,9 +91,8 @@ template <class T>
         ,[](const std::chrono::milliseconds& x)  { return std::to_string(x.count()) + " ms"; }
         ,[](const std::chrono::nanoseconds&  x)  { return std::to_string(x.count()) + " ns"; }
     };
-    return vis(std::forward<T>(in));
+    return stringify(std::forward<T>(in));
 }
-
 
 template <class T, class ...Ts>
 [[nodiscard]] std::string joinStr(std::string separator, T&& first, Ts&&... args) {
@@ -119,11 +131,65 @@ template <class T>
     return toString(t) + std::string(subtractClip(count, toString(t).size()), ch);
 }
 
+// ----== Misc ==----
+
 template <class T> T swapEndian32(T& x) {
     return (x << 24) & 0xFF000000 |
            (x <<  8) & 0x00FF0000 |
            (x >>  8) & 0x0000FF00 |
            (x >> 24) & 0x000000FF ;
+}
+
+//                                      ------------------                                        //
+// -------------------------------------==[ Algorithms ]==--------------------------------------- //
+//                                      ------------------                                        //
+
+constexpr auto GroupByEqualKeys    = [](const auto& key, const auto& prevKey) { return key == prevKey; };
+constexpr auto AggregatePlusEquals = [](auto agg, const auto& value)          { return agg += value; };
+
+/**
+ * @brief Groups values by keys given in two containers
+ *
+ * @param keys      Container for keys
+ * @param values    Container for values
+ *
+ * @param p         Predicate function
+ *                      indicating when to do the operation
+ *                      key and previous key are passed in
+ *
+ * @param op        Binary operation called on the aggregate and the current value
+ *
+ * @return          A container with key-value pairs
+ */
+template <Range KeysCont
+         ,Range ValueCont
+         ,class Predicate
+         ,class BinOp>
+[[nodiscard]]
+std::vector<std::pair<typename KeysCont::value_type, typename ValueCont::value_type>>
+groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)
+{
+    std::vector<std::pair<typename KeysCont::value_type, typename ValueCont::value_type>> summary;
+    typename ValueCont::value_type aggregate {0};
+    auto prevKey = keys.front();
+
+    for (auto [key, value] = std::make_tuple(std::begin(keys), std::begin(values));
+            key != std::end(keys) && value != std::end(values);
+            std::advance(key, 1), std::advance(value, 1))
+    {
+        if (p(*key, prevKey)) {
+            aggregate = op(aggregate, *value);
+        }
+        else {
+            summary.emplace_back(prevKey, aggregate);
+            prevKey = *key;
+            aggregate = op(typename ValueCont::value_type{0}, *value);
+        }
+    }
+
+    summary.emplace_back(prevKey, aggregate);
+
+    return summary;
 }
 
 
