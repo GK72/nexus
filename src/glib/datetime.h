@@ -1,5 +1,5 @@
 // **********************************************
-// ** gkpro @ 2020-03-21                       **
+// ** gkpro @ 2020-04-25                       **
 // **                                          **
 // **           ---  G-Library  ---            **
 // **             Datetime Header              **
@@ -113,7 +113,7 @@ public:
         : m_rep(year, month, day)
     {}
 
-    bool operator== (const Date<>& date) {
+    bool operator== (const Date<>& date) const {
         return year()  == date.year()
             && month() == date.month()
             && day()   == date.day();

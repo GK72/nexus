@@ -20,7 +20,7 @@ constexpr auto rangeDivider = "-";
 
 constexpr auto fn_getline = [](auto& inf, std::string& str) -> auto& { return std::getline(inf, str); };
 
-auto getTime() {
+auto now() {
     return glib::datetime::getCurrentEpoch<std::chrono::seconds>().count();
 }
 
@@ -75,7 +75,7 @@ bool FileReader::read(Tokenizer tokenizer, InputProcessor process)
 
 
 class WorkLog {
-    using range = std::tuple<glib::datetime::Date<>, long, long>;
+    using Date = glib::datetime::Date<>;
 public:
     explicit WorkLog(const std::string& path);
 
@@ -93,7 +93,8 @@ private:
         ,CORRUPTED
     };
 
-    std::vector<range>  _range;
+    std::vector<Date>   _keys;
+    std::vector<long>   _durations;
     std::string         _path;
     State               _state;
 
@@ -111,7 +112,7 @@ void WorkLog::checkIn() {
         std::ofstream outf(_path, std::ios::out | std::ios::in);
         if (outf) {
             outf.seekp(-1, std::ios::end);
-            outf << getTime();
+            outf << now();
             outf.seekp(0, std::ios::end);
             outf << rangeDivider;
             outf.seekp(0, std::ios::end);
@@ -132,7 +133,7 @@ void WorkLog::checkOut() {
         std::ofstream outf(_path, std::ios::out | std::ios::in);
         if (outf) {
             outf.seekp(-1, std::ios_base::end);
-            outf << getTime();
+            outf << now();
             outf.seekp(0, std::ios_base::end);
             outf << "\n\n";
         }
@@ -165,37 +166,25 @@ void WorkLog::createEntries() {
                 start = std::stol(parts[0].data());
 
                 if (!parts[1].empty()) {
-                end = std::stol(parts[1].data());
+                    end = std::stol(parts[1].data());
                 }
                 else {
-                    end = getTime();
+                    end = now();
                 }
 
-                using namespace glib::datetime;
-                _range.emplace_back(epochToDate(start), start, end);
+                _keys.emplace_back(glib::datetime::epochToDate(start));
+                _durations.push_back(end - start);
             }
         }
     );
 }
 
 void WorkLog::printSummary() {
-    std::vector<std::pair<glib::datetime::Date<>, long>> summary;
-    auto duration = 0l;
-    auto prevDate = glib::datetime::Date(1, 1, 1);
+    auto summary = glib::groupBy(_keys, _durations
+        ,[](const auto& key, const auto& prevKey) { return key == prevKey; }
+        ,glib::AggregatePlusEquals
+    );
 
-    for (const auto& [date, start, end] : _range) {
-        if (prevDate == date) {
-            duration += end - start;
-        }
-        else {
-            summary.emplace_back(prevDate, duration);
-            duration = end - start;
-        }
-        prevDate = date;
-    }
-    summary.emplace_back(prevDate, duration);
-
-    summary.erase(summary.begin());
     for (const auto& [date, duration] : summary) {
         glib::printn(
             glib::joinStr(": "
@@ -247,7 +236,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (args.get<bool>("help")) { return 0; }
+    if (args.get<bool>("--help")) { return 0; }
 
     auto log = WorkLog(fullpathData);
 
