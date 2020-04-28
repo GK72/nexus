@@ -68,7 +68,6 @@ template <class Time> Time getCurrentEpoch() {
         std::chrono::system_clock().now().time_since_epoch());
 }
 
-
 class DateImpl_Compact {
 public:
     DateImpl_Compact(int year, char month, char day);
@@ -236,6 +235,8 @@ bool isDateValid(const Date<Impl>& date) {
         ,date.getDay()
     );
 }
+
+char weekNum(Date<> date);
 
 template <class DateImpl = DefDateImpl,
           class TimeImpl = DefTimeImpl>
