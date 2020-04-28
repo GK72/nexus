@@ -22,6 +22,11 @@ bool isDateValid(int year, char month, char day) {
     return true;
 }
 
+char weekNum(Date<> date) {
+    // TODO: implement
+    return 1;
+}
+
 std::pair<char, char> splitToMonthAndDays(short days) {
     char month = 0;
     while (days > days_in_months[month]) {

@@ -1,4 +1,5 @@
 #include <chrono>
+#include <functional>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -20,6 +21,13 @@ constexpr auto rangeDivider = "-";
 
 constexpr auto fn_getline = [](auto& inf, std::string& str) -> auto& { return std::getline(inf, str); };
 
+enum class SummaryType {
+    INVALID
+    ,DAY
+    ,WEEK
+    ,MONTH
+};
+
 auto now() {
     return glib::datetime::getCurrentEpoch<std::chrono::seconds>().count();
 }
@@ -38,6 +46,20 @@ auto strSplit(std::string_view str, std::string_view split) {
     return parts;
 }
 
+SummaryType validateSummaryType(std::string_view type) {
+    if (type == "day") {
+        return SummaryType::DAY;
+    }
+    else if (type == "week") {
+        return SummaryType::WEEK;
+    }
+    else if (type == "month") {
+        return SummaryType::MONTH;
+    }
+    else {
+        return SummaryType::INVALID;
+    }
+}
 
 class FileReader {
 public:
@@ -82,7 +104,7 @@ public:
     void checkIn();
     void checkOut();
     void createEntries();
-    void printSummary();
+    void printSummary(SummaryType type);
 
 private:
     enum class State {
@@ -179,11 +201,31 @@ void WorkLog::createEntries() {
     );
 }
 
-void WorkLog::printSummary() {
-    auto summary = glib::groupBy(_keys, _durations
-        ,[](const auto& key, const auto& prevKey) { return key == prevKey; }
-        ,glib::AggregatePlusEquals
-    );
+void WorkLog::printSummary(SummaryType type) {
+    using namespace glib::datetime;
+    std::function<bool(Date, Date)> func;
+
+    switch (type) {
+        case SummaryType::DAY:
+            func = [](Date key, Date prevKey) -> bool {
+                return key == prevKey;
+            };
+            break;
+        case SummaryType::WEEK:
+            // weekNum() is not yet implemented
+            // func = [](Date key, Date prevKey) -> bool {
+            //     return weekNum(key) == weekNum(prevKey);
+            // };
+            break;
+        case SummaryType::MONTH:
+            func = [](Date key, Date prevKey) -> bool {
+                return key.month() == prevKey.month();
+            };
+            break;
+        default:    break;
+    }
+
+    auto summary = glib::groupBy(_keys, _durations, func, glib::AggregatePlusEquals);
 
     for (const auto& [date, duration] : summary) {
         glib::printn(
@@ -222,6 +264,7 @@ glib::ArgParser parseArgs(int argc, char* args[]) {
     argfactory.addFlag("start", "Check-in");
     argfactory.addFlag("end", "Check-out");
     argfactory.addFlag("show");
+    argfactory.add("summary");
 
     return argparser;
 }
@@ -248,8 +291,12 @@ int main(int argc, char* argv[]) {
             log.checkOut();
         }
         else if (args.get<bool>("show")) {
+            auto type = validateSummaryType(args.get<std::string>("summary"));
+            if (type == SummaryType::INVALID) {
+                return 2;
+            }
             log.createEntries();
-            log.printSummary();
+            log.printSummary(type);
         }
     }
     catch (const std::runtime_error & e) {
