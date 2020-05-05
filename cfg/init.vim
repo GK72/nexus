@@ -153,3 +153,6 @@ xmap <silent><expr>  ++  VMATH_YankAndAnalyse()
 nmap <silent>        ++  vip++
 
 nmap <silent> <F5> :call ClangCheck()<CR><CR>
+
+" ---= Command mappings
+command! Cmm call CommentAlignMiddle()
