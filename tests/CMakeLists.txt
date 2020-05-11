@@ -1,6 +1,6 @@
 add_executable(test_glib
     test.cpp
-    test_io_tokenizer.cpp
+    # test_io_tokenizer.cpp
     test_io_json.cpp
     test_units.cpp
     test_utility.cpp
