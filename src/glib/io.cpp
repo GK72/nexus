@@ -66,7 +66,7 @@ std::string Tokenizer::next()
     );
 
     if (esc != std::end(m_escapers)) {
-        escapedToken = next(esc->second);                           DBGMSG("esc token", escapedToken);
+        escapedToken = next(esc->second);
     }
 
     m_posEnd = m_str.find(m_delims[m_idxDelim], m_posStart);
