@@ -3,176 +3,126 @@
 #include "units.h"
 
 using namespace glib::units;
+using namespace literals;
 
-TEST_CASE("Units/Bytes: Implicit conversions", "[units]") {
+TEST_CASE("Units/Bytes: Conversions", "[units]") {
     SECTION("Implicit conversion to smaller") {
-        auto bytes = byte{ 1 };
-        auto bits  = bit { bytes };
-        CHECK(bits == bytes);
+        CHECK(bit(1_byte) ==    8_bit);
+        CHECK(bit(1_kB)   == 8192_bit);
     }
 
     SECTION("Explicit conversion to larger") {
-        // TODO: make it explicit, disallow implicit up casting
-        auto bits  = bit { 8 };
-        auto bytes = byte{ bits };
-        CHECK(bits == bytes);
+        CHECK(unit_cast<byte>( 9_bit) == 1_byte);
+        CHECK(unit_cast<byte>(15_bit) == 1_byte);
+        CHECK(unit_cast<byte>(16_bit) == 2_byte);
     }
+
+    SECTION("Implicit conversion between representations")
+        CHECK(Unit<int>(8) == Unit<long>(8));
+
+        CHECK( (Unit<int, std::ratio<1000>>   (8)) == (Unit<long,   std::ratio<1, 1000>>(8'000'000)) );
+        CHECK( (Unit<int, std::ratio<1000>>   (8)) == (Unit<double, std::ratio<1, 1000>>(8e6)      ) );
+        CHECK( (Unit<int, std::ratio<1, 1000>>(8)) == (Unit<double>                     (8e-3)     ) );
 }
 
-TEST_CASE("Units/Bytes: Helper types (equality)", "[units]") {
-    SECTION("Conversion: bit - byte") {
-        auto lhs = bit  { 8 };
-        auto rhs = byte { 1 };
-        CHECK(lhs == rhs);
-        CHECK(rhs == lhs);
-    }
+TEST_CASE("Units/Bytes: Helper types", "[units]") {
+    CHECK(   8_bit  == 1_byte);
+    CHECK(1024_byte == 1_kB);
+    CHECK(1024_kB   == 1_MB);
+    CHECK(1024_MB   == 1_GB);
+    CHECK(1024_GB   == 1_TB);
 
-    SECTION("Conversion: byte - kByte") {
-        auto lhs = byte  { 1024 };
-        auto rhs = kByte { 1 };
-        CHECK(lhs == rhs);
-        CHECK(rhs == lhs);
-    }
-
-    SECTION("Conversion: kByte - MByte") {
-        auto lhs = kByte { 1024 };
-        auto rhs = MByte { 1 };
-        CHECK(lhs == rhs);
-        CHECK(rhs == lhs);
-    }
-
-    SECTION("Conversion: MByte - GByte") {
-        auto lhs = MByte{ 1024 };
-        auto rhs = GByte{ 1 };
-        CHECK(lhs == rhs);
-        CHECK(rhs == lhs);
-    }
-
-    SECTION("Conversion: GByte - TByte") {
-        auto lhs = GByte{ 1024 };
-        auto rhs = TByte{ 1 };
-        CHECK(lhs == rhs);
-        CHECK(rhs == lhs);
-    }
-
-    SECTION("Conversion: kByte - GByte") {
-        auto lhs = kByte{ 1024 * 1024 };
-        auto rhs = GByte{ 1 };
-        CHECK(lhs == rhs);
-        CHECK(rhs == lhs);
-    }
+    CHECK(1_byte == 8_bit);
+    CHECK(1_kB   == 1024_byte);
+    CHECK(1_MB   == 1024_kB);
+    CHECK(1_GB   == 1024_MB);
+    CHECK(1_TB   == 1024_GB);
 }
 
 TEST_CASE("Units/Bytes: Relational operators", "[units]") {
     SECTION("Common type") {
-        SECTION("Operator !=") {
-            auto lhs = byte{ 1 };
-            auto rhs = byte{ 2 };
-            CHECK(lhs != rhs);
-            CHECK(rhs != lhs);
-        }
+        CHECK(1_byte != 2_byte);
+        CHECK(1_byte <  2_byte);
+        CHECK(1_byte <= 2_byte);
+        CHECK(1_byte <= 1_byte);
 
-        SECTION("Operator <") {
-            auto lhs = byte{ 1 };
-            auto rhs = byte{ 2 };
-            CHECK(lhs < rhs);
-        }
-
-        SECTION("Operator >") {
-            auto lhs = byte{ 2 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs > rhs);
-        }
-
-        SECTION("Operator <=") {
-            auto lhs = byte{ 1 };
-            auto rhs = byte{ 2 };
-            CHECK(lhs < rhs);
-            CHECK(lhs <= rhs);
-            CHECK(lhs <= lhs);
-        }
-
-        SECTION("Operator >=") {
-            auto lhs = byte{ 2 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs > rhs);
-            CHECK(lhs >= rhs);
-            CHECK(lhs >= lhs);
-        }
+        CHECK(2_byte != 1_byte);
+        CHECK(2_byte >  1_byte);
+        CHECK(2_byte >= 1_byte);
+        CHECK(2_byte >= 2_byte);
     }
 
     SECTION("Different types") {
-        SECTION("Operator !=") {
-            auto lhs = bit { 1 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs != rhs);
-            CHECK(rhs != lhs);
+        SECTION("bit - byte") {
+            CHECK(1_bit  != 1_byte);
+            CHECK(1_bit  <  1_byte);
+            CHECK(1_bit  <= 1_byte);
+            CHECK(8_bit  <= 1_byte);
+
+            CHECK(1_byte != 1_bit);
+            CHECK(1_byte >  1_bit);
+            CHECK(1_byte >= 1_bit);
+            CHECK(1_byte >= 8_bit);
         }
 
-        SECTION("Operator <") {
-            auto lhs = bit { 1 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs < rhs);
-        }
+        SECTION("9 bit - 1 byte") {
+            CHECK(1_byte != 9_bit);
+            CHECK(1_byte <  9_bit);
+            CHECK(1_byte <= 9_bit);
 
-        SECTION("Operator >") {
-            auto lhs = bit { 16 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs > rhs);
-        }
-
-        SECTION("Operator > (one-way-only conversion)") {
-            auto lhs = bit { 9 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs > rhs);
-        }
-
-        SECTION("Operator <=") {
-            auto lhs  = bit { 1 };
-            auto lhs2 = bit { 8 };
-            auto rhs  = byte{ 1 };
-            CHECK(lhs  < rhs);
-            CHECK(lhs  <= rhs);
-            CHECK(lhs2 <= rhs);
-        }
-
-        SECTION("Operator >=") {
-            auto lhs  = byte{ 1 };
-            auto rhs  = bit { 7 };
-            auto rhs2 = bit { 8 };
-            CHECK(lhs > rhs);
-            CHECK(lhs >= rhs);
-            CHECK(lhs >= rhs2);
+            CHECK(9_bit != 1_byte);
+            CHECK(9_bit >= 1_byte);
+            CHECK(9_bit >  1_byte);
         }
     }
 }
 
 TEST_CASE("Units/Bytes: Arithmetic operators", "[units]") {
-    SECTION("Common type") {
-        SECTION("Addition") {
-            auto lhs = byte{ 1 };
-            auto rhs = byte{ 1 };
-            CHECK(lhs + rhs == byte{ 2 });
-        }
-
-        SECTION("Subtraction") {
-            // TODO
-        }
-
-        // TODO ...
+    SECTION("Multiplication and divison") {
+        CHECK(12_byte * 2  == 24_byte);
+        CHECK( 2 * 3_byte  ==  6_byte);
+        CHECK(12_byte  / 2 ==  6_byte);
+        CHECK( 4_byte  / 2 == 16_bit);
     }
 
-    SECTION("Different types") {
-        // TODO ...
+    SECTION("Modulo division") {
+        CHECK(14_bit  % 8     == 6_bit);
+        CHECK( 4_byte % 6_bit == 2_bit);
+    }
+
+    SECTION("Addition and subtraction") {
+        CHECK(12_byte + 3_byte == 15_byte);
+        CHECK(12_byte - 3_byte ==  9_byte);
+        CHECK(12_byte + 2_bit  == 98_bit);
+        CHECK(12_byte - 2_bit  == 94_bit);
+    }
+
+    SECTION("Member operators") {
+        auto x = 8_byte;
+
+        CHECK( (x += 2_byte) == 10_byte);
+        CHECK( (x -= 2_byte) ==  8_byte);
+        CHECK( (x *= 2)      == 16_byte);
+        CHECK( (x /= 4)      ==  4_byte);
+
+        CHECK(++x == 5_byte);
+        CHECK(--x == 4_byte);
+
+        CHECK(x++ == 4_byte);
+        CHECK(x   == 5_byte);
+        CHECK(x-- == 5_byte);
+        CHECK(x   == 4_byte);
     }
 }
 
-TEST_CASE("Units/Bytes: Literals", "[units]") {
-    using namespace literals;
-    SECTION("Base") {
-        auto x = 8_bit;
-        auto y = 1_byte;
-        CHECK(x == y);
-    }
-}
+TEST_CASE("Units/Bytes: Member functions", "[units]") {
+    auto x = 8_byte;
 
+    CHECK(x.count() == 8);
+
+    CHECK(byte::zero().count() == 0);
+    CHECK(byte::max().count()  == std::numeric_limits<long long>::max());
+    CHECK(byte::min().count()  == std::numeric_limits<long long>::min());
+
+    CHECK(Unit<double>::min().count() == std::numeric_limits<double>::lowest());
+}
