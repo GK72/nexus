@@ -1,2 +1,0 @@
-#define LIBGS_API __declspec(dllexport)
-#define LIBGS_API __declspec(dllimport)
