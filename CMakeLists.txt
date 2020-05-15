@@ -22,6 +22,12 @@ elseif (MSVC)
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
+include(cmake/Conan.cmake)
+run_conan()
+
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
 add_library(project_warnings INTERFACE)
 include(cmake/compilerWarnings.cmake)
 set_project_warnings(project_warnings)
