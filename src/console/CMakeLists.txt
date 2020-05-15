@@ -4,6 +4,7 @@ target_link_libraries (main PRIVATE utility)
 target_link_libraries (main PRIVATE io)
 target_link_libraries (main PRIVATE arg)
 target_link_libraries (main PRIVATE data)
+target_include_directories(main PRIVATE ${CMAKE_HOME_DIRECTORY}/include)
 target_include_directories(main PRIVATE ../glib)
 
 add_executable (worklog worklog.cpp)
