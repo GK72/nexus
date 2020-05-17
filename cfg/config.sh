@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # Environment setup script
-# gkpro @ 2020-03-29
+# gkpro @ 2020-05-17
+
+set -e
 
 function printPad() {
     # Move the cursor forward N columns:    \033[<N>C
     # Save cursor position:                 \033[s
     # Restore cursor position:              \033[u
-    printf "\r\033[s\033[$2C$1\n\033[u\n"
+    printf "\r\033[s\033[$2C$1\n\033[u"
 }
 
 PATH_DIR_SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" >/dev/null 2>&1 && pwd  )"
@@ -20,11 +22,23 @@ fi
 
 function usage() {
     cat <<EOH
-Usage: ${0##*/} [install] [update] [backup]
+Usage: ${0##*/} [install] [install-zshExt] [update] [backup]
   install           Checking environment and installs tools if not available
+  install-zshExt    Installing ZSH extensions (Oh-My-Zsh, Powerlevel)
   update            Copies config files from glib/cfg
   backup            Copies config files into glib/cfg
 EOH
+}
+
+function installZshExt() {
+    sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+    git clone https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/themes/powerlevel10k
+
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
+    source ./zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+    git clone https://github.com/zsh-users/zsh-autosuggestions \
+        ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 }
 
 function install() {
@@ -33,14 +47,29 @@ function install() {
         INSTALL_ZSH="sudo apt-get install zsh"
         INSTALL_GCC="sudo apt-get install gcc"
         INSTALL_AG="sudo apt-get install silversearcher-ag"
-        INSTALL_CMAKE="sudo apt-get install ccmake"
+        INSTALL_CMAKE="sudo apt-get install cmake"
         INSTALL_CCMAKE="sudo apt-get install cmake-curses-gui"
         INSTALL_CCACHE="sudo apt-get install ccache"
         INSTALL_CPPCHECK="sudo apt-get install cppcheck"
         INSTALL_DOXYGEN="sudo apt-get install doxygen"
         INSTALL_GRAPHVIZ="sudo apt-get install graphviz"
         INSTALL_TIMEWARRIOR="sudo apt-get install timewarrior"
-        INSTALL_LINUX_TOOLS_GENERIC="sudo apt-get install linux-tools-generic"
+        INSTALL_PERF="sudo apt-get install linux-tools-generic"
+    }
+
+    command -v pacman >/dev/null 2>&1 && {
+        printf "Using pacman package manager\n"
+        INSTALL_ZSH="sudo pacman -S zsh"
+        INSTALL_GCC="sudo pacman -S gcc"
+        INSTALL_AG="sudo pacman -S silversearcher-ag"
+        INSTALL_CMAKE="sudo pacman -S cmake"
+        INSTALL_CCMAKE="sudo pacman -S cmake-curses-gui"
+        INSTALL_CCACHE="sudo pacman -S ccache"
+        INSTALL_CPPCHECK="sudo pacman -S cppcheck"
+        INSTALL_DOXYGEN="sudo pacman -S doxygen"
+        INSTALL_GRAPHVIZ="sudo pacman -S graphviz"
+        INSTALL_TIMEWARRIOR="sudo pacman -S timewarrior"
+        INSTALL_PERF="sudo pacman -S perf"
     }
 
     ###############################################################################
@@ -52,59 +81,51 @@ function install() {
     command -v zsh >/dev/null 2>&1 && printPad OK 30 || {
         ${INSTALL_ZSH} && {
             zsh
-            sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-            git clone https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/themes/powerlevel10k
-
-            git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
-            echo "source ${(q-)PWD}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR:-$HOME}/.zshrc
-            source ./zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
-            git clone https://github.com/zsh-users/zsh-autosuggestions \
-                ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-
-        } || printPad "Failed!" 30
+            installZshExt
+       } || printPad "Failed!" 30
     }
 
     # Compiler and build automation
     printf "Checking gcc..."
-    command -v g++ >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_GCC}"
+    command -v g++ >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_GCC}"
 
     printf "Checking cmake..."
-    command -v cmake >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CMAKE}"
+    command -v cmake >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_CMAKE}"
 
     printf "Checking ccmake..."
-    command -v ccmake >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CCMAKE}"
+    command -v ccmake >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_CCMAKE}"
 
     printf "Checking ccache..."
-    command -v ccache >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CCACHE}"
+    command -v ccache >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_CCACHE}"
 
     printf "Checking cppcheck..."
-    command -v cppcheck >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_CPPCHECK}"
+    command -v cppcheck >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_CPPCHECK}"
 
     printf "Checking perf..."
-    command -v perf >/dev/null 2>&1 && printPad OK 30 || "${INSTALL_LINUX_TOOLS_GENERIC}"
+    command -v perf >/dev/null 2>&1 && printPad OK 30 || eval "${PERF}"
 
     # Doxygen
     printf "Checking doxygen..."
     command -v doxygen >/dev/null 2>&1 && printPad OK 30 || {
-        "${INSTALL_DOXYGEN}"
-        "${INSTALL_GRAPHVIZ}"
+        eval "${INSTALL_DOXYGEN}"
+        eval "${INSTALL_GRAPHVIZ}"
     }
 
     # Testing environment
-    printf "Checking Catch2..."
-    if [[ -e /usr/local/lib/cmake/Catch2/Catch2Targets.cmake ]]; then
-        printPad OK 30
-    else
-        cd ~/repos
-        git clone https://github.com/catchorg/Catch2.git
-        cmake -Bbuild -H. -DBUILD_TESTING=OFF
-        sudo cmake --build build/ --target install
-    fi
+    # printf "Checking Catch2..."
+    # if [[ -e /usr/local/lib/cmake/Catch2/Catch2Targets.cmake ]]; then
+    #     printPad OK 30
+    # else
+    #     cd ~/repos
+    #     git clone https://github.com/catchorg/Catch2.git
+    #     cmake -Bbuild -H. -DBUILD_TESTING=OFF
+    #     sudo cmake --build build/ --target install
+    # fi
 
     # LF file manager
     printf "Checking lf..."
     command -v lf >/dev/null 2>&1 && printPad OK 30 || {
+    mkdir -p ~/.local/bin
         curl -L https://github.com/gokcehan/lf/releases/download/r13/lf-linux-amd64.tar.gz | tar xzC ~/.local/bin
         chmod +x ~/.local/bin/lf
         sudo mv ~/.local/bin/lf /usr/local/bin
@@ -113,11 +134,12 @@ function install() {
     # NeoVim
     printf "Checking nvim..."
     command -v nvim >/dev/null 2>&1 && printPad OK 30 || {
-        curl -fsSL https://github.com/neovim/neovim/releases/download/v0.4.3/nvim.appimage -o ~/nvim.appimage
-        ./nvim.appimage --appimage-extract
+        curl -fSL https://github.com/neovim/neovim/releases/download/v0.4.3/nvim.appimage -o ~/nvim.appimage
+    sudo chmod +x ~/nvim.appimage
+        ~/nvim.appimage --appimage-extract
         sudo cp -r ~/squashfs-root/usr/* /usr/
 
-        mkdir ~/.config/nvim
+        mkdir -p ~/.config/nvim
         touch ~/.config/nvim/init.vim
 
         # Plugin Manager
@@ -126,7 +148,8 @@ function install() {
 
         sudo find /usr/share/nvim -type d -exec chmod 755 {} +
 
-        ~/.local/share/nvim/plugged/YouCompleteMe/install.py --clang-completer
+    echo "Use the following to install YCM"
+    echo " ~/.local/share/nvim/plugged/YouCompleteMe/install.py --clang-completer"
 
         # Cleaning up
         printf "Cleaning up temporary files...\n"
@@ -137,7 +160,7 @@ function install() {
     # Shell extensions
     printf "Checking shell extensions..."
     command -v timew >/dev/null 2>&1 && printPad OK 30 || {
-        "${INSTALL_TIMEWARRIOR}"
+        eval "${INSTALL_TIMEWARRIOR}" || echo "Package not found"
     }
 
     printf "\nEnvironment setup has finished.\n"
@@ -169,10 +192,11 @@ fi
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        install)        install;;
-        backup)         backup;;
-        update)         update;;
-        *)              usage;;
+        install)            install;;
+        install-zshExt)     installZshExt;;
+        backup)             backup;;
+        update)             update;;
+        *)                  usage;;
     esac
     shift
 done
