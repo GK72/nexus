@@ -1,9 +1,18 @@
-alias ff='findinfiles'
+alias ls='ls --color=auto'
+alias ll='ls -lh'
+alias la='ls -A'
+alias l='ls -CF'
+
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+
 alias tws='timew start'
 alias twt='timew stop'
 alias twss='timew summary'
 alias twc='timew continue'
 alias rsyncp="rsync -avz --info=progress2"
 
-alias make_gclib='(cd ~/repos/glib/build && make -j gclib_main)'
-alias sandboxc='gcc ~/repos/glib/src/gclib/sandbox.c -o ~/repos/glib/build/sandbox && ~/repos/glib/build/sandbox'
+alias gl='git --no-pager log --oneline --decorate --graph -n10'
+
+alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'

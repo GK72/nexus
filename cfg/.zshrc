@@ -99,6 +99,5 @@ bindkey -s '^o' 'lfcd\n'
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 source ~/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source ~/.gkrc
 
 # test -r $d && eval "$(dircolors ~/.dircolors)"
