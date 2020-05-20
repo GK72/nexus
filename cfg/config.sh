@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Environment setup script
-# gkpro @ 2020-05-17
+# gkpro @ 2020-05-20
 
 set -e
 
@@ -111,17 +111,6 @@ function install() {
         eval "${INSTALL_GRAPHVIZ}"
     }
 
-    # Testing environment
-    # printf "Checking Catch2..."
-    # if [[ -e /usr/local/lib/cmake/Catch2/Catch2Targets.cmake ]]; then
-    #     printPad OK 30
-    # else
-    #     cd ~/repos
-    #     git clone https://github.com/catchorg/Catch2.git
-    #     cmake -Bbuild -H. -DBUILD_TESTING=OFF
-    #     sudo cmake --build build/ --target install
-    # fi
-
     # LF file manager
     printf "Checking lf..."
     command -v lf >/dev/null 2>&1 && printPad OK 30 || {
@@ -135,7 +124,7 @@ function install() {
     printf "Checking nvim..."
     command -v nvim >/dev/null 2>&1 && printPad OK 30 || {
         curl -fSL https://github.com/neovim/neovim/releases/download/v0.4.3/nvim.appimage -o ~/nvim.appimage
-    sudo chmod +x ~/nvim.appimage
+        sudo chmod +x ~/nvim.appimage
         ~/nvim.appimage --appimage-extract
         sudo cp -r ~/squashfs-root/usr/* /usr/
 
@@ -148,8 +137,8 @@ function install() {
 
         sudo find /usr/share/nvim -type d -exec chmod 755 {} +
 
-    echo "Use the following to install YCM"
-    echo " ~/.local/share/nvim/plugged/YouCompleteMe/install.py --clang-completer"
+        echo "Use the following to install YCM"
+        echo " ~/.local/share/nvim/plugged/YouCompleteMe/install.py --clang-completer"
 
         # Cleaning up
         printf "Cleaning up temporary files...\n"
@@ -172,6 +161,7 @@ function backup() {
     cp ~/.zshrc "$PATH_DIR_SCRIPT"
     cp ~/.config/nvim/init.vim "$PATH_DIR_SCRIPT"
     cp ~/.oh-my-zsh/custom/alias.zsh "$PATH_DIR_SCRIPT"
+    cp ~/.oh-my-zsh/custom/build.zsh "$PATH_DIR_SCRIPT"
     cp ~/.oh-my-zsh/custom/functions.zsh "$PATH_DIR_SCRIPT"
     cp ~/.oh-my-zsh/custom/variables.zsh "$PATH_DIR_SCRIPT"
 }
@@ -182,6 +172,7 @@ function update() {
     cp "$PATH_DIR_SCRIPT"/.zshrc ~
     cp "$PATH_DIR_SCRIPT"/init.vim ~/.config/nvim
     cp "$PATH_DIR_SCRIPT"/alias.zsh ~/.oh-my-zsh/custom
+    cp "$PATH_DIR_SCRIPT"/build.zsh ~/.oh-my-zsh/custom
     cp "$PATH_DIR_SCRIPT"/functions.zsh ~/.oh-my-zsh/custom
     cp "$PATH_DIR_SCRIPT"/variables.zsh ~/.oh-my-zsh/custom
 }
