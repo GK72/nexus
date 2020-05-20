@@ -17,7 +17,7 @@ conan_add_remote(NAME bincrafters URL
 conan_cmake_run(
     REQUIRES
     ${CONAN_EXTRA_REQUIRES}
-    catch2/3.0.0@catchorg/stable
+    catch2/2.12.1
     rapidjson/1.1.0
     OPTIONS
     ${CONAN_EXTRA_OPTIONS}
