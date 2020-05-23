@@ -8,8 +8,9 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'scrooloose/nerdtree'                  " File explorer
 
     " ---= Text editing
-    Plug 'jiangmiao/auto-pairs'                 " Insert or delete brackets, parens, quotes in pair
+    "Plug 'jiangmiao/auto-pairs'                 " Insert or delete brackets, parens, quotes in pair
     Plug 'tpope/vim-surround'                   " Surround text with quotes, brackets
+    Plug 'preservim/nerdcommenter'
 
     " ---= Visuals
     Plug 'machakann/vim-highlightedyank'        " Brief highlight of yanked range
@@ -23,6 +24,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'Valloric/YouCompleteMe', { 'do': './install.py --clang-completer'  }
     Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
     Plug 'junegunn/fzf.vim'
+    Plug 'dyng/ctrlsf.vim'
 
     Plug 'derekwyatt/vim-fswitch'               " Switching between source and header files
     Plug 'szw/vim-tags'                         " Ctag generator (TagsGenerate)
@@ -35,6 +37,8 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'vim-syntastic/syntastic'              " Syntax checker
     Plug 'vim-scripts/L9'
     Plug 'vim-scripts/ReplaceWithRegister'
+
+    Plug 'junegunn/goyo.vim'
 call plug#end()
 
 
@@ -133,15 +137,35 @@ let g:ycm_confirm_extra_conf = 0
 " delete '...98' argument from .ycm_extra_conf.py, otherwise syntastic does not work properly
 let g:ycm_global_ycm_extra_conf = '/home/gkpro/.vim/plugged/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_extra_conf.py'
 
+let g:goyo_width = 120
+let g:NERDSpaceDelims = 1
+
 
 " ---------------------------------------==[ Mappings ]==-------------------------------------------
+
+let mapleader = ' '
+
+" ---= Exit insert mode with 'jj'
+inoremap jj <ESC>
+
 " ---= Command without shift
 nnoremap ; :
 nnoremap : ,
 nnoremap , ;
 
-" ---= Terminal: Use ESC to exit insert mode
-tnoremap <C-\><C-\> <C-\><C-n>
+" ---= Terminal: exit key
+tnoremap <leader>q <C-\><C-n>
+
+" ---= Windows
+nnoremap <leader>v <C-w>v<C-w>l
+
+" ---= Misc
+noremap <leader>n :NERDTreeToggle<CR>
+noremap <leader>p :CtrlSF<space>
+noremap <leader>a :Ag<space>
+noremap <leader>no :noh<CR>
+noremap <leader>s :source %<CR>
+noremap <leader>o :FSHere<CR>
 
 vmap  <expr>  <LEFT>   DVB_Drag('left')
 vmap  <expr>  <RIGHT>  DVB_Drag('right')
@@ -156,3 +180,18 @@ nmap <silent> <F5> :call ClangCheck()<CR><CR>
 
 " ---= Command mappings
 command! Cmm call CommentAlignMiddle()
+
+
+" ---= Goyo config
+function! s:goyo_enter()
+    set noshowmode
+    set noshowcmd
+endfunction
+
+function! s:goyo_leave()
+    highlight cursorline cterm=bold ctermbg=234
+    highlight colorcolumn ctermbg=235
+endfunction
+
+autocmd! User GoyoEnter nested call <SID>goyo_enter()
+autocmd! User GoyoLeave nested call <SID>goyo_leave()
