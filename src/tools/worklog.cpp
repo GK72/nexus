@@ -143,10 +143,10 @@ void WorkLog::checkIn() {
         outf.close();
     }
     else if (_state == State::ONGOING) {
-        glib::printn("There is an ongoing logging.");
+        glib::print("There is an ongoing logging.");
     }
     else {
-        glib::printn("Error");
+        glib::print("Error");
     }
 }
 
@@ -162,17 +162,17 @@ void WorkLog::checkOut() {
         outf.close();
     }
     else if (_state != State::ONGOING) {
-        glib::printn("There are no ongoing logging.");
+        glib::print("There are no ongoing logging.");
     }
     else {
-        glib::printn("Error.");
+        glib::print("Error.");
     }
 }
 
 
 void WorkLog::createEntries() {
     if (!(_state == State::ONGOING || _state == State::CLOSED)) {
-        glib::printn("Invalid file!");
+        glib::print("Invalid file!");
         return;
     }
 
@@ -228,7 +228,7 @@ void WorkLog::printSummary(SummaryType type) {
     auto summary = glib::groupBy(_keys, _durations, func, glib::AggregatePlusEquals);
 
     for (const auto& [date, duration] : summary) {
-        glib::printn(
+        glib::print(
             glib::joinStr(": "
                 ,date.toString()
                 ,glib::datetime::prettyTime(duration)
@@ -275,7 +275,7 @@ int main(int argc, char* argv[]) {
 
     try { args.process(); }
     catch (const std::runtime_error& e) {
-        glib::printn(e.what());
+        glib::print(e.what());
         return 1;
     }
 
@@ -300,6 +300,7 @@ int main(int argc, char* argv[]) {
         }
     }
     catch (const std::runtime_error & e) {
-        glib::printn(e.what());
+        glib::print(e.what());
     }
 }
+

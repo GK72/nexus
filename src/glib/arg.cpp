@@ -34,7 +34,7 @@ void ArgParser::argsToString(char* argv[])
 
 void ArgParser::displayHelp()
 {
-    glib::printn("Help");
+    glib::print("Help");
 }
 
 void ArgParser::process()

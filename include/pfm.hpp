@@ -121,15 +121,15 @@ public:
 
     void print() {
         for (const auto& e : m_stats) {
-            glib::printn(e.toString());
-            glib::printn();
+            glib::print(e.toString());
+            glib::print();
         }
     }
 
     void printCSV() {
         glib::print(",", "Name", "Best", "Worst", "Average", "Median", "No of Measures");
         for (const auto& e : m_stats) {
-            glib::printn(e.toCSV());
+            glib::print(e.toCSV());
         }
     }
 
@@ -140,4 +140,4 @@ private:
 };
 
 
-} // End of namespace glib::pfm
+} // namespace glib::pfm

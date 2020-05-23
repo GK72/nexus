@@ -8,6 +8,7 @@
 
 #pragma once
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <exception>
 #include <functional>
@@ -15,6 +16,7 @@
 #include <iomanip>
 #include <map>
 #include <mutex>
+#include <numeric>
 #include <random>
 #include <string>
 #include <string_view>
@@ -36,9 +38,7 @@ namespace glib {
 
 using pDim = std::vector<size_t>;                   // For passing dimensions as parameter
 
-//                                        ----------------                                        //
 // ---------------------------------------==[ Concepts ]==--------------------------------------- //
-//                                        ----------------                                        //
 
 template <class T>
 concept Range = requires(T& t) {
@@ -47,9 +47,7 @@ concept Range = requires(T& t) {
 };
 
 
-//                                     ----------------------                                     //
 // ------------------------------------==[ Free Functions ]==------------------------------------ //
-//                                     ----------------------                                     //
 
 void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
@@ -59,15 +57,11 @@ std::string ipv6Formatter(std::string ipv6);
     return lhs < rhs ? 0 : lhs - rhs;
 }
 
-inline void printn() {
+inline void print() {
     std::cout << '\n';
 }
 
-
-
-//                                  ---------------------------                                   //
 // ---------------------------------==[ Templated Functions ]==---------------------------------- //
-//                                  ---------------------------                                   //
 
 template <class ...Ts> struct Lambdas : Ts... {
     Lambdas(Ts&& ...t) : Ts(std::forward<Ts>(t))... {}
@@ -81,15 +75,21 @@ template<class ...Ts> Lambdas(Ts...) -> Lambdas<std::decay_t<Ts>...>;
 template <class T>
 [[nodiscard]] std::string toString(T&& in) {
     Lambdas stringify{
-         [](const int x)                         { return std::to_string(x); }
+         [](const char x)                        { return std::to_string(x); }
+        ,[](const short x)                       { return std::to_string(x); }
+        ,[](const int x)                         { return std::to_string(x); }
         ,[](const long x)                        { return std::to_string(x); }
+        ,[](const unsigned char x)               { return std::to_string(x); }
+        ,[](const unsigned short x)              { return std::to_string(x); }
+        ,[](const unsigned int x)                { return std::to_string(x); }
         ,[](const size_t x)                      { return std::to_string(x); }
         ,[](const char* x)                       { return std::string(x); }
         ,[](std::string_view x)                  { return std::string(x); }
         ,[](const std::string& x)                { return x; }
-        ,[](const std::chrono::microseconds& x)  { return std::to_string(x.count()) + " us"; }
+        ,[](const std::chrono::seconds& x)       { return std::to_string(x.count()) + " s"; }
         ,[](const std::chrono::milliseconds& x)  { return std::to_string(x.count()) + " ms"; }
-        ,[](const std::chrono::nanoseconds&  x)  { return std::to_string(x.count()) + " ns"; }
+        ,[](const std::chrono::microseconds& x)  { return std::to_string(x.count()) + " us"; }
+        ,[](const std::chrono::nanoseconds& x)   { return std::to_string(x.count()) + " ns"; }
     };
     return stringify(std::forward<T>(in));
 }
@@ -106,7 +106,7 @@ void print(const std::string& separator, T&& first, Ts&&... args) {
 }
 
 template <class T>
-void printn(T t) {
+void print(T t) {
     std::cout << toString(t) << '\n';
 }
 
@@ -140,9 +140,7 @@ template <class T> T swapEndian32(T& x) {
            (x >> 24) & 0x000000FF ;
 }
 
-//                                      ------------------                                        //
 // -------------------------------------==[ Algorithms ]==--------------------------------------- //
-//                                      ------------------                                        //
 
 constexpr auto GroupByEqualKeys    = [](const auto& key, const auto& prevKey) { return key == prevKey; };
 constexpr auto AggregatePlusEquals = [](auto agg, const auto& value)          { return agg += value; };
@@ -192,6 +190,37 @@ groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)
     return summary;
 }
 
+// -------------------------------------==[ Generators ]==------------------------------------------
+
+template <size_t N>
+[[nodiscard]] constexpr auto range() {
+    std::array<size_t, N> r;
+    std::iota(std::begin(r), std::end(r), 0);
+    return r;
+}
+
+template <size_t N, class Init>
+[[nodiscard]] constexpr auto range(Init init) {
+    std::array<size_t, N> r;
+    std::iota(std::begin(r), std::end(r), init);
+    return r;
+}
+
+template <class Length>
+[[nodiscard]] constexpr auto range(Length len) {
+    std::vector<Length> r(len);
+    std::iota(std::begin(r), std::end(r), 0);
+    return r;
+}
+
+template <class Length, class Init>
+[[nodiscard]] constexpr auto range(Length len, Init init) {
+    std::vector<Length> r(len);
+    std::iota(std::begin(r), std::end(r), init);
+    return r;
+}
+
+// TODO: clean up header
 
 // ********************************************************************************************** //
 //                                             Classes                                            //
@@ -304,7 +333,7 @@ public:
 
 
 
-} // End of namespace glib
+} // namespace glib
 
 
 // compile-time endianness swap based on http://stackoverflow.com/a/36937049 
