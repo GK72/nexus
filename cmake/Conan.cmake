@@ -18,6 +18,7 @@ conan_cmake_run(
     REQUIRES
     ${CONAN_EXTRA_REQUIRES}
     catch2/2.12.1
+    ncurses/6.1@conan/stable
     rapidjson/1.1.0
     OPTIONS
     ${CONAN_EXTRA_OPTIONS}
