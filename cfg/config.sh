@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Environment setup script
-# gkpro @ 2020-05-20
+# gkpro @ 2020-05-24
 
 set -e
 
@@ -72,9 +72,7 @@ function install() {
         INSTALL_PERF="sudo pacman -S perf"
     }
 
-    ###############################################################################
-    #                             Checking environment                            #
-    ###############################################################################
+    # ---------------------------------==[ Checking environment ]==---------------------------------
 
     # Shell
     printf "Checking ZSH..."
@@ -156,25 +154,27 @@ function install() {
 }
 
 function backup() {
-    printf "Backing up config files to $PATH_DIR_SCRIPT\n"
-    cp ~/.p10k.zsh "$PATH_DIR_SCRIPT"
-    cp ~/.zshrc "$PATH_DIR_SCRIPT"
-    cp ~/.config/nvim/init.vim "$PATH_DIR_SCRIPT"
-    cp ~/.oh-my-zsh/custom/alias.zsh "$PATH_DIR_SCRIPT"
-    cp ~/.oh-my-zsh/custom/build.zsh "$PATH_DIR_SCRIPT"
-    cp ~/.oh-my-zsh/custom/functions.zsh "$PATH_DIR_SCRIPT"
-    cp ~/.oh-my-zsh/custom/variables.zsh "$PATH_DIR_SCRIPT"
+    printf "Backing up config files to ${PATH_DIR_SCRIPT}\n"
+    cp ~/.p10k.zsh "${PATH_DIR_SCRIPT}"
+    cp ~/.zshrc "${PATH_DIR_SCRIPT}"
+    cp ~/.config/nvim/init.vim "${PATH_DIR_SCRIPT}"
+    cp ~/.oh-my-zsh/custom/alias.zsh "${PATH_DIR_SCRIPT}"
+    cp ~/.oh-my-zsh/custom/build.zsh "${PATH_DIR_SCRIPT}"
+    cp ~/.oh-my-zsh/custom/functions.zsh "${PATH_DIR_SCRIPT}"
+    cp ~/.oh-my-zsh/custom/variables.zsh "${PATH_DIR_SCRIPT}"
+    cp -r ~/.local/share/nvim/plugin/* "${PATH_DIR_SCRIPT}/vimfiles"
 }
 
 function update() {
-    printf "Updating config files from $PATH_DIR_SCRIPT\n"
-    cp "$PATH_DIR_SCRIPT"/.p10k.zsh ~
-    cp "$PATH_DIR_SCRIPT"/.zshrc ~
-    cp "$PATH_DIR_SCRIPT"/init.vim ~/.config/nvim
-    cp "$PATH_DIR_SCRIPT"/alias.zsh ~/.oh-my-zsh/custom
-    cp "$PATH_DIR_SCRIPT"/build.zsh ~/.oh-my-zsh/custom
-    cp "$PATH_DIR_SCRIPT"/functions.zsh ~/.oh-my-zsh/custom
-    cp "$PATH_DIR_SCRIPT"/variables.zsh ~/.oh-my-zsh/custom
+    printf "Updating config files from ${PATH_DIR_SCRIPT}\n"
+    cp -iu "${PATH_DIR_SCRIPT}"/.p10k.zsh ~
+    cp -iu "${PATH_DIR_SCRIPT}"/.zshrc ~
+    cp -iu "${PATH_DIR_SCRIPT}"/init.vim ~/.config/nvim
+    cp -iu "${PATH_DIR_SCRIPT}"/alias.zsh ~/.oh-my-zsh/custom
+    cp -iu "${PATH_DIR_SCRIPT}"/build.zsh ~/.oh-my-zsh/custom
+    cp -iu "${PATH_DIR_SCRIPT}"/functions.zsh ~/.oh-my-zsh/custom
+    cp -iu "${PATH_DIR_SCRIPT}"/variables.zsh ~/.oh-my-zsh/custom
+    cp -iur "${PATH_DIR_SCRIPT}"/vimfiles/* ~/.local/share/nvim/plugin/
 }
 
 if [[ $# -eq 0 ]]; then

@@ -43,10 +43,10 @@ call plug#end()
 
 
 " -----------------------------==[ Custom Plugins and Functions ]==---------------------------------
-source ~/.local/share/nvim/arrownavigation.vim
-source ~/.local/share/nvim/dragvisuals.vim
-source ~/.local/share/nvim/vmath.vim
-source ~/.local/share/nvim/functions.vim
+source ~/.local/share/nvim/plugin/arrownavigation.vim
+source ~/.local/share/nvim/plugin/dragvisuals.vim
+source ~/.local/share/nvim/plugin/vmath.vim
+source ~/.local/share/nvim/plugin/functions.vim
 
 
 " ------------------------------------==[ Basic Settings ]==----------------------------------------
