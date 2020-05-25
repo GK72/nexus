@@ -1,6 +1,6 @@
 /*
  * gkpro @ 2020-04-25
- *   G-Library
+ *   Nexus Library
  *   Datetime header
  */
 
@@ -15,7 +15,7 @@
 #define DATETIME_OSPEED
 #endif
 
-namespace glib::datetime {
+namespace nxs::datetime {
 
 class DateImpl_Compact;
 class DateImpl_Speed;
@@ -128,10 +128,10 @@ public:
     [[nodiscard]] char day()   const              { return m_rep.day(); }
 
     std::string toString() const {
-        return glib::joinStr("."
-            ,glib::padBegin(std::to_string(year()) , 4, '0')
-            ,glib::padBegin(std::to_string(month()), 2, '0')
-            ,glib::padBegin(std::to_string(day())  , 2, '0')
+        return nxs::joinStr("."
+            ,nxs::padBegin(std::to_string(year()) , 4, '0')
+            ,nxs::padBegin(std::to_string(month()), 2, '0')
+            ,nxs::padBegin(std::to_string(day())  , 2, '0')
         );
     }
 
@@ -173,10 +173,10 @@ public:
     [[nodiscard]] char second()  const     { return m_rep.second(); }
 
     [[nodiscard]] std::string toString() const {
-        return glib::joinStr(":"
-            ,glib::padBegin(std::to_string(hour())  , 2, '0')
-            ,glib::padBegin(std::to_string(minute()), 2, '0')
-            ,glib::padBegin(std::to_string(second()), 2, '0')
+        return nxs::joinStr(":"
+            ,nxs::padBegin(std::to_string(hour())  , 2, '0')
+            ,nxs::padBegin(std::to_string(minute()), 2, '0')
+            ,nxs::padBegin(std::to_string(second()), 2, '0')
         );
     }
 
@@ -262,7 +262,7 @@ public:
     [[nodiscard]] char second()   const     { return m_time.second(); }
 
     [[nodiscard]] std::string toString() const {
-        return glib::joinStr(" - "
+        return nxs::joinStr(" - "
             ,m_date.toString()
             ,m_time.toString()
         );
@@ -274,4 +274,4 @@ private:
 };
 
 
-} // namespace glib::date
+} // namespace nxs::date

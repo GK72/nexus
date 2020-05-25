@@ -1,6 +1,6 @@
 /*
  * gkpro @ 2020-01-19
- *   G-Library
+ *   Nexus Library
  *   Argument parsing header
  */
 
@@ -14,7 +14,7 @@
 #include <string_view>
 #include <vector>
 
-namespace glib::ex {
+namespace nxs::ex {
 
 class ValuelessArgException : public std::runtime_error {
 public:
@@ -35,9 +35,9 @@ public:
 };
 
 
-} // namespace glib::ex
+} // namespace nxs::ex
 
-namespace glib {
+namespace nxs {
 
 
 struct Arg {
@@ -128,4 +128,4 @@ private:
 };
 
 
-} // namespace glib
+} // namespace nxs

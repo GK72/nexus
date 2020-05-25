@@ -1,6 +1,6 @@
 /*
  * gkpro @ 2020-04-11
- *   G-Library
+ *   Nexus Library
  *   IO implementation
  */
 
@@ -9,7 +9,7 @@
 #include "io.h"
 #include "utility.h"
 
-namespace glib::IO {
+namespace nxs::IO {
 
 using namespace std::literals::string_literals;
 
@@ -136,4 +136,4 @@ void Tokenizer::escapeQuotes(std::string_view quoteEnd) {
 }
 
 
-} // namespace glib::IO
+} // namespace nxs::IO

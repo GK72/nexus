@@ -12,9 +12,9 @@
 #include "utility.h"
 
 
-static const auto pathDir       = glib::joinStr("/", getenv("HOME"), ".worklog");
+static const auto pathDir       = nxs::joinStr("/", getenv("HOME"), ".worklog");
 static const auto filename      = "data";
-static const auto fullpathData  = glib::joinStr("/", pathDir, filename);
+static const auto fullpathData  = nxs::joinStr("/", pathDir, filename);
 
 constexpr char eof = 26;
 constexpr auto rangeDivider = "-";
@@ -29,7 +29,7 @@ enum class SummaryType {
 };
 
 auto now() {
-    return glib::datetime::getCurrentEpoch<std::chrono::seconds>().count();
+    return nxs::datetime::getCurrentEpoch<std::chrono::seconds>().count();
 }
 
 auto strSplit(std::string_view str, std::string_view split) {
@@ -97,7 +97,7 @@ bool FileReader::read(Tokenizer tokenizer, InputProcessor process)
 
 
 class WorkLog {
-    using Date = glib::datetime::Date<>;
+    using Date = nxs::datetime::Date<>;
 public:
     explicit WorkLog(const std::string& path);
 
@@ -143,10 +143,10 @@ void WorkLog::checkIn() {
         outf.close();
     }
     else if (_state == State::ONGOING) {
-        glib::print("There is an ongoing logging.");
+        nxs::print("There is an ongoing logging.");
     }
     else {
-        glib::print("Error");
+        nxs::print("Error");
     }
 }
 
@@ -162,17 +162,17 @@ void WorkLog::checkOut() {
         outf.close();
     }
     else if (_state != State::ONGOING) {
-        glib::print("There are no ongoing logging.");
+        nxs::print("There are no ongoing logging.");
     }
     else {
-        glib::print("Error.");
+        nxs::print("Error.");
     }
 }
 
 
 void WorkLog::createEntries() {
     if (!(_state == State::ONGOING || _state == State::CLOSED)) {
-        glib::print("Invalid file!");
+        nxs::print("Invalid file!");
         return;
     }
 
@@ -194,7 +194,7 @@ void WorkLog::createEntries() {
                     end = now();
                 }
 
-                _keys.emplace_back(glib::datetime::epochToDate(start));
+                _keys.emplace_back(nxs::datetime::epochToDate(start));
                 _durations.push_back(end - start);
             }
         }
@@ -202,7 +202,7 @@ void WorkLog::createEntries() {
 }
 
 void WorkLog::printSummary(SummaryType type) {
-    using namespace glib::datetime;
+    using namespace nxs::datetime;
     std::function<bool(Date, Date)> func;
 
     switch (type) {
@@ -225,13 +225,13 @@ void WorkLog::printSummary(SummaryType type) {
         default:    break;
     }
 
-    auto summary = glib::groupBy(_keys, _durations, func, glib::AggregatePlusEquals);
+    auto summary = nxs::groupBy(_keys, _durations, func, nxs::AggregatePlusEquals);
 
     for (const auto& [date, duration] : summary) {
-        glib::print(
-            glib::joinStr(": "
+        nxs::print(
+            nxs::joinStr(": "
                 ,date.toString()
-                ,glib::datetime::prettyTime(duration)
+                ,nxs::datetime::prettyTime(duration)
             )
         );
     }
@@ -258,9 +258,9 @@ WorkLog::State WorkLog::read() {
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
-glib::ArgParser parseArgs(int argc, char* args[]) {
-    auto argparser = glib::ArgParser(argc, args);
-    auto argfactory = glib::ArgFactory(&argparser);
+nxs::ArgParser parseArgs(int argc, char* args[]) {
+    auto argparser = nxs::ArgParser(argc, args);
+    auto argfactory = nxs::ArgFactory(&argparser);
     argfactory.addFlag("start", "Check-in");
     argfactory.addFlag("end", "Check-out");
     argfactory.addFlag("show");
@@ -275,7 +275,7 @@ int main(int argc, char* argv[]) {
 
     try { args.process(); }
     catch (const std::runtime_error& e) {
-        glib::print(e.what());
+        nxs::print(e.what());
         return 1;
     }
 
@@ -300,7 +300,7 @@ int main(int argc, char* argv[]) {
         }
     }
     catch (const std::runtime_error & e) {
-        glib::print(e.what());
+        nxs::print(e.what());
     }
 }
 

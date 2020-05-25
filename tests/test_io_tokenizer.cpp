@@ -3,10 +3,10 @@
 
 using namespace std::literals::string_literals;
 
-namespace glib::test {
+namespace nxs::test {
 
 TEST_CASE("Tokenizer - One delim", "[tokenizer]") {
-    auto tok = glib::IO::Tokenizer(",");
+    auto tok = nxs::IO::Tokenizer(",");
 
     SECTION("Empty") {
         tok.setString("");
@@ -58,7 +58,7 @@ TEST_CASE("Tokenizer - One delim", "[tokenizer]") {
 }
 
 TEST_CASE("Tokenizer - One delim, multiple chars", "[tokenizer][!mayfail]") {
-    auto tok = glib::IO::Tokenizer("./");
+    auto tok = nxs::IO::Tokenizer("./");
 
     SECTION("Empty") {
         tok.setString("");
@@ -109,7 +109,7 @@ TEST_CASE("Tokenizer - One delim, multiple chars", "[tokenizer][!mayfail]") {
 }
 
 TEST_CASE("Tokenizer - Two delims", "[tokenizer]") {
-    auto tok = glib::IO::Tokenizer(std::vector{"{"s, "}"s});
+    auto tok = nxs::IO::Tokenizer(std::vector{"{"s, "}"s});
 
     SECTION("Empty") {
         tok.setString("");
@@ -163,7 +163,7 @@ TEST_CASE("Tokenizer - Two delims", "[tokenizer]") {
 }
 
 TEST_CASE("Tokenizer - Escaping quotes", "[tokenizer]") {
-    auto tok = glib::IO::Tokenizer(",");
+    auto tok = nxs::IO::Tokenizer(",");
     tok.setQuote("'");
 
     SECTION("String without quotes") {
@@ -191,7 +191,7 @@ TEST_CASE("Tokenizer - Escaping quotes", "[tokenizer]") {
 }
 
 TEST_CASE("Tokenizer - by explicit sentinel value", "[tokenizer]") {
-    auto tok = glib::IO::Tokenizer(std::vector{":"s, ","s});
+    auto tok = nxs::IO::Tokenizer(std::vector{":"s, ","s});
     tok.setQuote("'");
 
     SECTION("one sentinel") {
@@ -219,7 +219,7 @@ TEST_CASE("Tokenizer - by explicit sentinel value", "[tokenizer]") {
 }
 
 TEST_CASE("Tokenizer - escapers", "[tokenizer]") {
-    auto tok = glib::IO::Tokenizer(",");
+    auto tok = nxs::IO::Tokenizer(",");
     tok.setEscapers({{{"["},{"]"}}});
     tok.setQuote("\"");
 
@@ -249,4 +249,4 @@ TEST_CASE("Tokenizer - escapers", "[tokenizer]") {
     }
 }
 
-}    // namespace glib::test
+}    // namespace nxs::test

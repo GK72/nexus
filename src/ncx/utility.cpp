@@ -1,6 +1,6 @@
 /*
  * gkpro @ 2020-04-25
- *   G-Library
+ *   Nexus Library
  *   Utility implementation
  */
 
@@ -8,7 +8,7 @@
 #include <ctime>
 #include "utility.h"
 
-namespace glib {
+namespace nxs {
 
 void printLog(const std::string_view& msg) {
     auto timestamp = std::chrono::system_clock::now();
@@ -48,4 +48,4 @@ std::string ipv6Formatter(const std::string& ipv6) {
 }
 
 
-} // namespace glib
+} // namespace nxs

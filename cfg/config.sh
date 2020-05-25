@@ -13,10 +13,10 @@ function printPad() {
 }
 
 PATH_DIR_SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" >/dev/null 2>&1 && pwd  )"
-PATH_REPO_GLIB="$(basename $(dirname ${PATH_DIR_SCRIPT}))"
+PATH_REPO_NEXUS="$(basename $(dirname ${PATH_DIR_SCRIPT}))"
 
-if [[ $(basename "${PATH_REPO_GLIB}") != "glib" ]]; then
-    printf "Script is not in gLib repository\n"
+if [[ $(basename "${PATH_REPO_NEXUS}") != "nexus" ]]; then
+    printf "Script is not in Nexus repository\n"
     exit 1
 fi
 
@@ -25,8 +25,8 @@ function usage() {
 Usage: ${0##*/} [install] [install-zshExt] [update] [backup]
   install           Checking environment and installs tools if not available
   install-zshExt    Installing ZSH extensions (Oh-My-Zsh, Powerlevel)
-  update            Copies config files from glib/cfg
-  backup            Copies config files into glib/cfg
+  update            Copies config files from nexus/cfg
+  backup            Copies config files into nexus/cfg
 EOH
 }
 

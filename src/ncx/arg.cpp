@@ -1,13 +1,13 @@
 /*
  * gkpro @ 2020-01-29
- *   G-Library
+ *   Nexus Library
  *   Argument parsing implentation
  */
 
 #include "arg.h"
 #include "utility.h"
 
-namespace glib {
+namespace nxs {
 
 ArgParser::ArgParser(int argc, char* argv[])
 {
@@ -32,7 +32,7 @@ void ArgParser::argsToString(char* argv[])
 
 void ArgParser::displayHelp()
 {
-    glib::print("Help");
+    nxs::print("Help");
 }
 
 void ArgParser::process()
@@ -90,4 +90,4 @@ void ArgParser::setOptions()
 }
 
 
-} // namespace glib
+} // namespace nxs
