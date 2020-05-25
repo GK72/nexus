@@ -3,7 +3,7 @@
 #include <numeric>
 #include <ratio>
 
-namespace glib::units {
+namespace nxs::units {
 
 template <class Rep, class Measure = std::ratio<1>> class Unit;
 
@@ -22,17 +22,17 @@ namespace std {
 
 template <class Rep1, class Measure1, class Rep2, class Measure2>
 struct common_type<
-    glib::units::Unit<Rep1, Measure1>,
-    glib::units::Unit<Rep2, Measure2>>
+    nxs::units::Unit<Rep1, Measure1>,
+    nxs::units::Unit<Rep2, Measure2>>
 {
-    using type = glib::units::Unit<
+    using type = nxs::units::Unit<
         typename common_type<Rep1, Rep2>::type,
-        typename glib::units::_ratioGCD<Measure1, Measure2>::type>;
+        typename nxs::units::_ratioGCD<Measure1, Measure2>::type>;
 };
 
 } // namespace std
 
-namespace glib::units {
+namespace nxs::units {
 
 // -------------------------------------==[ Type Trait ]==------------------------------------------
 
@@ -465,4 +465,4 @@ namespace literals {
     }
 }
 
-} // namespace glib::units
+} // namespace nxs::units

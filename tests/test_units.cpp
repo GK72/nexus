@@ -2,7 +2,7 @@
 
 #include "units.h"
 
-using namespace glib::units;
+using namespace nxs::units;
 using namespace literals;
 
 TEST_CASE("Units/Bytes: Conversions", "[units]") {

@@ -14,7 +14,7 @@ TEST_CASE("GroupBy", "[utility]") {
         std::vector<int> keys   { 1, 1, 2, 3, 3, 3, 3 };
         std::vector<int> values { 1, 2, 5, 1, 1, 1, 1 };
 
-        auto group = glib::groupBy(keys, values
+        auto group = nxs::groupBy(keys, values
             ,[](const auto& key, const auto& prevKey) { return key == prevKey; }
             ,[](auto agg, const auto& value)          { return agg += value; }
         );

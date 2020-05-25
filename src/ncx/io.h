@@ -1,6 +1,6 @@
 /*
  * gkpro @ 2020-04-11
- *   G-Library
+ *   Nexus Library
  *   IO header
  */
 
@@ -15,7 +15,7 @@
 #include "utility.h"
 
 
-namespace glib::IO {
+namespace nxs::IO {
 
 std::string_view trim(std::string_view sv, const std::string& what);
 
@@ -74,4 +74,4 @@ private:
 };
 
 
-} // namespace glib::IO
+} // namespace nxs::IO

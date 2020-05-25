@@ -1,6 +1,6 @@
 /*
  * gkpro @ 2020-04-25
- *   G-Library
+ *   Nexus Library
  *   Utility header
  */
 
@@ -17,10 +17,10 @@
 #include <type_traits>
 #include <vector>
 
-namespace glib {
+namespace nxs {
 
 #ifndef NDEBUG
-#define DBGMSG(msg, value) glib::print("", "[DBG] ", __FILE__, ":", __FUNCTION__, ":", __LINE__,  "  \"", msg, "\"  = ", value);
+#define DBGMSG(msg, value) nxs::print("", "[DBG] ", __FILE__, ":", __FUNCTION__, ":", __LINE__,  "  \"", msg, "\"  = ", value);
 #else
 #define DBGMSG(msg, value) ((void)0)
 #endif
@@ -206,4 +206,4 @@ template <class Length, class Init>
 }
 
 
-} // namespace glib
+} // namespace nxs

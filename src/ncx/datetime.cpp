@@ -1,12 +1,12 @@
 /*
  * gkpro @ 2020-04-25
- *   G-Library
+ *   Nexus Library
  *   Datetime implementation
  */
 
 #include "datetime.h"
 
-namespace glib::datetime {
+namespace nxs::datetime {
 
 
 bool isDateValid(int year, char month, char day) {
@@ -62,4 +62,4 @@ Date<DateImpl> Date<DateImpl>::addDay(int day_) {
 }
 
 
-} // namespace glib::date
+} // namespace nxs::date
