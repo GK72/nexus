@@ -1,42 +1,29 @@
-// **********************************************
-// ** gkpro @ 2020-04-25                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **          Utility library header          **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-04-25
+ *   G-Library
+ *   Utility header
+ */
 
 #pragma once
+
 #include <algorithm>
 #include <array>
 #include <chrono>
-#include <exception>
-#include <functional>
 #include <iostream>
 #include <iomanip>
-#include <map>
-#include <mutex>
 #include <numeric>
-#include <random>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <type_traits>
 #include <vector>
 
 namespace glib {
-
-
-#define _g_NIE(msg) throw NotImplementedException(msg)
-#define _g_uNIE throw NotImplementedException("Unknown Exception")
 
 #ifndef NDEBUG
 #define DBGMSG(msg, value) glib::print("", "[DBG] ", __FILE__, ":", __FUNCTION__, ":", __LINE__,  "  \"", msg, "\"  = ", value);
 #else
 #define DBGMSG(msg, value) ((void)0)
 #endif
-
-using pDim = std::vector<size_t>;                   // For passing dimensions as parameter
 
 // ---------------------------------------==[ Concepts ]==--------------------------------------- //
 
@@ -46,10 +33,8 @@ concept Range = requires(T& t) {
     std::end(t);
 };
 
-
 // ------------------------------------==[ Free Functions ]==------------------------------------ //
 
-void dumpError(const std::exception& ex, const std::string_view& sv = "");
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
 
@@ -220,130 +205,5 @@ template <class Length, class Init>
     return r;
 }
 
-// TODO: clean up header
-
-// ********************************************************************************************** //
-//                                             Classes                                            //
-// ********************************************************************************************** //
-
-class Random {
-public:
-    static Random* getInstance();
-    static int randomInt(int min, int max);
-
-protected:
-    Random();
-
-private:
-    static Random* m_instance;
-    static std::random_device m_rd;
-    static std::mt19937 m_mt;
-};
-
-
-struct Event {
-    Event(const std::string& str) : msg(str) {}
-    std::string msg;
-};
-
-class Subscriber;
-
-class Publisher {
-public:
-    virtual void attach(Subscriber* sub);
-    virtual void detach(Subscriber* sub);
-    virtual void notify(Event&& evt);
-
-protected:
-    Publisher() {}
-    std::vector<Subscriber*> _subs;
-
-private:
-};
-
-class Subscriber {
-public:
-    virtual ~Subscriber() {}                      // in subclass: { _sub->detach(this); }
-    virtual void trigger(Event& evt) = 0;
-
-protected:
-    Subscriber() {}
-};
-
-
-
-class ThreadPool {
-public:
-    template <class F> void add(F func) {
-        m_threads.emplace_back(func);
-    }
-    void joinAll();
-    void message(const std::string& msg, int id);
-
-private:
-    std::vector<std::thread> m_threads;
-    std::mutex m_mx;
-};
-
-// ********************************************************************************************** //
-//                                         Access functions                                       //
-// ********************************************************************************************** //
-
-template <class T> struct Iterator {
-    Iterator()                              { p = nullptr; }
-    Iterator(T* p)                          : p(p) {}
-    bool operator!=(Iterator rhs)           { return p != rhs.p; }
-    T& operator*()                          { return *p; }
-    Iterator& operator++()                  { ++p; return *this; }
-    Iterator operator++(int) {
-        Iterator<T> t(p);
-        ++(*p);
-        return t;
-    }
-
-    T* p;
-};
-
-class Index {
-public:
-    Index(const std::vector<size_t>& dims) : m_dims(dims) {}
-    size_t at(const std::vector<size_t>& vec) const;
-    size_t at(size_t x, size_t y) const { return x * m_dims[1] + y; }
-
-private:
-    std::vector<size_t> m_dims;
-    mutable size_t m_global = 0;
-    size_t m_tile = 0;
-    size_t m_local = 0;
-};
-
-// ********************************************************************************************** //
-//                                           Exceptions                                           //
-// ********************************************************************************************** //
-
-class NotImplementedException : public std::runtime_error {
-public:
-    NotImplementedException(const char* msg) : std::runtime_error(msg) {}
-};
-
-class IOErrorException : public std::runtime_error {
-public:
-    IOErrorException(const char* filename) : std::runtime_error("IO Error") {}
-};
-
-
 
 } // namespace glib
-
-
-// compile-time endianness swap based on http://stackoverflow.com/a/36937049 
-//template<class T, std::size_t... N>
-//constexpr T bswap_impl(T i, std::index_sequence<N...>) {
-//  return (((i >> N*CHAR_BIT & std::uint8_t(-1)) << (sizeof(T)-1-N)*CHAR_BIT) | ...);
-//}
-//static_assert(bswap<std::uint16_t>(0x1234u)==0x3412u);
-//
-//template<typename ...Args>
-//void printer(Args&&... args) {
-//    (std::cout << ... << args) << '\n';
-//}

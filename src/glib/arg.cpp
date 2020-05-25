@@ -1,10 +1,8 @@
-// **********************************************
-// ** gkpro @ 2020-01-29                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **         Arguments implementation         **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-01-29
+ *   G-Library
+ *   Argument parsing implentation
+ */
 
 #include "arg.h"
 #include "utility.h"
@@ -92,5 +90,4 @@ void ArgParser::setOptions()
 }
 
 
-
-} // End of namespace glib
+} // namespace glib

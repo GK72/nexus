@@ -1,20 +1,19 @@
-// **********************************************
-// ** gkpro @ 2020-04-25                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **             Datetime Header              **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-04-25
+ *   G-Library
+ *   Datetime header
+ */
 
 #pragma once
+
 #include <array>
 #include <chrono>
 
 #include "utility.h"
 
-// #define DATETIME_OSIZE
+#if !defined(DATETIME_OSPEED) && !defined(DATETIME_OSIZE)
 #define DATETIME_OSPEED
-
+#endif
 
 namespace glib::datetime {
 
@@ -275,5 +274,4 @@ private:
 };
 
 
-
-} // End of namespace glib::date
+} // namespace glib::date
