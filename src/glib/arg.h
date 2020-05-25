@@ -1,12 +1,11 @@
-// **********************************************
-// ** gkpro @ 2020-01-29                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **            Arguments header              **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-01-19
+ *   G-Library
+ *   Argument parsing header
+ */
 
 #pragma once
+
 #include <any>
 #include <map>
 #include <optional>
@@ -36,7 +35,7 @@ public:
 };
 
 
-} // End of namespace glib::ex
+} // namespace glib::ex
 
 namespace glib {
 
@@ -129,5 +128,4 @@ private:
 };
 
 
-
-} // End of namespace glib
+} // namespace glib

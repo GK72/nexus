@@ -1,1 +1,0 @@
-int listdir(const char* path);

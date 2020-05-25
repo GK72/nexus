@@ -1,10 +1,8 @@
-// **********************************************
-// ** gkpro @ 2020-02-15                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **         Datatable Implementation         **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-04-25
+ *   G-Library
+ *   Datetime implementation
+ */
 
 #include "datetime.h"
 
@@ -64,5 +62,4 @@ Date<DateImpl> Date<DateImpl>::addDay(int day_) {
 }
 
 
-
-} // End of namespace glib::date
+} // namespace glib::date

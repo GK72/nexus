@@ -6,7 +6,6 @@
 
 #include "arg.h"
 #include "utility.h"
-#include "pfm.hpp"
 
 int run(const glib::ArgParser& args)
 {
@@ -37,13 +36,7 @@ int main(int argc, char* argv[])
     if (args.get<bool>("--help")) { return 0; }
 
     try {
-        if (args.get<bool>("measure")) {
-            std::function<void()> func( [&args]() { run(args); });
-            glib::print(glib::pfm::getMeasureStats(glib::pfm::measure(func, 10), "Test").toString());
-        }
-        else {
-            return run(args);
-        }
+        return run(args);
     }
     catch (const std::runtime_error & e) {
         glib::print(e.what());

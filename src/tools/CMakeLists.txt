@@ -3,7 +3,6 @@ add_executable (sandbox sandbox.cpp)
 target_link_libraries (sandbox PRIVATE utility)
 target_link_libraries (sandbox PRIVATE io)
 target_link_libraries (sandbox PRIVATE arg)
-target_link_libraries (sandbox PRIVATE data)
 target_include_directories(sandbox PRIVATE ${CMAKE_HOME_DIRECTORY}/include)
 target_include_directories(sandbox PRIVATE ../glib)
 
