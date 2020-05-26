@@ -27,11 +27,13 @@ namespace nxs {
 
 // ---------------------------------------==[ Concepts ]==--------------------------------------- //
 
+#ifdef __cpp_concepts
 template <class T>
 concept Range = requires(T& t) {
     std::begin(t);
     std::end(t);
 };
+#endif
 
 // ------------------------------------==[ Free Functions ]==------------------------------------ //
 
@@ -144,10 +146,16 @@ constexpr auto AggregatePlusEquals = [](auto agg, const auto& value)          { 
  *
  * @return          A container with key-value pairs
  */
-template <Range KeysCont
-         ,Range ValueCont
-         ,class Predicate
-         ,class BinOp>
+template
+#ifdef __cpp_concepts
+    <Range KeysCont
+    ,Range ValueCont
+#else
+    <class KeysCont
+    ,class ValueCont
+#endif
+    ,class Predicate
+    ,class BinOp>
 [[nodiscard]]
 std::vector<std::pair<typename KeysCont::value_type, typename ValueCont::value_type>>
 groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)

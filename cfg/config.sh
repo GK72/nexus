@@ -159,7 +159,6 @@ function backup() {
     cp ~/.zshrc "${PATH_DIR_SCRIPT}"
     cp ~/.config/nvim/init.vim "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/alias.zsh "${PATH_DIR_SCRIPT}"
-    cp ~/.oh-my-zsh/custom/build.zsh "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/functions.zsh "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/variables.zsh "${PATH_DIR_SCRIPT}"
     cp -r ~/.local/share/nvim/plugin/* "${PATH_DIR_SCRIPT}/vimfiles"
@@ -171,9 +170,10 @@ function update() {
     cp -iu "${PATH_DIR_SCRIPT}"/.zshrc ~
     cp -iu "${PATH_DIR_SCRIPT}"/init.vim ~/.config/nvim
     cp -iu "${PATH_DIR_SCRIPT}"/alias.zsh ~/.oh-my-zsh/custom
-    cp -iu "${PATH_DIR_SCRIPT}"/build.zsh ~/.oh-my-zsh/custom
     cp -iu "${PATH_DIR_SCRIPT}"/functions.zsh ~/.oh-my-zsh/custom
     cp -iu "${PATH_DIR_SCRIPT}"/variables.zsh ~/.oh-my-zsh/custom
+
+    mkdir -p ~/.local/share/nvim/plugin
     cp -iur "${PATH_DIR_SCRIPT}"/vimfiles/* ~/.local/share/nvim/plugin/
 }
 
