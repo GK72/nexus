@@ -7,16 +7,16 @@
 # Cyan         0;36     Light Cyan    1;36
 # Light Gray   0;37     White         1;37
 
-COLOR_DEF='\033[0m'
-COLOR_RED='\033[0;31m'
-COLOR_GREEN='\033[0;32m'
+export COLOR_DEF='\033[0m'
+export COLOR_RED='\033[0;31m'
+export COLOR_GREEN='\033[0;32m'
 
 # Build configuration
-GBUILD_ENV_SET=1
-GBUILD_TYPE="Debug"
-GCOMPILER="clang"
-GCOMPILER_VER="11"
-GCOMPILER_C="${GCOMPILER}-${GCOMPILER_VER}"
-GCOMPILER_CXX="${GCOMPILER}++-${GCOMPILER_VER}"
-GBUILD_GEN="Ninja"
-GBUILD_JOBS=4
+export XBUILD_ENV_SET=1
+export XBUILD_TYPE="Debug"
+export XCOMPILER="clang"
+export XCOMPILER_VER="11"
+export XCOMPILER_C="${GCOMPILER}-${GCOMPILER_VER}"
+export XCOMPILER_CXX="${GCOMPILER}++-${GCOMPILER_VER}"
+export XBUILD_GEN="Ninja"
+export XBUILD_JOBS=4

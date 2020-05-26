@@ -1,0 +1,107 @@
+#!/bin/zsh
+
+function usage() {
+    cat << EOF
+usage: ${0##*/} [-c | --compiler <COMPILER NAME>]
+
+    -b | --build_type <BUILD TYPE>          Type of the build e.g. Debug, Release
+    -c | --compiler <COMPILER NAME>         Compiler used by CMake
+    -h | --help                             Print help
+    -j | --jobs <N>                         Number of parallel jobs
+    -l | --list                             List XBUILD environment variables
+    -p | --path <REPO PATH>                 Path to the repository
+    -r | --run <BINARY PATH>                Path to the binary to run (relative to REPO PATH)
+    -t | --target <TARGET NAME>             Target to build
+EOF
+}
+
+function list() {
+    echo "Build environment set: ${XBUILD_ENV_SET}"
+    echo "Build type           : ${XBUILD_TYPE}"
+    echo "Build generator      : ${XBUILD_GEN}"
+    echo "Parallel jobs        : ${XBUILD_JOBS}"
+    echo "Compiler             : ${XCOMPILER}"
+    echo "Compiler version     : ${XCOMPILER_VER}"
+    echo "C Compiler           : ${XCOMPILER_C}"
+    echo "C++ Compiler         : ${XCOMPILER_CXX}"
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -b | --build_type)  BUILD_TYPE="$2";    shift; shift ;;
+        -c | --compiler)    COMPILER="$2";      shift; shift ;;
+        -j | --jobs)        JOBS="$2";          shift; shift ;;
+        -l | --list)        list; exit 0;       shift ;;
+        -p | --path)        PATH_REPO="$2";     shift; shift ;;
+        -r | --run)         PATH_BIN="$2";      shift; shift ;;
+        -t | --target)      TARGET="$2";        shift; shift ;;
+        -h | --help)        usage; exit 0;      shift ;;
+        *)                  usage; exit 1;      shift ;;
+    esac
+done
+
+# MAIN
+
+BUILD_TYPE="${BUILD_TYPE-$XBUILD_TYPE}"
+if [[ -z "${BUILD_TYPE}" ]]; then
+    echo "No build type specified"
+    exit 1
+fi
+
+COMPILER="${COMPILER-$XCOMPILER}"
+GENERATOR="${XBUILD_GEN-"Unix Makefiles"}"
+TARGET="${TARGET-"all"}"
+
+if [[ -z "${JOBS}" ]]; then
+    JOBS="${XBUILD_JOBS-1}"
+fi
+
+if [[ "${COMPILER}" == "gcc" ]]; then
+    COMPILER_C=gcc
+    COMPILER_CXX=g++
+elif [[ "${COMPILER}" == "clang" ]]; then
+    COMPILER_C=clang
+    COMPILER_CXX=clang++
+fi
+
+BUILD_DIR="${PATH_REPO}/build/${BUILD_TYPE:l}-${COMPILER}"
+mkdir -p "${BUILD_DIR}"
+
+if [[ "${GENERATOR}" == "Ninja" ]]; then
+    BUILD_FILE="build.ninja"
+elif [[ "${GENERATOR}" == "Unix Makefiles" ]]; then
+    BUILD_FILE="Makefile"
+fi
+
+# Generate build files if hasn't been already
+if [[ ! -e "${BUILD_DIR}/${BUILD_FILE}" ]]; then
+    (cd "${BUILD_DIR}" &&
+    cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+          -DCMAKE_C_COMPILER="${COMPILER_C}" \
+          -DCMAKE_CXX_COMPILER="${COMPILER_CXX}" \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -G"${GENERATOR}" \
+          "${PATH_REPO}"
+    )
+fi
+
+# Build
+cmake --build "${BUILD_DIR}" \
+      --target "${TARGET}" \
+      -- -j"${JOBS}"
+
+if [[ $? != 0 ]]; then
+    echo -e "${COLOR_RED}  ----==[ BUILD FAILED ! ]==----"
+    return 2
+fi
+
+# Link compile_commands.json to the root of the repo
+if [[ ! -e "${BUILD_DIR}/compile_commands.json" ]]; then
+    ln -s "${BUILD_DIR}/compile_commands.json" \
+        "${PATH_REPO}/compile_commands.json"
+fi
+
+# Run executable
+if [[ -n "${PATH_BIN}" ]]; then
+    "${BUILD_DIR}/${PATH_BIN}"
+fi
