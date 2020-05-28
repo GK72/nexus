@@ -96,8 +96,8 @@ if [[ $? != 0 ]]; then
 fi
 
 # Link compile_commands.json to the root of the repo
-if [[ ! -e "${BUILD_DIR}/compile_commands.json" ]]; then
-    ln -s "${BUILD_DIR}/compile_commands.json" \
+if [[ ! -e "${PATH_REPO}/compile_commands.json" ]]; then
+    ln -sv "${BUILD_DIR}/compile_commands.json" \
         "${PATH_REPO}/compile_commands.json"
 fi
 
