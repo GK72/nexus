@@ -96,6 +96,7 @@ syntax on                   " syntax highlighting
 " Some coloring
 highlight cursorline cterm=bold ctermbg=234
 highlight colorcolumn ctermbg=235
+highlight VertSplit ctermfg=0 ctermbg=235
 
 
 " ------------------------------------==[ Configuration ]==-----------------------------------------
