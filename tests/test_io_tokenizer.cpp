@@ -57,7 +57,7 @@ TEST_CASE("Tokenizer - One delim", "[tokenizer]") {
     }
 }
 
-TEST_CASE("Tokenizer - One delim, multiple chars", "[tokenizer][!mayfail]") {
+TEST_CASE("Tokenizer - One delim, multiple chars", "[tokenizer]") {
     auto tok = nxs::IO::Tokenizer("./");
 
     SECTION("Empty") {

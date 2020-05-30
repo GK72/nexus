@@ -64,6 +64,7 @@ std::string Tokenizer::next()
     );
 
     if (esc != std::end(m_escapers)) {
+        m_posStart += m_escapers.front().first.size();
         escapedToken = next(esc->second);
     }
 
@@ -81,7 +82,7 @@ std::string Tokenizer::next()
     }
 
     token = m_str.substr(m_posStart, m_posEnd - m_posStart);
-    m_posStart = m_posEnd + 1;
+    m_posStart = m_posEnd + m_delims[m_idxDelim].size();
     m_idxDelim = ++m_idxDelim % m_nDelims;
 
     if (escapedToken != "") {
