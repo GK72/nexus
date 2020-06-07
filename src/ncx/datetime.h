@@ -8,6 +8,7 @@
 
 #include <array>
 #include <chrono>
+#include <string_view>
 
 #include "utility.h"
 
@@ -109,6 +110,13 @@ class Date
 public:
     Date(int year, char month, char day)
         : m_rep(year, month, day)
+    {}
+
+    Date(std::string_view date)
+        : Date(
+            std::stoi(date.substr(0, 4).data()),
+            std::stoi(date.substr(5, 2).data()),
+            std::stoi(date.substr(8, 2).data()))
     {}
 
     bool operator== (const Date<>& date) const {
