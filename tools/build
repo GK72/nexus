@@ -29,20 +29,29 @@ function list() {
     echo "XCOMPILER_VER = ${XCOMPILER_VER}"
 }
 
+NONE="<none>"
+FWD_ARGS="${NONE}"
+
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        -b | --build_type)      BUILD_TYPE="$2";    shift; shift ;;
-        -c | --compiler)        COMPILER="$2";      shift; shift ;;
-        -d | --delete)          DELETE=1;           shift ;;
-        -j | --jobs)            JOBS="$2";          shift; shift ;;
-        -l | --list)            list; exit 0;       shift ;;
-        -p | --path)            PATH_REPO="$2";     shift; shift ;;
-        -r | --run)             PATH_BIN="$2";      shift; shift ;;
-        -t | --target)          TARGET="$2";        shift; shift ;;
-        -h | --help)            usage; exit 0;      shift ;;
-        -v | --compiler-ver)    COMPILER_VER="$2";  shift; shift ;;
-        *)                      usage; exit 255;    shift ;;
-    esac
+    if [[ "${FWD_ARGS}" == "${NONE}" ]]; then
+        case $1 in
+            -b | --build_type)      BUILD_TYPE="$2";    shift; shift ;;
+            -c | --compiler)        COMPILER="$2";      shift; shift ;;
+            -d | --delete)          DELETE=1;           shift ;;
+            -j | --jobs)            JOBS="$2";          shift; shift ;;
+            -l | --list)            list; exit 0;       shift ;;
+            -p | --path)            PATH_REPO="$2";     shift; shift ;;
+            -r | --run)             PATH_BIN="$2";      shift; shift ;;
+            -t | --target)          TARGET="$2";        shift; shift ;;
+            -h | --help)            usage; exit 0;      shift ;;
+            -v | --compiler-ver)    COMPILER_VER="$2";  shift; shift ;;
+            --)                     FWD_ARGS="";        shift ;;
+            *)                      usage; exit 255;    shift ;;
+        esac
+    else
+        FWD_ARGS="${FWD_ARGS}$1 "
+        shift
+    fi
 done
 
 # -------------------------------------==[ Initializing ]==-----------------------------------------
@@ -104,7 +113,8 @@ mkdir -p "${BUILD_DIR}"
 # Generate build files if hasn't been already
 if [[ ! -e "${BUILD_DIR}/${BUILD_FILE}" ]]; then
     (cd "${BUILD_DIR}" &&
-    cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+    cmake "${FWD_ARGS}" \
+          -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
           -DCMAKE_C_COMPILER="${COMPILER_C}" \
           -DCMAKE_CXX_COMPILER="${COMPILER_CXX}" \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
