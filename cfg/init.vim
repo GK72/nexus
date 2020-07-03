@@ -18,6 +18,8 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'ryanoasis/vim-devicons'               " File type icons
     Plug 'tmhedberg/SimpylFold'                 " Folding for Python
 
+    Plug 'arzg/vim-corvine'
+
     " ---= Completion and searching
     Plug 'davidhalter/jedi-vim'                 " Python auto-completion
     Plug 'rdnetto/YCM-Generator', { 'branch': 'stable' }
@@ -98,7 +100,6 @@ highlight cursorline cterm=bold ctermbg=234
 highlight colorcolumn ctermbg=235
 highlight VertSplit ctermfg=0 ctermbg=235
 
-
 " ------------------------------------==[ Configuration ]==-----------------------------------------
 let g:deoplete#enable_at_startup = 1
 let g:airline_powerline_fonts=1
@@ -158,7 +159,11 @@ nnoremap , ;
 tnoremap <leader>q <C-\><C-n>
 
 " ---= Windows
-nnoremap <leader>v <C-w>v<C-w>l
+nnoremap <leader>vs <C-w>v<C-w>l
+noremap <leader>r :res +10<CR>
+noremap <leader>R :res -10<CR>
+noremap <leader>vr :vert res +5<CR>
+noremap <leader>vR :vert res -5<CR>
 
 " ---= Misc
 noremap <leader>n :NERDTreeToggle<CR>
@@ -167,6 +172,13 @@ noremap <leader>a :Ag<space>
 noremap <leader>no :noh<CR>
 noremap <leader>s :source %<CR>
 noremap <leader>o :FSHere<CR>
+noremap <leader>gs :Gstatus<CR>
+noremap <leader>gc :Gcommit<CR>
+
+" ---= Moving text
+vnoremap J :m '>+1<CR>gv=gv
+vnoremap K :m '<-2<CR>gv=gv
+
 
 vmap  <expr>  <LEFT>   DVB_Drag('left')
 vmap  <expr>  <RIGHT>  DVB_Drag('right')
