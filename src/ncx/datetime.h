@@ -170,26 +170,42 @@ template <class TimeImpl = DefTimeImpl>
 class Time
 {
 public:
-    Time(char hour, char minute, char second)
+    Time(int days, char hour, char minute, char second, bool negative = false)
+        : Time(hour, minute, second, negative)
+    {
+        m_days = days;
+    }
+
+    Time(char hour, char minute, char second, bool negative = false)
         : m_rep(hour, minute, second)
-    {}
+    {
+        m_negative = negative;
+    }
 
     [[nodiscard]] bool isValid() const     { return m_rep.isValid(); }
 
+    [[nodiscard]] int  days()    const     { return days; }
     [[nodiscard]] char hour()    const     { return m_rep.hour(); }
     [[nodiscard]] char minute()  const     { return m_rep.minute(); }
     [[nodiscard]] char second()  const     { return m_rep.second(); }
 
     [[nodiscard]] std::string toString() const {
-        return nxs::joinStr(":"
+        std::string timeStr = m_negative ? "-" : "";
+        timeStr += nxs::joinStr(":"
             ,nxs::padBegin(std::to_string(hour())  , 2, '0')
             ,nxs::padBegin(std::to_string(minute()), 2, '0')
             ,nxs::padBegin(std::to_string(second()), 2, '0')
         );
+
+        return m_days == 0
+             ? timeStr
+             : nxs::joinStr("", m_days, "d ", timeStr);
     }
 
 private:
     TimeImpl m_rep;
+    int m_days = 0;
+    bool m_negative;
 };
 
 
@@ -213,13 +229,15 @@ template <class TimeRep>
 [[nodiscard]]
 Time<> epochToTime(TimeRep epoch)
 {
-    auto seconds = epoch % 86400;
+    auto absEpoch = std::abs(epoch);
+    auto days    = absEpoch / 86400;
+    auto seconds = absEpoch % 86400;
 
     auto hour       = seconds / 3600;
     auto minute     = seconds / 60 % 60;
     auto second     = seconds - (hour * 3600) - (minute * 60);
 
-    return Time(hour, minute, second);
+    return Time(days, hour, minute, second, epoch < 0);
 }
 
 template <class TimeRep>

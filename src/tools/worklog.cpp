@@ -11,10 +11,8 @@
 #include "datetime.h"
 #include "utility.h"
 
-
-static const auto pathDir       = nxs::joinStr("/", getenv("HOME"), ".worklog");
-static const auto filename      = "data";
-static const auto fullpathData  = nxs::joinStr("/", pathDir, filename);
+static const auto pathDir          = nxs::joinStr("/", getenv("HOME"), ".worklog");
+static const auto filenameData     = "data";
 
 constexpr char eof = 26;
 constexpr auto rangeDivider = "-";
@@ -26,6 +24,7 @@ enum class SummaryType {
     ,DAY
     ,WEEK
     ,MONTH
+    ,BALANCE
 };
 
 auto now() {
@@ -55,6 +54,9 @@ SummaryType validateSummaryType(std::string_view type) {
     }
     else if (type == "month") {
         return SummaryType::MONTH;
+    }
+    else if (type == "balance") {
+        return SummaryType::BALANCE;
     }
     else {
         return SummaryType::INVALID;
@@ -115,23 +117,23 @@ private:
         ,CORRUPTED
     };
 
-    std::vector<Date>   _keys;
-    std::vector<long>   _durations;
-    std::string         _path;
-    State               _state;
+    std::vector<Date> _keys;
+    std::vector<long> _durations;
+    std::string       _logFile;
+    State             _state;
 
     State read();
 
 };
 
 WorkLog::WorkLog(const std::string& path)
-    : _path(path)
+    : _logFile(nxs::joinStr("/", path, filenameData))
     , _state(read())
 {}
 
 void WorkLog::checkIn() {
     if (_state == State::CLOSED) {
-        std::ofstream outf(_path, std::ios::out | std::ios::in);
+        std::ofstream outf(_logFile, std::ios::out | std::ios::in);
         if (outf) {
             outf.seekp(-1, std::ios::end);
             outf << now();
@@ -152,7 +154,7 @@ void WorkLog::checkIn() {
 
 void WorkLog::checkOut() {
     if (_state == State::ONGOING) {
-        std::ofstream outf(_path, std::ios::out | std::ios::in);
+        std::ofstream outf(_logFile, std::ios::out | std::ios::in);
         if (outf) {
             outf.seekp(-1, std::ios_base::end);
             outf << now();
@@ -176,9 +178,10 @@ void WorkLog::createEntries() {
         return;
     }
 
-    auto inf = FileReader(_path);
+    auto log = FileReader(_logFile);
 
-    inf.read(fn_getline,
+    log.read(
+        fn_getline,
         [this](const std::string& str) mutable {
             auto parts = strSplit(str, rangeDivider);
             long start = 0;
@@ -222,23 +225,42 @@ void WorkLog::printSummary(SummaryType type) {
                 return key.month() == prevKey.month();
             };
             break;
-        default:    break;
+        case SummaryType::BALANCE:
+            func = [](Date key, Date prevKey) -> bool {
+                return key == prevKey;
+            };
+            break;
+        default:
+            break;
     }
 
     auto summary = nxs::groupBy(_keys, _durations, func, nxs::AggregatePlusEquals);
 
-    for (const auto& [date, duration] : summary) {
+    if (type == SummaryType::BALANCE) {
         nxs::print(
-            nxs::joinStr(": "
-                ,date.toString()
-                ,nxs::datetime::prettyTime(duration)
+            nxs::datetime::prettyTime(
+                std::accumulate(std::begin(summary), std::end(summary), 0,
+                    [](auto acc, const auto& value) {
+                        return acc + value.second;
+                    }
+                ) - static_cast<long>(summary.size()) * 8 * 3600
             )
         );
+    }
+    else {
+        for (const auto& [date, duration] : summary) {
+            nxs::print(
+                nxs::joinStr(": "
+                    ,date.toString()
+                    ,nxs::datetime::prettyTime(duration)
+                )
+            );
+        }
     }
 }
 
 WorkLog::State WorkLog::read() {
-    auto inf = FileReader(_path);
+    auto inf = FileReader(_logFile);
     auto state = State::CORRUPTED;
 
     inf.read(
@@ -281,7 +303,7 @@ int main(int argc, char* argv[]) {
 
     if (args.get<bool>("--help")) { return 0; }
 
-    auto log = WorkLog(fullpathData);
+    auto log = WorkLog(pathDir);
 
     try {
         if (args.get<bool>("start")) {
@@ -303,4 +325,3 @@ int main(int argc, char* argv[]) {
         nxs::print(e.what());
     }
 }
-
