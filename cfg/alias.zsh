@@ -18,6 +18,7 @@ alias gl='git --no-pager log --oneline --decorate --graph -n10'
 alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
 
 alias build='~/repos/nexus/tools/build'
+alias datef=~/repos/nexus/tools/dateformat.sh
 
 # Builders
 
