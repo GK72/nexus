@@ -1,19 +1,19 @@
 AccessModifierOffset: -4
-AlignAfterOpenBracket: BAS_Align
+AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: false
 AlignConsecutiveMacros: true
-AlignEscapedNewlines: ENAS_Left
+AlignEscapedNewlines: Left
 AlignOperands: true
 AlignTrailingComments: true
-AllowShortBlocksOnASingleLine: SBS_Always
+AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: SFS_Inline
-AlwaysBreakTemplateDeclarations: BTDS_No
+AllowShortFunctionsOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: No
 BraceWrapping:
     AfterCaseLabel: false
     AfterClass: false
-    AfterControlStatement: never
+    AfterControlStatement: Never
     AfterEnum: false
     AfterFunction: false
     AfterNamespace: false
@@ -23,7 +23,6 @@ BraceWrapping:
     AfterExternBlock: false
     BeforeCatch: false
     BeforeElse: true
-    BeforeLambdaBody: false
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
@@ -44,9 +43,9 @@ IncludeCategories:
 IndentCaseLabels: true
 IndentPPDirectives: AfterHash
 Language: Cpp
-NamespaceIndentation: none
+NamespaceIndentation: None
 PenaltyBreakTemplateDeclaration: 60
-PointerAlignment: left
+PointerAlignment: Left
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
