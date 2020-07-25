@@ -1,9 +1,10 @@
 add_executable(test_nexus
     test.cpp
+    test_datetime.cpp
+    test_detector.cpp
     test_io_tokenizer.cpp
     test_units.cpp
     test_utility.cpp
-    test_datetime.cpp
 )
 
 target_include_directories(test_nexus PRIVATE ${CMAKE_HOME_DIRECTORY}/include)
