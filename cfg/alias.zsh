@@ -16,3 +16,9 @@ alias rsyncp="rsync -avz --info=progress2"
 alias gl='git --no-pager log --oneline --decorate --graph -n10'
 
 alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
+
+alias build='~/repos/nexus/tools/build'
+
+# Builders
+
+alias bledger='build -p ~/repos/nexus/.worktrees/feat-ui -r bin/test_nexus && ~/repos/nexus/tools/build -p ~/repos/ledger -- -DPATH_NEXUS_REPO=~/repos/nexus/.worktrees/feat-ui && ~/repos/ledger/build/debug-clang11/bin/ledger'
