@@ -142,6 +142,9 @@ let g:ycm_global_ycm_extra_conf = '/home/gkpro/.vim/plugged/YouCompleteMe/third_
 let g:goyo_width = 120
 let g:NERDSpaceDelims = 1
 
+let g:fzf_layout = { 'window' : { 'width': 0.8, 'height': 0.8 } }
+let $FZF_DEFAULT_OPTS='--reverse'
+
 
 " ---------------------------------------==[ Mappings ]==-------------------------------------------
 
@@ -159,7 +162,7 @@ nnoremap , ;
 tnoremap <leader>q <C-\><C-n>
 
 " ---= Windows
-nnoremap <leader>vs <C-w>v<C-w>l
+nnoremap <leader>v <C-w>v<C-w>l
 noremap <leader>r :res +10<CR>
 noremap <leader>R :res -10<CR>
 noremap <leader>vr :vert res +5<CR>
@@ -168,12 +171,13 @@ noremap <leader>vR :vert res -5<CR>
 " ---= Misc
 noremap <leader>n :NERDTreeToggle<CR>
 noremap <leader>p :CtrlSF<space>
-noremap <leader>a :Ag<space>
+noremap <leader>a :Ag<CR>
 noremap <leader>no :noh<CR>
-noremap <leader>s :source %<CR>
 noremap <leader>o :FSHere<CR>
 noremap <leader>gs :Gstatus<CR>
 noremap <leader>gc :Gcommit<CR>
+
+nnoremap <leader>s :Ag <C-R>=expand("<cword>")<CR><CR>
 
 " ---= Moving text
 vnoremap J :m '>+1<CR>gv=gv
