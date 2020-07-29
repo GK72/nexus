@@ -7,6 +7,18 @@ function! CommentAlignMiddle()
     normal! d100|
 endfunction
 
+function! EpochToDateTime()
+    normal! yiw
+    let epoch = getreg('')
+    execute "!date --date=@" . epoch[0:9]
+endfunction
+
+function! ReadEpochToDateTime()
+    normal! yiw
+    let epoch = getreg('')
+    execute "read !date --date=@" . epoch[0:9]
+endfunction
+
 function! ClangCheckImpl(cmd)
     if &autowrite | wall | endif
     echo "Running " . a:cmd . " ..."
