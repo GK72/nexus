@@ -53,7 +53,10 @@ source ~/.local/share/nvim/plugin/functions.vim
 
 " ------------------------------------==[ Basic Settings ]==----------------------------------------
 
-color desert
+
+let g:gruvbox_contrast_dark='hard'
+
+color gruvbox
 
 if &encoding != 'utf-8'
     set encoding=utf-8
@@ -96,7 +99,7 @@ filetype plugin indent on   " allows auto-indenting depending on file type
 syntax on                   " syntax highlighting
 
 " Some coloring
-highlight cursorline cterm=bold ctermbg=234
+highlight cursorline cterm=bold ctermbg=235
 highlight colorcolumn ctermbg=235
 highlight VertSplit ctermfg=0 ctermbg=235
 
@@ -142,6 +145,7 @@ let g:ycm_global_ycm_extra_conf = '/home/gkpro/.vim/plugged/YouCompleteMe/third_
 let g:goyo_width = 120
 let g:NERDSpaceDelims = 1
 
+set undofile
 let g:fzf_layout = { 'window' : { 'width': 0.8, 'height': 0.8 } }
 let $FZF_DEFAULT_OPTS='--reverse'
 
@@ -168,14 +172,20 @@ noremap <leader>R :res -10<CR>
 noremap <leader>vr :vert res +5<CR>
 noremap <leader>vR :vert res -5<CR>
 
-" ---= Misc
-noremap <leader>n :NERDTreeToggle<CR>
-noremap <leader>p :CtrlSF<space>
-noremap <leader>a :Ag<CR>
-noremap <leader>no :noh<CR>
-noremap <leader>o :FSHere<CR>
+" ---= Git
 noremap <leader>gs :Gstatus<CR>
 noremap <leader>gc :Gcommit<CR>
+noremap <leader>gd :Gdiffsplit<CR>
+noremap <leader>gdd :Gvdiffsplit!<CR>
+noremap <leader>gp :GitGutterPreviewHunk<CR>
+noremap <leader>gf :GitGutterFold<CR>
+noremap <leader>gy :GitGutterStageHunk<CR>
+noremap <leader>gu :GitGutterUndoHunk<CR>
+
+" ---= Searching
+noremap <leader>p :CtrlSF<space>
+noremap <leader>a :Ag<CR>
+noremap <leader>p :FZF<CR>
 
 nnoremap <leader>s :Ag <C-R>=expand("<cword>")<CR><CR>
 
@@ -183,6 +193,10 @@ nnoremap <leader>s :Ag <C-R>=expand("<cword>")<CR><CR>
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
 
+" ---= Misc
+noremap <leader>n :NERDTreeToggle<CR>
+noremap <leader>no :noh<CR>
+noremap <leader>o :FSHere<CR>
 
 vmap  <expr>  <LEFT>   DVB_Drag('left')
 vmap  <expr>  <RIGHT>  DVB_Drag('right')
