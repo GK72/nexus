@@ -17,6 +17,7 @@ Optional parameters:
     -t | --target <TARGET NAME>             Target to build
     -v | --compiler-ver                     Compiler version
          --args <"arg1, arg2, ...">         Arguments to the executed binary (in quotes)
+         --gdb                              Run in gdb
          --                                 Forwarding arguments to CMake
 EOF
 }
@@ -47,6 +48,7 @@ while [[ $# -gt 0 ]]; do
             -t | --target)          TARGET="$2";        shift; shift ;;
             -v | --compiler-ver)    COMPILER_VER="$2";  shift; shift ;;
                  --args)            BINARY_ARGS="$2";   shift; shift ;;
+                 --gdb)             GDB=1;              shift;;
             --)                     FWD_ARGS="";        shift ;;
             -h | --help)            usage ${0##*/};     exit 0; shift ;;
             *)                      usage; exit 255;    shift ;;
@@ -144,5 +146,9 @@ fi
 
 # Run executable
 if [[ -n "${PATH_BIN}" ]]; then
-    "${BUILD_DIR}/${PATH_BIN}" ${(z)BINARY_ARGS}
+    if [[ -n "${GDB}" ]]; then
+        gdb --args "${BUILD_DIR}/${PATH_BIN}" ${(z)BINARY_ARGS}
+    else
+        "${BUILD_DIR}/${PATH_BIN}" ${(z)BINARY_ARGS}
+    fi
 fi
