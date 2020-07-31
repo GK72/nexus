@@ -18,10 +18,11 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'ryanoasis/vim-devicons'               " File type icons
     Plug 'tmhedberg/SimpylFold'                 " Folding for Python
 
-    Plug 'arzg/vim-corvine'
+    Plug 'morhetz/gruvbox'
 
     " ---= Completion and searching
     Plug 'davidhalter/jedi-vim'                 " Python auto-completion
+    Plug 'rust-lang/rust.vim'
     Plug 'rdnetto/YCM-Generator', { 'branch': 'stable' }
     Plug 'Valloric/YouCompleteMe', { 'do': './install.py --clang-completer'  }
     Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
@@ -100,8 +101,10 @@ syntax on                   " syntax highlighting
 
 " Some coloring
 highlight cursorline cterm=bold ctermbg=235
-highlight colorcolumn ctermbg=235
-highlight VertSplit ctermfg=0 ctermbg=235
+highlight colorcolumn ctermbg=233
+highlight VertSplit ctermfg=237 ctermbg=234
+
+hi! link String GruvboxAqua
 
 " ------------------------------------==[ Configuration ]==-----------------------------------------
 let g:deoplete#enable_at_startup = 1
