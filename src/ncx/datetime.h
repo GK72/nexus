@@ -60,7 +60,7 @@ enum class name_days {
     ,SUNDAY
 };
 
-bool isDateValid(size_t year, size_t month, size_t day);
+bool isDateValid(int year, char month, char day);
 std::pair<char, char> splitToMonthAndDays(short days);
 
 template <class Time> Time getCurrentEpoch() {
@@ -70,6 +70,7 @@ template <class Time> Time getCurrentEpoch() {
 
 class DateImpl_Compact {
 public:
+    DateImpl_Compact() = default;
     DateImpl_Compact(int year, char month, char day);
 
     [[nodiscard]] bool isValid() const      { return m_rep != 0; }
@@ -87,6 +88,7 @@ private:
 
 class DateImpl_Speed {
 public:
+    DateImpl_Speed() = default;
     DateImpl_Speed(int year, char month, char day)
         : m_year(year), m_month(month), m_day(day)
     {}
@@ -108,6 +110,7 @@ template <class DateImpl = DefDateImpl>
 class Date
 {
 public:
+    Date() = default;
     Date(int year, char month, char day)
         : m_rep(year, month, day)
     {}
