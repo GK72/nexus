@@ -104,6 +104,7 @@ highlight cursorline cterm=bold ctermbg=235
 highlight colorcolumn ctermbg=233
 highlight VertSplit ctermfg=237 ctermbg=234
 
+highlight normal ctermfg=white
 hi! link String GruvboxAqua
 
 " ------------------------------------==[ Configuration ]==-----------------------------------------
@@ -137,6 +138,8 @@ let g:ycm_show_diagnostics_ui = 0
 let g:ycm_key_list_select_completion = ['<C-k>', '<Down>']
 let g:ycm_key_list_previous_completion = ['<C-l>', '<Up>']
 let g:SuperTabDefaulCompletionType = '<C-k>'
+
+set completeopt-=preview
 
 " disable annoying ycm confirmation
 let g:ycm_confirm_extra_conf = 0
