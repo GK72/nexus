@@ -33,4 +33,5 @@ alias datef=~/repos/nexus/tools/dateformat.sh
 
 # Builders
 
-alias bledger='build -p ~/repos/nexus/.worktrees/feat-ui -r bin/test_nexus && ~/repos/nexus/tools/build -p ~/repos/ledger -- -DPATH_NEXUS_REPO=~/repos/nexus/.worktrees/feat-ui && ~/repos/ledger/build/debug-clang11/bin/ledger'
+alias btledger='build -p ~/repos/nexus/.worktrees/feat-ui -r bin/test_nexus && build -p ~/repos/ledger -- -DPATH_NEXUS_REPO=~/repos/nexus/.worktrees/feat-ui && ~/repos/ledger/build/debug-clang11/bin/test_ledger'
+alias bledger='build -p ~/repos/nexus/.worktrees/feat-ui -r bin/test_nexus && build -p ~/repos/ledger -- -DPATH_NEXUS_REPO=~/repos/nexus/.worktrees/feat-ui && ~/repos/ledger/build/debug-clang11/bin/ledger'
