@@ -5,6 +5,10 @@
 namespace nxs::test {
 
 TEST_CASE("Date - Construction", "[date]") {
+    SECTION("Default construction") {
+        CHECK(!nxs::datetime::Date().isValid());
+    }
+
     SECTION("From string") {
         auto date = nxs::datetime::Date("2020.05.31");
         CHECK(date.year()  == 2020);
