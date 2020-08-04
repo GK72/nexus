@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <numeric>
@@ -62,7 +63,8 @@ template<class ...Ts> Lambdas(Ts...) -> Lambdas<std::decay_t<Ts>...>;
 template <class T>
 [[nodiscard]] std::string toString(T&& in) {
     Lambdas stringify{
-         [](const char x)                        { return std::to_string(x); }
+         [](const bool x)                        { return x ? "true" : "false"; }
+        ,[](const char x)                        { return std::to_string(x); }
         ,[](const short x)                       { return std::to_string(x); }
         ,[](const int x)                         { return std::to_string(x); }
         ,[](const long x)                        { return std::to_string(x); }
@@ -70,31 +72,35 @@ template <class T>
         ,[](const unsigned short x)              { return std::to_string(x); }
         ,[](const unsigned int x)                { return std::to_string(x); }
         ,[](const size_t x)                      { return std::to_string(x); }
+        ,[](const float x)                       { return std::to_string(x); }
         ,[](const char* x)                       { return std::string(x); }
+        ,[](char* x)                             { return std::string(x); }
         ,[](std::string_view x)                  { return std::string(x); }
         ,[](const std::string& x)                { return x; }
         ,[](const std::chrono::seconds& x)       { return std::to_string(x.count()) + " s"; }
         ,[](const std::chrono::milliseconds& x)  { return std::to_string(x.count()) + " ms"; }
         ,[](const std::chrono::microseconds& x)  { return std::to_string(x.count()) + " us"; }
         ,[](const std::chrono::nanoseconds& x)   { return std::to_string(x.count()) + " ns"; }
+        ,[](const auto& x)                       { return x.toString(); }
     };
     return stringify(std::forward<T>(in));
 }
 
 template <class T, class ...Ts>
-[[nodiscard]] std::string joinStr(std::string separator, T&& first, Ts&&... args) {
-    return toString(first) + (... + (separator + toString(args)));
+[[nodiscard]] std::string joinStr(const std::string& separator, T&& first, Ts&&... args) {
+    return toString(std::forward<T>(first)) +
+        (... + (separator + toString(std::forward<Ts>(args))));
 }
 
 template <class T, class ...Ts>
 void print(const std::string& separator, T&& first, Ts&&... args) {
-    std::cout << toString(first);
-    (std::cout << ... << (separator + toString(args))) << '\n';
+    std::cout << toString(std::forward<T>(first));
+    (std::cout << ... << (separator + toString(std::forward<Ts>(args)))) << '\n';
 }
 
 template <class T>
-void print(T t) {
-    std::cout << toString(t) << '\n';
+void print(T&& t) {
+    std::cout << toString(std::forward<T>(t)) << '\n';
 }
 
 template <class T>
@@ -183,7 +189,7 @@ groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)
     return summary;
 }
 
-// -------------------------------------==[ Generators ]==------------------------------------------
+// -------------------------------------==[ Generators ]==--------------------------------------- //
 
 template <size_t N>
 [[nodiscard]] constexpr auto range() {
@@ -212,6 +218,34 @@ template <class Length, class Init>
     std::iota(std::begin(r), std::end(r), init);
     return r;
 }
+
+// --------------------------------------==[ Classes ]==----------------------------------------- //
+
+class Output {
+public:
+    Output(std::string_view path)
+        : m_out(path.data())
+    {}
+
+    ~Output() = default;
+
+    Output(const Output&)           = delete;
+    Output(Output&&)                = delete;
+    Output operator=(const Output&) = delete;
+    Output operator=(Output&&)      = delete;
+
+    template <class T, class... Ts>
+    void write(const std::string& separator, T&& first, Ts&&... args) {
+        m_out << joinStr(
+            separator,
+            std::forward<T>(first),
+            std::forward<Ts>(args)...
+        ) << '\n';
+    }
+
+private:
+    std::ofstream m_out;
+};
 
 
 } // namespace nxs
