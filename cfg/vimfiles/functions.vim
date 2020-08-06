@@ -7,10 +7,19 @@ function! CommentAlignMiddle()
     normal! d100|
 endfunction
 
+func Eatchar(pat)
+  let c = nr2char(getchar(0))
+  return (c =~ a:pat) ? '' : c
+endfunc
+
 function! EpochToDateTime()
     normal! yiw
     let epoch = getreg('')
     execute "!date --date=@" . epoch[0:9]
+endfunction
+
+function! InsertBashArgs()
+    execute "read $HOME/.local/share/nvim/templates/bashArgs.sh"
 endfunction
 
 function! ReadEpochToDateTime()
