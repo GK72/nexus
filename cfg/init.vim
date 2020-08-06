@@ -218,6 +218,11 @@ nmap <silent> <F5> :call ClangCheck()<CR><CR>
 " ---= Command mappings
 command! Cmm call CommentAlignMiddle()
 
+" ------------------------------------==[ Auto Commands ]==-----------------------------------------
+
+autocmd FileType zsh | iab <buffer> $ "${}"<Left><Left><C-R>=Eatchar('\s')<CR>
+autocmd FileType sh | iab <buffer> $ "${}"<Left><Left><C-R>=Eatchar('\s')<CR>
+
 
 " ---= Goyo config
 function! s:goyo_enter()
