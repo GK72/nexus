@@ -1,0 +1,67 @@
+#!/bin/zsh
+
+function usage() {
+    cat << EOF
+Description: A helper script for batch processing.
+
+Given a command and an input file, the command is run for every line
+of the input file in which a SUBSTITUTION string will be replaced with
+the line read from the file.
+
+usage: ${1##*/} -c <COMMAND> -i <PATH> [OPTIONS...]
+
+    -c | --cmd <COMMAND>            The command to run
+    -i | --input <PATH>             The path to the file to read from
+
+Optional parameters:
+    -s | --sub <STR>                A placeholder string that is substituted with the line from the input
+                                    Default value: @
+EOF
+}
+
+NONE="<none>"
+FWD_ARGS="${NONE}"
+
+while [[ $# -gt 0 ]]; do
+    if [[ "${FWD_ARGS}" == "${NONE}" ]]; then
+        case $1 in
+            -c | --cmd)             CMD=$2;                 shift; shift ;;
+            -i | --input)           INPUT=$2;               shift; shift ;;
+            -s | --sub)             SUB=$2;                 shift; shift ;;
+            --)                     FWD_ARGS="";            shift ;;
+            -h | --help)            usage ${0##*/};         exit 0; shift ;;
+            *)                      usage; exit 255;        shift ;;
+        esac
+    else
+        FWD_ARGS="${FWD_ARGS}$1 "
+        shift
+    fi
+done
+
+# -------------------------------------==[ Initializing ]==-----------------------------------------
+
+EXIT_FLAG=0
+
+if [[ -z "${INPUT}" ]]; then
+    echo "No input given"
+    EXIT_FLAG=1
+fi
+
+if [[ -z "${CMD}" ]]; then
+    echo "No command given"
+    EXIT_FLAG=1
+fi
+
+if [[ "${EXIT_FLAG}" == 1 ]]; then
+    exit 1
+fi
+
+if [[ -z "${SUB}" ]]; then
+    SUB='@'
+fi
+
+# -----------------------------------------==[ MAIN ]==---------------------------------------------
+
+while read -r LINE; do
+    eval $(echo "${CMD//$SUB/$LINE}")
+done < "${INPUT}"
