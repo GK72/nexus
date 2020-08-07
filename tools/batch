@@ -29,7 +29,7 @@ while [[ $# -gt 0 ]]; do
             -i | --input)           INPUT=$2;               shift; shift ;;
             -s | --sub)             SUB=$2;                 shift; shift ;;
             --)                     FWD_ARGS="";            shift ;;
-            -h | --help)            usage ${0##*/};         exit 0; shift ;;
+            -h | --help)            usage "${0##*/}";       exit 0; shift ;;
             *)                      usage; exit 255;        shift ;;
         esac
     else
@@ -63,7 +63,6 @@ fi
 # --------------------------------------==[ Functions ]==-------------------------------------------
 
 CUR_FWD='\033[NC'
-TEXT_LEN=0
 CHAR_FULL_BLOCK='\u2588'
 
 function progressBar() {
@@ -74,12 +73,16 @@ function progressBar() {
     size=50
     unit=$((size/total))
 
+    # Overwriting line with blank characters
     printf " %.0s" $(seq 1 $((size+10+TEXT_LEN)))
 
     printf "\r["
-    printf "$CHAR_FULL_BLOCK%.0s" $(seq 1 $((unit*progress)))
-    printf "\r${CUR_FWD/N/$((size+1))}] "
-    printf "${progress} - ${text}\r"
+    printf "$CHAR_FULL_BLOCK%.0s" $(seq 1 $((unit*progress)))           # Repeating a string
+    # shellcheck disable=SC2059
+    printf "\r${CUR_FWD/N/$((size+1))}] "                               # Moving the cursor forward
+    printf "%s - %s\r" "${progress}" "${text}"
+
+    TEXT_LEN="${4}"
 }
 
 # -----------------------------------------==[ MAIN ]==---------------------------------------------
@@ -87,11 +90,13 @@ function progressBar() {
 LENGTH=$(wc -l "${INPUT}" | cut -f1 -d' ')
 IDX=0
 
+rm -rf /tmp/batchLog_*.txt
+
 while read -r LINE; do
-    progressBar "${IDX}" "${LENGTH}" "${LINE}"
-    TEXT_LEN=${#LINE}
-    eval $(echo "${CMD//$SUB/$LINE}")
-    IDX=$(($IDX+1))
+    progressBar "${IDX}" "${LENGTH}" "${LINE}" "${#LINE}"
+    # shellcheck disable=SC2046,SC2116
+    eval $(echo "${CMD//$SUB/$LINE}") > "/tmp/batchLog_$(basename "${LINE}").txt" 2>&1
+    IDX=$((IDX+1))
 done < "${INPUT}"
 
 progressBar "${IDX}" "${LENGTH}" "DONE\n"
