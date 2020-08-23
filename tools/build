@@ -89,11 +89,21 @@ fi
 
 # Setting up compilers
 if [[ "${COMPILER}" == "gcc" ]]; then
-    COMPILER_C="gcc-${COMPILER_VER}"
-    COMPILER_CXX="g++-${COMPILER_VER}"
+    if [[ -z "${COMPILER_VER}" ]]; then
+        COMPILER_C="gcc"
+        COMPILER_CXX="g++"
+    else
+        COMPILER_C="gcc-${COMPILER_VER}"
+        COMPILER_CXX="g++-${COMPILER_VER}"
+    fi
 elif [[ "${COMPILER}" == "clang" ]]; then
-    COMPILER_C="clang-${COMPILER_VER}"
-    COMPILER_CXX="clang++-${COMPILER_VER}"
+    if [[ -z "${COMPILER_VER}" ]]; then
+        COMPILER_C="clang"
+        COMPILER_CXX="clang++"
+    else
+        COMPILER_C="clang-${COMPILER_VER}"
+        COMPILER_CXX="clang++-${COMPILER_VER}"
+    fi
 fi
 
 # Checking build file according to the provided generator
@@ -112,6 +122,10 @@ if [[ -n "${DELETE}" ]]; then
 fi
 
 mkdir -p "${BUILD_DIR}"
+
+if [[ "${FWD_ARGS}" == "${NONE}" ]]; then
+    FWD_ARGS=""
+fi
 
 # -----------------------------------------==[ MAIN ]==---------------------------------------------
 
