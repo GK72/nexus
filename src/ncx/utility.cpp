@@ -47,5 +47,27 @@ std::string ipv6Formatter(const std::string& ipv6) {
     return out;
 }
 
+Progress::Progress(size_t total)
+    : m_total(total)
+{
+    m_start = now<std::chrono::seconds>();
+}
+
+void Progress::update(size_t progress) {
+    double ratio  = progress / static_cast<double>(m_total);
+    size_t n      = static_cast<size_t>(ratio * m_size);
+    size_t movCur = m_size - n;
+    std::string progressStr(n, m_fill);
+
+    auto elapsed = now<std::chrono::seconds>() - m_start;
+
+    if (progress == m_total) {
+        print("", m_prefix, " |", progressStr, "| ", elapsed, m_suffix);
+    }
+    else {
+        printr("", m_prefix, " |", progressStr, "\033[", movCur, "C", "| ", elapsed, m_suffix);
+    }
+}
+
 
 } // namespace nxs
