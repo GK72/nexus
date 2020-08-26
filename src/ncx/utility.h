@@ -98,9 +98,20 @@ void print(const std::string& separator, T&& first, Ts&&... args) {
     (std::cout << ... << (separator + toString(std::forward<Ts>(args)))) << '\n';
 }
 
+template <class T, class ...Ts>
+void printr(const std::string& separator, T&& first, Ts&&... args) {
+    std::cout << toString(std::forward<T>(first));
+    (std::cout << ... << (separator + toString(std::forward<Ts>(args)))) << '\r' << std::flush;
+}
+
 template <class T>
 void print(T&& t) {
     std::cout << toString(std::forward<T>(t)) << '\n';
+}
+
+template <class T>
+void printr(T&& t) {
+    std::cout << toString(std::forward<T>(t)) << '\r' << std::flush;
 }
 
 template <class T>
@@ -122,6 +133,11 @@ template <class T>
 [[nodiscard]] std::string padEnd(const T& t, size_t count, const char ch = ' ')
 {
     return toString(t) + std::string(subtractClip(count, toString(t).size()), ch);
+}
+
+template <class Time = std::chrono::nanoseconds> Time now() {
+    return std::chrono::duration_cast<Time>(
+        std::chrono::system_clock().now().time_since_epoch());
 }
 
 // ----== Misc ==----
@@ -245,6 +261,26 @@ public:
 
 private:
     std::ofstream m_out;
+};
+
+class Progress {
+public:
+    Progress(size_t total);
+
+    void update(size_t progress);
+    void prefix(const std::string& prefix)  { m_prefix = prefix; }
+    void suffix(const std::string& suffix)  { m_suffix = suffix; }
+    void fill(char ch)                      { m_fill = ch; }
+
+private:
+    size_t m_total;
+    size_t m_size = 50;
+    char   m_fill = '=';
+    // const char* m_fill = "\u2588";
+
+    std::string m_prefix;
+    std::string m_suffix;
+    std::chrono::seconds m_start { 0 };
 };
 
 
