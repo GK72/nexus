@@ -140,9 +140,9 @@ public:
 
     std::string toString() const {
         return nxs::joinStr("."
-            ,nxs::padBegin(std::to_string(year()) , 4, '0')
-            ,nxs::padBegin(std::to_string(month()), 2, '0')
-            ,nxs::padBegin(std::to_string(day())  , 2, '0')
+            ,nxs::alignRight(std::to_string(year()) , 4, '0')
+            ,nxs::alignRight(std::to_string(month()), 2, '0')
+            ,nxs::alignRight(std::to_string(day())  , 2, '0')
         );
     }
 
@@ -195,9 +195,9 @@ public:
     [[nodiscard]] std::string toString() const {
         std::string timeStr = m_negative ? "-" : "";
         timeStr += nxs::joinStr(":"
-            ,nxs::padBegin(std::to_string(hour())  , 2, '0')
-            ,nxs::padBegin(std::to_string(minute()), 2, '0')
-            ,nxs::padBegin(std::to_string(second()), 2, '0')
+            ,nxs::alignRight(std::to_string(hour())  , 2, '0')
+            ,nxs::alignRight(std::to_string(minute()), 2, '0')
+            ,nxs::alignRight(std::to_string(second()), 2, '0')
         );
 
         return m_days == 0
