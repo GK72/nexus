@@ -115,7 +115,7 @@ void printr(T&& t) {
 }
 
 template <class T>
-[[nodiscard]] std::string padBoth(const T& t, size_t count, const char ch = ' ')
+[[nodiscard]] std::string alignCenter(const T& t, size_t count, const char ch = ' ')
 {
     size_t pad = subtractClip(count, toString(t).size()) / 2;
     std::string padL(pad, ch);
@@ -124,13 +124,13 @@ template <class T>
 }
 
 template <class T>
-[[nodiscard]] std::string padBegin(const T& t, size_t count, const char ch = ' ')
+[[nodiscard]] std::string alignRight(const T& t, size_t count, const char ch = ' ')
 {
     return std::string(subtractClip(count, toString(t).size()), ch) + toString(t);
 }
 
 template <class T>
-[[nodiscard]] std::string padEnd(const T& t, size_t count, const char ch = ' ')
+[[nodiscard]] std::string alignLeft(const T& t, size_t count, const char ch = ' ')
 {
     return toString(t) + std::string(subtractClip(count, toString(t).size()), ch);
 }
