@@ -62,6 +62,7 @@ TextBox Menu::toFormattedText() const {
 
 
 TextUI::TextUI() {
+    setlocale(LC_ALL, "");
     initscr();
     keypad(stdscr, TRUE);
     noecho();
