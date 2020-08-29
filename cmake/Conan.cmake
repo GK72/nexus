@@ -18,9 +18,9 @@ conan_cmake_run(
     REQUIRES
     ${CONAN_EXTRA_REQUIRES}
     catch2/2.12.1
-    ncurses/6.1@conan/stable
     rapidjson/1.1.0
-    OPTIONS
+    ncurses/6.1@conan/stable
+    OPTIONS ncurses:with_widec=True
     ${CONAN_EXTRA_OPTIONS}
     BASIC_SETUP
     CMAKE_TARGETS # individual targets to link to
