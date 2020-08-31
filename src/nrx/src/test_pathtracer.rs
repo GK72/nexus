@@ -8,7 +8,7 @@ mod test_pathtracer {
         (lhs - rhs).abs() < epsilon
     }
 
-    fn approxVec3D(lhs: &Vec3D, rhs: &Vec3D, epsilon: f64) -> bool {
+    fn approx_vec_3d(lhs: &Vec3D, rhs: &Vec3D, epsilon: f64) -> bool {
         println!("lhs: {:?}", lhs);
         println!("rhs: {:?}", rhs);
         approx(lhs.x, rhs.x, epsilon) &&
@@ -101,11 +101,10 @@ mod test_pathtracer {
             &Vec3D{ x: 10.0, y: 20.0, z: 30.0 })){
                 Some(x) => {
                     assert!(approx(x.distance, 22.416573, 0.00001));
-                    assert!(approxVec3D(&x.position, &Vec3D { x: 5.99108, y: 11.98216, z: 17.97324 }, 0.00001));
-                    assert!(approxVec3D(&x.normal, &Vec3D { x: -0.267261, y: -0.534522, z: -0.801784 }, 0.00001));
+                    assert!(approx_vec_3d(&x.position, &Vec3D { x: 5.99108, y: 11.98216, z: 17.97324 }, 0.00001));
+                    assert!(approx_vec_3d(&x.normal, &Vec3D { x: -0.267261, y: -0.534522, z: -0.801784 }, 0.00001));
                 },
                 None => assert!(false),
         }
     }
 }
-

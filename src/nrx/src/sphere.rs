@@ -1,7 +1,6 @@
-use crate::vector::Vec3D;
-// use crate::vector::Vec3Dnorm;
 use crate::hit::Hit;
 use crate::ray::Ray;
+use crate::vector::Vec3D;
 
 pub struct Sphere<'a> {
     pub centre: &'a Vec3D,
@@ -20,7 +19,6 @@ impl<'a> Sphere<'a> {
         let distance = *self.centre - ray.origin();
         let b = distance.dot(&ray.direction());
         let mut determinant = b * b - distance.length_squared() + self.radius * self.radius;
-        // let determinant = b - distance.length() + self.radius;
 
         if determinant < 0.0 {
             None
