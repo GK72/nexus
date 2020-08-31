@@ -1,26 +1,8 @@
+#[macro_use] pub mod utils;
+
 #[cfg(test)]
-mod test_pathtracer {
+mod vector {
     use crate::vector::Vec3D;
-    use crate::sphere::Sphere;
-    use crate::ray::Ray;
-
-    fn approx(lhs: f64, rhs: f64, epsilon: f64) -> bool {
-        (lhs - rhs).abs() < epsilon
-    }
-
-    fn approx_vec_3d(lhs: &Vec3D, rhs: &Vec3D, epsilon: f64) -> bool {
-        println!("lhs: {:?}", lhs);
-        println!("rhs: {:?}", rhs);
-        approx(lhs.x, rhs.x, epsilon) &&
-        approx(lhs.y, rhs.y, epsilon) &&
-        approx(lhs.z, rhs.z, epsilon)
-    }
-
-    #[test]
-    fn point_new() {
-        let p = Vec3D{ x: 1.0, y: 1.0, z: 1.0 };
-        assert_eq!(p.x, 1.0);
-    }
 
     #[test]
     fn addition() {
@@ -63,6 +45,14 @@ mod test_pathtracer {
         assert_eq!(p.length_squared(), 14.0);
         assert_eq!(p.length(), 14.0f64.sqrt());
     }
+}
+
+#[cfg(test)]
+pub mod pathtracer {
+    use crate::ray::Ray;
+    use crate::sphere::Sphere;
+    use crate::vector::Vec3D;
+    use super::utils::*;
 
     #[test]
     fn ray_distance_along() {
@@ -84,16 +74,16 @@ mod test_pathtracer {
 
         match s.intersect(&Ray::from_points(
             &Vec3D{ x: 0.0, y: 0.0, z: 0.0 },
-            &Vec3D{ x: 0.0, y: 1.0, z: 0.0 })){
+            &Vec3D{ x: 0.0, y: 1.0, z: 0.0 })) {
                 Some(_x) => assert!(false),
-                None     => assert!(true),
+                None => assert!(true),
         }
 
         match s.intersect(&Ray::from_points(
             &Vec3D{ x: 0.0, y: 0.0, z: 0.0 },
-            &Vec3D{ x: -10.0, y: -20.0, z: -30.0 })){
+            &Vec3D{ x: -10.0, y: -20.0, z: -30.0 })) {
                 Some(_x) => assert!(false),
-                None     => assert!(true),
+                None => assert!(true),
         }
 
         match s.intersect(&Ray::from_points(
@@ -101,8 +91,11 @@ mod test_pathtracer {
             &Vec3D{ x: 10.0, y: 20.0, z: 30.0 })){
                 Some(x) => {
                     assert!(approx(x.distance, 22.416573, 0.00001));
-                    assert!(approx_vec_3d(&x.position, &Vec3D { x: 5.99108, y: 11.98216, z: 17.97324 }, 0.00001));
-                    assert!(approx_vec_3d(&x.normal, &Vec3D { x: -0.267261, y: -0.534522, z: -0.801784 }, 0.00001));
+
+                    let pos  = Vec3D { x: 5.99108, y: 11.98216, z: 17.97324 };
+                    let norm = Vec3D { x: -0.267261, y: -0.534522, z: -0.801784 };
+                    assert_comp!(&x.position, &pos, approx_vec_3d);
+                    assert_comp!(&x.normal, &norm, approx_vec_3d);
                 },
                 None => assert!(false),
         }

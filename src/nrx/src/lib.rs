@@ -4,4 +4,5 @@ pub mod ray;
 pub mod sphere;
 pub mod vector;
 
-pub mod test_pathtracer;
+#[path = "tests/test_pathtracer.rs"]
+pub mod tests;
