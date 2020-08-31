@@ -41,14 +41,12 @@ pub fn run() -> std::io::Result<()> {
         15.0
     );
 
-    let mut s: String = String::from("");
-    s.push_str("P3\n");
-    s.push_str(&width.to_string());
-    s.push_str(" ");
-    s.push_str(&height.to_string());
-    s.push_str("\n");
-    s.push_str(&255.to_string());
-    s.push_str("\n");
+    let s = [
+        "P3\n",
+        &width.to_string(), " ",
+        &height.to_string(), "\n",
+        &255.to_string(), "\n",
+    ].concat();
 
     let mut img = File::create("image.ppm")?;
     img.write(s.as_bytes())?;
@@ -64,16 +62,14 @@ pub fn run() -> std::io::Result<()> {
             match hit {
                 Some(x) => {
                     let colour = Vec3D{ x: 1.0, y: 0.0, z: 1.0 } * direction.dot(&x.normal).powi(2);
-                    let mut s: String = String::from("");
-                    s.push_str(&to_int(colour.x).to_string());
-                    s.push_str(" ");
-                    s.push_str(&to_int(colour.y).to_string());
-                    s.push_str(" ");
-                    s.push_str(&to_int(colour.z).to_string());
-                    s.push_str(" ");
+                    let s: String = [
+                        &to_int(colour.x).to_string(), " ",
+                        &to_int(colour.y).to_string(), " ",
+                        &to_int(colour.z).to_string(), " "
+                    ].concat();
                     img.write(s.as_bytes())
                 },
-                None     => img.write(b"0 0 0 "),
+                None => img.write(b"0 0 0 "),
             }?;
         }
     }

@@ -1,24 +1,10 @@
 use std::ops;
 
-#[macro_export]
-macro_rules! op_add {
-    () => {
-        println!("Operator add");
-    };
-}
-
 #[derive(Default, PartialEq, Copy, Clone, Debug)]
 pub struct Vec3D {
     pub x: f64,
     pub y: f64,
     pub z: f64
-}
-
-#[derive(PartialEq, Copy, Clone, Debug)]
-pub struct Vec3Dnorm {
-    x: f64,
-    y: f64,
-    z: f64
 }
 
 impl Vec3D {
@@ -40,10 +26,6 @@ impl Vec3D {
         self.z * rhs.z
     }
 
-    pub fn normalize(&self) -> Self {
-        *self * (1.0 / self.length())
-    }
-
     pub fn length_squared(&self) -> f64 {
         self.dot(&self)
     }
@@ -51,16 +33,9 @@ impl Vec3D {
     pub fn length(&self) -> f64 {
         self.length_squared().sqrt()
     }
-}
 
-impl ops::Sub<Vec3D> for Vec3D {
-    type Output = Vec3D;
-    fn sub(self, rhs: Vec3D) -> Vec3D {
-        Vec3D{
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z
-        }
+    pub fn normalize(&self) -> Self {
+        *self * (1.0 / self.length())
     }
 }
 
@@ -75,6 +50,16 @@ impl ops::Add<Vec3D> for Vec3D {
     }
 }
 
+impl ops::Sub<Vec3D> for Vec3D {
+    type Output = Vec3D;
+    fn sub(self, rhs: Vec3D) -> Vec3D {
+        Vec3D{
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z
+        }
+    }
+}
 
 impl ops::Mul<f64> for Vec3D {
     type Output = Vec3D;
@@ -86,31 +71,3 @@ impl ops::Mul<f64> for Vec3D {
         }
     }
 }
-
-// impl ops::Add<Vec3Dnorm> for Vec3D{
-    // type Output = Vec3D;
-    // fn add(self, rhs: Vec3Dnorm) -> Vec3D{
-        // Vec3D{
-            // x: self.x + rhs.x,
-            // y: self.y + rhs.y,
-            // z: self.z + rhs.z
-        // }
-    // }
-// }
-// impl ops::Mul<f64> for Vec3Dnorm {
-    // type Output = Vec3Dnorm;
-    // fn mul(self, rhs: f64) -> Vec3Dnorm {
-        // Vec3Dnorm{
-            // x: self.x * rhs,
-            // y: self.y * rhs,
-            // z: self.z * rhs
-        // }
-    // }
-// }
-
-// impl Vec3Dnorm {
-    // pub fn new(vec: Vec3D) -> Self {
-        // let ret = vec * (1.0 / vec.length());
-        // Vec3Dnorm { x: ret.x, y: ret.y, z: ret.z }
-    // }
-// }
