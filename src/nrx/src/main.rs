@@ -1,10 +1,10 @@
-pub mod hit;
 pub mod pathtracer;
 pub mod ray;
+pub mod screen;
 pub mod sphere;
+pub mod types;
 pub mod vector;
 
-fn main() -> Result<(), std::io::Error> {
-    pathtracer::run()?;
-    Ok(())
+fn main() {
+    pathtracer::run();
 }

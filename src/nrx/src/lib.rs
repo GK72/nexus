@@ -1,7 +1,8 @@
-pub mod hit;
 pub mod pathtracer;
 pub mod ray;
+pub mod screen;
 pub mod sphere;
+pub mod types;
 pub mod vector;
 
 #[path = "tests/test_pathtracer.rs"]
