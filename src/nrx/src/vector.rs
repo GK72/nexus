@@ -50,6 +50,16 @@ impl ops::Add<Vec3D> for Vec3D {
     }
 }
 
+impl ops::AddAssign for Vec3D {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z
+        }
+    }
+}
+
 impl ops::Sub<Vec3D> for Vec3D {
     type Output = Vec3D;
     fn sub(self, rhs: Vec3D) -> Vec3D {
@@ -57,6 +67,17 @@ impl ops::Sub<Vec3D> for Vec3D {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z
+        }
+    }
+}
+
+impl ops::Mul<Vec3D> for Vec3D {
+    type Output = Vec3D;
+    fn mul(self, rhs: Vec3D) -> Vec3D {
+        Vec3D{
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z
         }
     }
 }
