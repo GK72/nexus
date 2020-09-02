@@ -161,7 +161,8 @@ function backup() {
     cp ~/.oh-my-zsh/custom/alias.zsh "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/functions.zsh "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/variables.zsh "${PATH_DIR_SCRIPT}"
-    cp -r ~/.local/share/nvim/plugin/* "${PATH_DIR_SCRIPT}/vimfiles"
+    cp -r ~/.local/share/nvim/plugin/* "${PATH_DIR_SCRIPT}/vimfiles/plugin"
+    cp -r ~/.local/share/nvim/templates/* "${PATH_DIR_SCRIPT}/vimfiles/templates"
 }
 
 function update() {
@@ -174,7 +175,8 @@ function update() {
     cp -iu "${PATH_DIR_SCRIPT}"/variables.zsh ~/.oh-my-zsh/custom
 
     mkdir -p ~/.local/share/nvim/plugin
-    cp -iur "${PATH_DIR_SCRIPT}"/vimfiles/* ~/.local/share/nvim/plugin/
+    mkdir -p ~/.local/share/nvim/templates
+    cp -iur "${PATH_DIR_SCRIPT}"/vimfiles/* ~/.local/share/nvim/
 }
 
 if [[ $# -eq 0 ]]; then

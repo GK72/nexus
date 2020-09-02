@@ -12,10 +12,16 @@ func Eatchar(pat)
   return (c =~ a:pat) ? '' : c
 endfunc
 
+" Test: 1588012345
 function! EpochToDateTime()
     normal! yiw
     let epoch = getreg('')
-    execute "!date --date=@" . epoch[0:9]
+    let datetime = system("date --date=@" . epoch[0:9])
+    echo datetime
+
+    " Dev: autoreload
+    " lua for k in pairs(package.loaded) do if k:match("^epoch%-to%-date") then package.loaded[k] = nil end end
+    " lua require("epoch-to-date").display()
 endfunction
 
 function! InsertBashArgs()
