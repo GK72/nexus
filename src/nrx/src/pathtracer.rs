@@ -14,10 +14,12 @@ use rand::prelude::*;
 
 use crate::ray::Ray;
 use crate::screen::Screen;
-use crate::sphere::Primitive;
+use crate::scene::Scene;
+use crate::scene::Primitive;
 use crate::sphere::Sphere;
 use crate::types::Material;
 use crate::vector::Vec3D;
+
 
 pub fn clamp<T: std::cmp::PartialOrd>(x: T, min: T, max: T) -> T {
     if x < min { return min; }
@@ -46,53 +48,56 @@ pub fn render(buffer: &mut Screen, scene: &dyn Primitive) {
         for x in 0..buffer.width() {
             let xx = (x as f64) / (buffer.width() as f64) * 2.0 - 1.0;
             let direction = (cam_x * xx * xfov + cam_y * yy * yfov + camera_dir).normalize();
-            let rng = rand::thread_rng();
+            let mut rng = rand::thread_rng();
             let mut colour = Vec3D::new();
 
             let num_samples = 100;
             for _ in 0..num_samples {
                 colour += radiance(
                     scene,
-                    Ray::new(camera_pos, direction),
-                    rng, 5);
+                    Ray::new(&camera_pos, &direction),
+                    &mut rng, 0);
                 }
             buffer.draw(x, y, &(colour * (1.0 / num_samples as f64)));
         }
     }
 }
 
-pub fn radiance(scene: &dyn Primitive, ray: Ray, mut rng: ThreadRng, mut depth: i32) -> Vec3D {
-    let hit = scene.intersect(&ray);
-    match hit {
-        Some(a) => {
+pub fn radiance(scene: &dyn Primitive, ray: Ray, rng: &mut ThreadRng, mut depth: i32) -> Vec3D {
+    let intersection = scene.intersect(&ray);
+    match intersection {
+        Some(x) => {
+            let hit = x.0;
+            let material = x.1;
+
+            // return material.diffuse;
             depth += 1;
             if depth > 5 {
-                return a.1.emission;
+                return material.emission;
             }
             else {
                 let rand_polar = rng.gen_range(0.0, std::f64::consts::PI * 2.0);
                 let rand_unit = rng.gen_range(0.0, 1.0);
                 let rand_unit_sqrt = (rand_unit as f64).sqrt();
 
-                let w = a.0.normal;
+                let w = hit.normal;
                 let u = if w.x.abs() > 0.1 {
                     Vec3D{ x: 0.0, y: 1.0, z: 0.0 }
                 } else {
-                    Vec3D{ x: 1.0, y: 0.0, z: 0.0 }
+                    Vec3D{ x: 1.0, y: 0.0, z: 0.0 }.cross(&w)
                 };
-
                 let v = w.cross(&u);
 
                 let new_dir = u * rand_polar.cos() * rand_unit_sqrt
                     + v * rand_polar.sin() * rand_unit_sqrt
                     + w * (1.0 - rand_unit as f64).sqrt();
 
-                let new_ray = Ray::from_points(&a.0.position, &new_dir.normalize());
+                let new_ray = Ray::new(&hit.position, &new_dir.normalize());
 
-                return a.1.emission + a.1.diffuse * radiance(scene, new_ray, rng, depth);
+                return material.emission + material.diffuse * radiance(scene, new_ray, rng, depth);
             }
         },
-        None => return Vec3D::new()
+        None => Vec3D::new()
     }
 }
 
@@ -125,15 +130,28 @@ pub fn write_file(buffer: &Screen) -> std::io::Result<()> {
 pub fn run() {
     let mut screen_buffer = Screen::new(640, 480);
 
-    let sphere = Sphere::new(
-        &Vec3D{ x: 0.0, y: 0.0, z: 50.0 },
-        15.0,
+    let mut scene: Scene = Default::default();
+    let sphere_a = Sphere::new(
+        &Vec3D{ x: -10.0, y: 0.0, z: 50.0 },
+        9.0,
         Material{
             diffuse: Vec3D { x: 1.0, y: 0.0, z: 1.0 },
-            emission: Vec3D { x: 0.1, y: 0.1, z: 0.1 }
+            emission: Vec3D { x: 0.0, y: 0.0, z: 0.0 }
         }
     );
 
-    render(&mut screen_buffer, &sphere);
+    let sphere_b = Sphere::new(
+        &Vec3D{ x: 10.0, y: 0.0, z: 50.0 },
+        9.0,
+        Material{
+            diffuse: Vec3D { x: 0.0, y: 0.0, z: 0.0 },
+            emission: Vec3D { x: 0.4, y: 0.4, z: 0.4 }
+        }
+    );
+
+    scene.add(&sphere_a);
+    scene.add(&sphere_b);
+
+    render(&mut screen_buffer, &scene);
     write_file(&screen_buffer).expect("IO Error");
 }
