@@ -50,7 +50,9 @@ mod vector {
 #[cfg(test)]
 pub mod pathtracer {
     use crate::ray::Ray;
+    use crate::sphere::Primitive;
     use crate::sphere::Sphere;
+    use crate::types::Material;
     use crate::vector::Vec3D;
     use super::utils::*;
 
@@ -69,7 +71,11 @@ pub mod pathtracer {
     fn sphere_intersect() {
         let s = Sphere{
             centre: &Vec3D{ x: 10.0, y: 20.0, z: 30.0 },
-            radius: 15.0
+            radius: 15.0,
+            material: Material {
+                diffuse: Vec3D { x: 1.0, y: 0.0, z: 1.0 },
+                emission: Vec3D { x: 0.1, y: 0.1, z: 0.1 }
+            }
         };
 
         match s.intersect(&Ray::from_points(
@@ -90,12 +96,12 @@ pub mod pathtracer {
             &Vec3D{ x: 0.0, y: 0.0, z: 0.0 },
             &Vec3D{ x: 10.0, y: 20.0, z: 30.0 })){
                 Some(x) => {
-                    assert!(approx(x.distance, 22.416573, 0.00001));
+                    assert!(approx(x.0.distance, 22.416573, 0.00001));
 
                     let pos  = Vec3D { x: 5.99108, y: 11.98216, z: 17.97324 };
                     let norm = Vec3D { x: -0.267261, y: -0.534522, z: -0.801784 };
-                    assert_comp!(&x.position, &pos, approx_vec_3d);
-                    assert_comp!(&x.normal, &norm, approx_vec_3d);
+                    assert_comp!(&x.0.position, &pos, approx_vec_3d);
+                    assert_comp!(&x.0.normal, &norm, approx_vec_3d);
                 },
                 None => assert!(false),
         }

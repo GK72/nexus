@@ -1,15 +1,16 @@
 use crate::vector::Vec3D;
 
+#[derive(Debug)]
 pub struct Ray {
     origin: Vec3D,
     direction: Vec3D
 }
 
 impl Ray {
-    pub fn new(origin: Vec3D, direction: Vec3D) -> Ray {
+    pub fn new(origin: &Vec3D, direction: &Vec3D) -> Ray {
         Ray {
-            origin: origin,
-            direction: direction
+            origin: *origin,
+            direction: *direction
         }
     }
 

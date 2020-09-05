@@ -1,11 +1,8 @@
+use crate::scene::Primitive;
 use crate::types::HitRecord;
 use crate::types::Material;
 use crate::ray::Ray;
 use crate::vector::Vec3D;
-
-pub trait Primitive {
-    fn intersect(&self, ray: &Ray) -> Option<(HitRecord, &Material)>;
-}
 
 pub struct Sphere<'a> {
     pub centre: &'a Vec3D,
@@ -30,7 +27,7 @@ impl<'a> Primitive for Sphere<'a> {
         let mut determinant = b * b - distance.length_squared() + self.radius * self.radius;
 
         if determinant < 0.0 {
-            None
+            return None;
         }
         else {
             determinant = determinant.sqrt();
@@ -50,15 +47,18 @@ impl<'a> Primitive for Sphere<'a> {
                 }
 
                 let hit_pos = ray.position_along(t);
-                let hit_normal = (hit_pos - *self.centre).normalize();
+                let mut hit_normal = (hit_pos - *self.centre).normalize();
+                if hit_normal.dot(&ray.direction()) > 0.0 {
+                    hit_normal = hit_normal * -1.0;
+                }
 
-                Some((
+                return Some((
                     HitRecord {
                         distance: t,
                         position: hit_pos,
                         normal: hit_normal
                     }, &self.material
-                ))
+                ));
             }
         }
     }
