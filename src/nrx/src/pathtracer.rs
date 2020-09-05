@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use rand::prelude::*;
 
+use crate::args::ArgParser;
 use crate::ray::Ray;
 use crate::screen::Screen;
 use crate::scene::Scene;
@@ -31,7 +32,7 @@ pub fn to_int(x: f64) -> i32 {
     return (clamp(x, 0.0, 1.0).powf(1.0 / 2.2) * 255.0 + 0.5) as i32;
 }
 
-pub fn render(buffer: &mut Screen, scene: &dyn Primitive) {
+pub fn render(buffer: &mut Screen, scene: &dyn Primitive, sampling: i32, trace_depth: i32) {
     let aspect_ratio = (buffer.width() as f64) / (buffer.height() as f64);
 
     let fov = 50.0;
@@ -51,28 +52,26 @@ pub fn render(buffer: &mut Screen, scene: &dyn Primitive) {
             let mut rng = rand::thread_rng();
             let mut colour = Vec3D::new();
 
-            let num_samples = 100;
-            for _ in 0..num_samples {
+            for _ in 0..sampling {
                 colour += radiance(
                     scene,
                     Ray::new(&camera_pos, &direction),
-                    &mut rng, 0);
+                    &mut rng, 0, trace_depth);
                 }
-            buffer.draw(x, y, &(colour * (1.0 / num_samples as f64)));
+            buffer.draw(x, y, &(colour * (1.0 / sampling as f64)));
         }
     }
 }
 
-pub fn radiance(scene: &dyn Primitive, ray: Ray, rng: &mut ThreadRng, mut depth: i32) -> Vec3D {
+pub fn radiance(scene: &dyn Primitive, ray: Ray, rng: &mut ThreadRng, mut depth: i32, max_depth: i32) -> Vec3D {
     let intersection = scene.intersect(&ray);
     match intersection {
         Some(x) => {
             let hit = x.0;
             let material = x.1;
 
-            // return material.diffuse;
             depth += 1;
-            if depth > 5 {
+            if depth > max_depth {
                 return material.emission;
             }
             else {
@@ -94,7 +93,7 @@ pub fn radiance(scene: &dyn Primitive, ray: Ray, rng: &mut ThreadRng, mut depth:
 
                 let new_ray = Ray::new(&hit.position, &new_dir.normalize());
 
-                return material.emission + material.diffuse * radiance(scene, new_ray, rng, depth);
+                return material.emission + material.diffuse * radiance(scene, new_ray, rng, depth, max_depth);
             }
         },
         None => Vec3D::new()
@@ -127,8 +126,19 @@ pub fn write_file(buffer: &Screen) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn run() {
-    let mut screen_buffer = Screen::new(640, 480);
+pub fn run(mut args: ArgParser) {
+    args.add("--sampling".to_string());
+    args.add("--width".to_string());
+    args.add("--height".to_string());
+    args.add("--trace-depth".to_string());
+    args.process();
+
+    let width = args.get("--width".to_string(), "320".to_string()).parse::<u32>().unwrap();
+    let height = args.get("--height".to_string(), "240".to_string()).parse::<u32>().unwrap();
+    let sampling = args.get("--sampling".to_string(), "10".to_string()).parse::<i32>().unwrap();
+    let trace_depth = args.get("--trace-depth".to_string(), "5".to_string()).parse::<i32>().unwrap();
+
+    let mut screen_buffer = Screen::new(width, height);
 
     let mut scene: Scene = Default::default();
     let sphere_a = Sphere::new(
@@ -152,6 +162,6 @@ pub fn run() {
     scene.add(&sphere_a);
     scene.add(&sphere_b);
 
-    render(&mut screen_buffer, &scene);
+    render(&mut screen_buffer, &scene, sampling, trace_depth);
     write_file(&screen_buffer).expect("IO Error");
 }
