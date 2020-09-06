@@ -13,6 +13,8 @@ use std::io::prelude::*;
 use rand::prelude::*;
 
 use crate::args::ArgParser;
+use crate::progress::Progress;
+
 use crate::ray::Ray;
 use crate::screen::Screen;
 use crate::scene::Scene;
@@ -32,7 +34,7 @@ pub fn to_int(x: f64) -> i32 {
     return (clamp(x, 0.0, 1.0).powf(1.0 / 2.2) * 255.0 + 0.5) as i32;
 }
 
-pub fn render(buffer: &mut Screen, scene: &dyn Primitive, sampling: i32, trace_depth: i32) {
+pub fn render(buffer: &mut Screen, scene: &dyn Primitive, sampling: i32, trace_depth: i32) -> std::io::Result<()> {
     let aspect_ratio = (buffer.width() as f64) / (buffer.height() as f64);
 
     let fov = 50.0;
@@ -44,7 +46,9 @@ pub fn render(buffer: &mut Screen, scene: &dyn Primitive, sampling: i32, trace_d
     let cam_x = Vec3D {x: 1.0, y: 0.0, z: 0.0 };
     let cam_y = cam_x.cross(&camera_dir).normalize();
 
+    let mut progress = Progress::new(buffer.height() as usize);
     for y in 0..buffer.height() {
+
         let yy = (y as f64) / (buffer.height() as f64) * 2.0 - 1.0;
         for x in 0..buffer.width() {
             let xx = (x as f64) / (buffer.width() as f64) * 2.0 - 1.0;
@@ -60,7 +64,10 @@ pub fn render(buffer: &mut Screen, scene: &dyn Primitive, sampling: i32, trace_d
                 }
             buffer.draw(x, y, &(colour * (1.0 / sampling as f64)));
         }
+
+        progress.next().print_bar()?;
     }
+    return Ok(());
 }
 
 pub fn radiance(scene: &dyn Primitive, ray: Ray, rng: &mut ThreadRng, mut depth: i32, max_depth: i32) -> Vec3D {
@@ -126,7 +133,7 @@ pub fn write_file(buffer: &Screen) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn run(mut args: ArgParser) {
+pub fn run(mut args: ArgParser) -> std::io::Result<()> {
     args.add("--sampling".to_string());
     args.add("--width".to_string());
     args.add("--height".to_string());
@@ -162,6 +169,8 @@ pub fn run(mut args: ArgParser) {
     scene.add(&sphere_a);
     scene.add(&sphere_b);
 
-    render(&mut screen_buffer, &scene, sampling, trace_depth);
+    render(&mut screen_buffer, &scene, sampling, trace_depth)?;
     write_file(&screen_buffer).expect("IO Error");
+
+    return Ok(());
 }

@@ -1,4 +1,6 @@
 pub mod args;
+pub mod progress;
+
 pub mod pathtracer;
 pub mod ray;
 pub mod scene;
@@ -7,9 +9,10 @@ pub mod sphere;
 pub mod types;
 pub mod vector;
 
-use std::env;
+fn main() -> std::io::Result<()> {
+    let args = args::ArgParser::new(std::env::args().collect());
 
-fn main() {
-    let args = args::ArgParser::new(env::args().collect());
-    pathtracer::run(args);
+    pathtracer::run(args)?;
+
+    return Ok(());
 }
