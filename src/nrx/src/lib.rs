@@ -1,4 +1,6 @@
 pub mod args;
+pub mod progress;
+
 pub mod pathtracer;
 pub mod ray;
 pub mod scene;
