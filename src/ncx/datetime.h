@@ -8,6 +8,7 @@
 
 #include <array>
 #include <chrono>
+#include <compare>
 #include <string_view>
 
 #include "utility.h"
@@ -79,6 +80,8 @@ public:
     [[nodiscard]] char month()  const;
     [[nodiscard]] char day()    const;
 
+    auto operator<=>(const DateImpl_Compact& date) const = default;
+
 private:
     size_t m_rep;
 
@@ -98,6 +101,8 @@ public:
     [[nodiscard]] int  year()  const              { return m_year; }
     [[nodiscard]] char month() const              { return m_month; }
     [[nodiscard]] char day()   const              { return m_day; }
+
+    auto operator<=>(const DateImpl_Speed& date) const = default;
 
 private:
     int  m_year;
@@ -122,11 +127,7 @@ public:
             std::stoi(date.substr(8, 2).data()))
     {}
 
-    bool operator== (const Date<>& date) const {
-        return year()  == date.year()
-            && month() == date.month()
-            && day()   == date.day();
-    }
+    auto operator<=>(const Date& date) const = default;
 
     Date<DateImpl> addYear(int year);
     Date<DateImpl> addMonth(int month);
