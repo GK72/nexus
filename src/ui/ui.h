@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -92,7 +93,7 @@ private:
 
 class UI {
 public:
-    using InputLambda = void(*)(const std::string&);
+    using InputLambda = std::function<void(const std::string&, int)>;
 
     UI();
     ~UI();
@@ -108,6 +109,7 @@ public:
     void clear();
     void print(const TextBox& text);
     void print(const TextBox& text, int row, int col);
+    void preview(const std::vector<std::string>& elems, int cursorMov);
 
     void highlightOn();
     void highlightOff();
@@ -125,6 +127,9 @@ private:
     bool m_terminate = false;
 
     Menu m_menu;
+
+    int m_previewSelection = 0;
+    std::string m_previewSelected;
 
     int getChar();
 
