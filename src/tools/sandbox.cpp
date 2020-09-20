@@ -6,10 +6,17 @@
 
 #include "arg.h"
 #include "utility.h"
+#include "ui.h"
 
 int run(const nxs::ArgParser& args)
 {
-    nxs::print("Empty sandbox");
+    // nxs::print("Empty sandbox");
+
+    auto ui = nxs::UI();
+    auto x = ui.input("Some input   ");
+    ui.print(nxs::TextBox({{"\nInput was:"}, {x}}));
+    ui.waitKey();
+
     return 0;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace nxs {
@@ -91,44 +92,28 @@ private:
 
 class UI {
 public:
-    virtual ~UI() = default;
+    using InputLambda = void(*)(const std::string&);
 
-    virtual void create()                  = 0;
-    virtual void addMenu(const Menu& menu) = 0;
+    UI();
+    ~UI();
 
-    virtual void waitKey()                                    = 0;
-    virtual void input(const std::string& msg)                = 0;
-    virtual void clear()                                      = 0;
-    virtual void print(const TextBox& text)                   = 0;
-    virtual void print(const TextBox& text, int row, int col) = 0;
+    void create();
+    void addMenu(const Menu& menu);
 
-    virtual void setPrintHighlightOn()  = 0;
-    virtual void setPrintHighlightOff() = 0;
+    void waitKey();
 
-    virtual MenuAction* messageNewScreen(const std::string& msg) = 0;
-    virtual void updateSize()                                    = 0;
-};
+    std::string input(const std::string& msg, const std::string& defaultStr = "");
+    std::string input(const std::string& msg, InputLambda process, const std::string& defaultStr = "");
 
-class TextUI : public UI {
-public:
-    TextUI();
-    ~TextUI() override;
+    void clear();
+    void print(const TextBox& text);
+    void print(const TextBox& text, int row, int col);
 
-    void create() override;
-    void addMenu(const Menu& menu) override;
+    void highlightOn();
+    void highlightOff();
 
-    void waitKey() override;
-    void input(const std::string& msg) override;
-
-    void clear() override;
-    void print(const TextBox& text) override;
-    void print(const TextBox& text, int row, int col) override;
-
-    void setPrintHighlightOn() override;
-    void setPrintHighlightOff() override;
-
-    MenuAction* messageNewScreen(const std::string& msg) override;
-    void updateSize() override;
+    MenuAction* messageNewScreen(const std::string& msg);
+    void updateSize();
 
 private:
     int m_maxRows;
@@ -145,6 +130,7 @@ private:
 
     void initMenu(Menu& menu);
     void displayMenu(const Menu& menu);
+    std::pair<int, int> getCur();
     void restoreCur();
     void saveCur();
 };
