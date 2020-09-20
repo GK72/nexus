@@ -61,22 +61,23 @@ TextBox Menu::toFormattedText() const {
 }
 
 
-TextUI::TextUI() {
+UI::UI() {
     setlocale(LC_ALL, "");
     initscr();
     keypad(stdscr, TRUE);
     noecho();
+    cbreak();
 }
 
-TextUI::~TextUI() {
+UI::~UI() {
     endwin();
 }
 
-void TextUI::create() {
+void UI::create() {
     initMenu(m_menu);
 }
 
-void TextUI::initMenu(Menu& menu) {
+void UI::initMenu(Menu& menu) {
     saveCur();
     displayMenu(menu);
     while (!m_terminate) {
@@ -92,88 +93,111 @@ void TextUI::initMenu(Menu& menu) {
     }
 }
 
-void TextUI::addMenu(const Menu& menu) {
+void UI::addMenu(const Menu& menu) {
     m_menu = menu;
 }
 
-void TextUI::displayMenu(const Menu& menu) {
+void UI::displayMenu(const Menu& menu) {
     restoreCur();
     print(menu.toFormattedText());
     refresh();
 }
 
-void TextUI::saveCur() {
+std::pair<int, int> UI::getCur() {
+    int x, y;
+    getyx(stdscr, y, x);
+    return { x, y };
+}
+
+void UI::saveCur() {
     getyx(stdscr, m_tCurY, m_tCurX);
 }
 
-void TextUI::restoreCur() {
+void UI::restoreCur() {
     move(m_tCurY, m_tCurX);
 }
 
-int TextUI::getChar() {
+int UI::getChar() {
     m_lastch = getch();
     return m_lastch;
 }
 
-void TextUI::clear() {
+void UI::clear() {
     ::clear();
     refresh();
 }
 
-void TextUI::print(const TextBox& text) {
+void UI::print(const TextBox& text) {
     for (const auto& line : text) {
         // TODO: generalize for different formatting options
         if (line.format.highlighted) {
-            setPrintHighlightOn();
+            highlightOn();
         }
         else {
-            setPrintHighlightOff();
+            highlightOff();
         }
         ncg::print(line.content);
     }
 }
 
-void TextUI::print(const TextBox& text, int row, int col) {
+void UI::print(const TextBox& text, int row, int col) {
     move(row, col);
     print(text);
 }
 
-MenuAction* TextUI::messageNewScreen(const std::string& msg) {
+MenuAction* UI::messageNewScreen(const std::string& msg) {
     return new MessageNewScreen(this, msg);
 }
 
-void TextUI::setPrintHighlightOn() {
+void UI::highlightOn() {
     attron(A_REVERSE);
 }
 
-void TextUI::setPrintHighlightOff() {
+void UI::highlightOff() {
     attroff(A_REVERSE);
 }
 
-void TextUI::waitKey() {
+void UI::waitKey() {
     getch();
 }
 
-void TextUI::input(const std::string& msg) {
-    printw(msg.c_str());
-    refresh();
-    int ch = getch();
-
-    if (ch == KEY_F(1)) {
-        printw("F1 key pressed");
-    }
-    else {
-        printw("Key pressed is: ");
-        attron(A_BOLD);
-        printw("%c", ch);
-        attroff(A_BOLD);
-    }
-
-    refresh();
+void UI::updateSize() {
+    getmaxyx(stdscr, m_maxRows, m_maxCols);
 }
 
-void TextUI::updateSize() {
-    getmaxyx(stdscr, m_maxRows, m_maxCols);
+std::string UI::input(const std::string& msg, InputLambda process, const std::string& defaultStr) {
+    printw(msg.c_str());
+    refresh();
+    std::string inputStr = defaultStr;
+
+    saveCur();
+
+    while (true) {
+        switch (int ch = getch()) {
+        case 10:    // KEY: Enter
+            return inputStr;
+        case KEY_BACKSPACE:
+            if (!inputStr.empty()) {
+                auto [x, y] = getCur();
+                move(y, x - 1);
+                clrtoeol();
+                inputStr.pop_back();
+            }
+            break;
+        default:
+            inputStr.push_back(ch);
+            break;
+        }
+
+        restoreCur();
+        printw(inputStr.c_str());
+        process(inputStr);
+        refresh();
+    }
+}
+
+std::string UI::input(const std::string& msg, const std::string& defaultStr) {
+    return input(msg, [](const std::string& str) {}, defaultStr);
 }
 
 } // namespace nxs
