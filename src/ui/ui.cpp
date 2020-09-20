@@ -98,7 +98,7 @@ void UI::addMenu(const Menu& menu) {
 }
 
 void UI::displayMenu(const Menu& menu) {
-    restoreCur();
+    move(0, 0);
     print(menu.toFormattedText());
     refresh();
 }
@@ -169,13 +169,17 @@ std::string UI::input(const std::string& msg, InputLambda process, const std::st
     printw(msg.c_str());
     refresh();
     std::string inputStr = defaultStr;
+    m_previewSelected = "";
 
     saveCur();
+    printw(inputStr.c_str());
 
     while (true) {
+        int cursorMov = 0;
         switch (int ch = getch()) {
         case 10:    // KEY: Enter
-            return inputStr;
+            printw("\n");
+            return !m_previewSelected.empty() ? m_previewSelected : inputStr;
         case KEY_BACKSPACE:
             if (!inputStr.empty()) {
                 auto [x, y] = getCur();
@@ -184,6 +188,10 @@ std::string UI::input(const std::string& msg, InputLambda process, const std::st
                 inputStr.pop_back();
             }
             break;
+        case KEY_UP:    cursorMov = 1;  break;
+        case KEY_DOWN:  cursorMov = 2;  break;
+        case KEY_LEFT:  cursorMov = 3;  break;
+        case KEY_RIGHT: cursorMov = 4;  break;
         default:
             inputStr.push_back(ch);
             break;
@@ -191,13 +199,32 @@ std::string UI::input(const std::string& msg, InputLambda process, const std::st
 
         restoreCur();
         printw(inputStr.c_str());
-        process(inputStr);
+        process(inputStr, cursorMov);
         refresh();
     }
 }
 
 std::string UI::input(const std::string& msg, const std::string& defaultStr) {
-    return input(msg, [](const std::string& str) {}, defaultStr);
+    return input(msg, [](const std::string& str, int) {}, defaultStr);
+}
+
+void UI::preview(const std::vector<std::string>& elems, int cursorMov) {
+    if (elems.empty()) { return; }
+
+    if (cursorMov == 1) {
+        m_previewSelection = std::max(0, m_previewSelection - 1);
+    }
+    if (cursorMov == 2) {
+        m_previewSelection = std::min(
+            static_cast<int>(elems.size()) - 1,
+            m_previewSelection + 1
+        );
+    }
+
+    printw("\n");
+    clrtoeol();
+    m_previewSelected = elems[m_previewSelection];
+    ncg::print(m_previewSelected);
 }
 
 } // namespace nxs
