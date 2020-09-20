@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iomanip>
 #include <numeric>
+#include <regex>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -25,6 +26,13 @@ namespace nxs {
 #else
 #define DBGMSG(msg, value) ((void)0)
 #endif
+
+// ---------------------------------------==[ Structs ]==---------------------------------------- //
+
+struct SearchResult {
+    std::string string;
+    int priority = 0;
+};
 
 // ---------------------------------------==[ Concepts ]==--------------------------------------- //
 
@@ -151,6 +159,14 @@ template <class T> T swapEndian32(T& x) {
 
 // -------------------------------------==[ Algorithms ]==--------------------------------------- //
 
+template <class Container>
+Container removeAllDuplicates(Container cont) {
+    std::sort(std::begin(cont), std::end(cont));
+    auto it = std::unique(std::begin(cont), std::end(cont));
+    cont.erase(it, std::end(cont));
+    return cont;
+}
+
 constexpr auto GroupByEqualKeys    = [](const auto& key, const auto& prevKey) { return key == prevKey; };
 constexpr auto AggregatePlusEquals = [](auto agg, const auto& value)          { return agg += value; };
 
@@ -204,6 +220,70 @@ groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)
 
     return summary;
 }
+
+/**
+ * @brief Searching in elements in multiple passes and prioritizing according to them
+ *
+ * 1. pass:   Starts with word
+ * 2. pass:   Starts with
+ * 3. pass:   Pattern matches somewhere
+ * 4. pass:   Fuzzy search
+ *
+ * @param pattern   Pattern to search for
+ * @param elems     Search among elements
+ *
+ * @return          A priority sorted vector of results
+ */
+template <class Range>
+std::vector<SearchResult> fuzzySearch(const std::string& pattern, const Range& elems) {
+    std::vector<SearchResult> ret;
+
+    std::string patternFuzzy;
+    for (const auto& s : pattern) {
+        patternFuzzy.push_back(s);
+        patternFuzzy.append(".*");
+    }
+
+    using namespace std::literals::string_literals;
+    auto regexFlags = std::regex::ECMAScript | std::regex::icase;
+    auto rPatternStartWord = std::regex("^"s + pattern + "($|\\s).*"s, regexFlags);
+    auto rPatternStart     = std::regex("^"s + pattern + ".*"s,        regexFlags);
+    auto rPattern          = std::regex(".*"s + pattern + ".*"s,       regexFlags);
+    auto rPatternFuzzy     = std::regex(patternFuzzy,                  regexFlags);
+
+    std::smatch match;
+    for (const auto& elem : elems) {
+        std::string target = elem;
+        if (std::regex_match(target, match, rPatternStartWord)) {
+            ret.push_back({ match.str(), 0 });
+            continue;
+        }
+
+        if (std::regex_match(target, match, rPatternStart)) {
+            ret.push_back({ match.str(), 2 });
+            continue;
+        }
+
+        if (std::regex_match(target, match, rPattern)) {
+            ret.push_back({ match.str(), 3 });
+            continue;
+        }
+
+        if (std::regex_match(target, match, rPatternFuzzy)) {
+            ret.push_back({ match.str(), 4 });
+            continue;
+        }
+    }
+
+    std::sort(
+        std::begin(ret),
+        std::end(ret),
+        [](const auto& lhs, const auto& rhs) { return lhs.priority < rhs.priority; }
+    );
+
+    return ret;
+}
+
 
 // -------------------------------------==[ Generators ]==--------------------------------------- //
 
