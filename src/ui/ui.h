@@ -1,6 +1,13 @@
+/*
+ * gkpro @ 2020-09-27
+ *   Nexus Library
+ *     Text based User Interface - header
+ */
+
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -9,85 +16,187 @@ namespace nxs {
 
 class UI;
 
-// -----------------------------------==[ Formatted Text ]==----------------------------------------
+struct CoordsRC {
+    int r = 0;
+    int c = 0;
+};
 
-struct TextFormat {
+inline CoordsRC operator+(CoordsRC lhs, CoordsRC rhs) {
+    return { lhs.r + rhs.r, lhs.c + rhs.c };
+}
+
+struct Format {
     bool highlighted = false;
 };
 
-struct FormattedText {
-    std::string content;
-    TextFormat format;
+
+/**
+ * @brief A UI element which can display itself
+ */
+class UIElement {
+public:
+    explicit UIElement(UI* ui, CoordsRC coords) : m_ui(ui), m_pos(coords) {}
+    virtual ~UIElement() = default;
+
+    virtual void display(CoordsRC offset) = 0;
+
+    int row() const { return m_pos.r; };
+    int col() const { return m_pos.c; };
+
+protected:
+    UI* m_ui;
+    CoordsRC m_pos;
+    CoordsRC m_length;       // TODO: clip at length
 };
 
-using TextBox = std::vector<FormattedText>;
 
-// ----------------------------------------==[ Menu ]==---------------------------------------------
-
-class MenuAction {
+/**
+ * @brief UIElement container
+ */
+class UIContainer : public UIElement {
 public:
-    virtual ~MenuAction() = default;
+    UIContainer(UI* ui, CoordsRC coords) : UIElement(ui, coords) {}
+    ~UIContainer() = default;
+
+    void display(CoordsRC offset = {}) override;
+    void add(std::unique_ptr<UIElement> element);
+
+private:
+    std::vector<std::unique_ptr<UIElement>> m_elements;
+};
+
+
+/**
+ * @brief The most fundamental UI building block
+ */
+class UIContent : public UIElement {
+public:
+    UIContent(UI* ui, CoordsRC coords, const std::string& name, const Format& format = {});
+    ~UIContent() = default;
+
+    void display(CoordsRC offset = {}) override;
+
+protected:
+    std::string m_name;
+    Format m_format;
+};
+
+
+/**
+ * @brief An interface for an action that can be executed
+ */
+class UIAction {
+public:
+    virtual ~UIAction() = default;
     virtual void execute() = 0;
 };
 
-class Message : public MenuAction {
+
+/**
+ * @brief An action that calls a function
+ */
+template <class Callable>
+class UICallback : public UIAction {
 public:
-    Message(UI* ui, const std::string msg, int x = 0, int y = 0);
-    ~Message() = default;
-
-    void execute() override;
-
-protected:
-    std::string m_msg;
-    int m_x;
-    int m_y;
-
-    UI* m_ui;
-};
-
-class MessageNewScreen : public Message {
-public:
-    MessageNewScreen(UI* ui, const std::string& msg, int x = 0, int y = 0);
-    ~MessageNewScreen() = default;
-
-    void execute() override;
-};
-
-template <class Func>
-class ActionCallback : public MenuAction {
-public:
-    ActionCallback(Func func) : m_func(func) {}
-    ~ActionCallback() = default;
+    UICallback(Callable func) : m_func(func) {}
+    ~UICallback() = default;
     void execute() override { m_func(); }
 
 private:
-    Func m_func;
+    Callable m_func;
 };
 
 
-struct MenuItem {
-    std::string name;
-    MenuAction* action;
-};
-
-class Menu {
+/**
+ * @brief A named input field with optional default value
+ */
+class UIInput : public UIContent, public UIAction {
 public:
-    Menu() = default;
-    Menu(const std::vector<MenuItem>& elems) : m_elems(elems) {}
+    UIInput(
+        UI* ui,
+        CoordsRC coords,
+        const std::string& name,
+        const Format& format = {},
+        const std::string& defaultInput = {}
+    );
+    ~UIInput() = default;
+
+    void display(CoordsRC offset = {}) override;
+    void execute() override;
+    void highlightOn();
+    void highlightOff();
+
+    const std::string& result() const { return m_inputStr; }
+
+private:
+    std::string m_inputStr;
+    mutable CoordsRC m_offset;      // TODO: remove this hack
+    mutable CoordsRC m_inputOffset; // TODO: remove this hack
+};
+
+
+/**
+ * @brief Displays a message on a clear screen
+ */
+class UIMessage : public UIContent, public UIAction {
+public:
+    UIMessage(UI* ui, const std::string& msg, CoordsRC coords = {}, const Format& format = {})
+        : UIContent(ui, coords, msg, format)
+    {}
+    ~UIMessage() = default;
+    void execute() override;
+};
+
+
+class UIInputGrid : public UIElement {
+public:
+    UIInputGrid(UI* ui, CoordsRC coords, const std::vector<UIInput>& inputs);
+    ~UIInputGrid() = default;
+
+    void display(CoordsRC offset = {}) override;
+
+    void decCur();
+    void incCur();
+    void select();
+
+    int cursor() const { return m_cursor; }
+    std::string result(size_t index) const { return m_inputs[index].result(); }
+
+private:
+    std::vector<UIInput> m_inputs;
+    int m_cursor = 0;
+};
+
+
+/**
+ * @brief A menu that stores named actions
+ *
+ * Keeps track its own selection and is able to create a
+ * `UIElement` formatted based on the selection
+ */
+class Menu : public UIElement {
+public:
+    struct Option {
+        std::string name;
+        std::unique_ptr<UIAction> action;
+    };
+
+    Menu(UI* ui, std::vector<Option>&& options, CoordsRC coords = {});
+
+    void display(CoordsRC offset = {}) override;
 
     void decCur();
     void incCur();
     void select() const;
-
-    auto getElems()  const         { return m_elems; }
-    auto getCursor() const         { return m_cursor; }
-
-    TextBox toFormattedText() const;
+    int cursor() const { return m_cursor; }
 
 private:
-    std::vector<MenuItem> m_elems;
+    std::vector<Option> m_options;
+
     int m_cursor = 0;
+    std::unique_ptr<UIElement> createUIElement() const;
 };
+
 
 // -----------------------------------------==[ UI ]==----------------------------------------------
 
@@ -98,46 +207,46 @@ public:
     UI();
     ~UI();
 
-    void create();
-    void addMenu(const Menu& menu);
+    int         input(Menu& menu);
+    int         input(UIInputGrid& menu);
+    std::string input(CoordsRC pos, const std::string& defaultStr = "");
+    std::string input(CoordsRC pos, InputLambda process, const std::string& defaultStr = "");
 
+    void render(CoordsRC coords, std::string_view text, const Format& format = {});
+    void clearScreen();
     void waitKey();
 
-    std::string input(const std::string& msg, const std::string& defaultStr = "");
-    std::string input(const std::string& msg, InputLambda process, const std::string& defaultStr = "");
-
-    void clear();
-    void print(const TextBox& text);
-    void print(const TextBox& text, int row, int col);
-    void preview(const std::vector<std::string>& elems, int cursorMov);
-
-    void highlightOn();
-    void highlightOff();
-
-    MenuAction* messageNewScreen(const std::string& msg);
-    void updateSize();
-
 private:
-    int m_maxRows;
-    int m_maxCols;
-    int m_tCurX;
-    int m_tCurY;
-
-    int m_lastch;
-    bool m_terminate = false;
-
-    Menu m_menu;
-
     int m_previewSelection = 0;
     std::string m_previewSelected;
 
     int getChar();
 
-    void initMenu(Menu& menu);
-    void displayMenu(const Menu& menu);
-    std::pair<int, int> getCur();
-    void restoreCur();
-    void saveCur();
+    void highlightOn();
+    void highlightOff();
 };
+
+
+class MenuBuilder {
+public:
+    MenuBuilder(UI& ui) : m_ui(&ui) {}
+
+    template <class Callable>
+    void add(const std::string& name, Callable callback) {
+        m_options.push_back({ name, std::make_unique<UICallback<Callable>>(callback) });
+    }
+
+    template <class Action, class ...Args>
+    void add(const std::string& name, Args&&... args) {
+        m_options.push_back({ name, std::make_unique<Action>(m_ui, args...) });
+    }
+
+    Menu build() { return nxs::Menu(m_ui, std::move(m_options)); }
+
+private:
+    UI* m_ui;
+    std::vector<Menu::Option> m_options;
+};
+
 
 } // namespace nxs
