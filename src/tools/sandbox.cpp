@@ -4,18 +4,35 @@
  *   Template for using ArgParser
  */
 
+#include <memory>
+
 #include "arg.h"
 #include "utility.h"
 #include "ui.h"
+
+void grid(nxs::UI* ui) {
+    auto x = nxs::UIInputGrid(ui, nxs::CoordsRC{}, {
+        nxs::UIInput(ui, nxs::CoordsRC{}, "Input 1:", nxs::Format{}, "default value one"),
+        nxs::UIInput(ui, nxs::CoordsRC{}, "Input 2:", nxs::Format{}, "default value two"),
+        nxs::UIInput(ui, nxs::CoordsRC{}, "Input 3:", nxs::Format{}, "default value three")
+    });
+
+    ui->input(x);
+
+    // nxs::UIMessage(ui, x.result(0)).execute();
+}
 
 int run(const nxs::ArgParser& args)
 {
     // nxs::print("Empty sandbox");
 
     auto ui = nxs::UI();
-    auto x = ui.input("Some input   ");
-    ui.print(nxs::TextBox({{"\nInput was:"}, {x}}));
-    ui.waitKey();
+    auto builder = nxs::MenuBuilder(ui);
+    builder.add<nxs::UIMessage>("Help", "A message");
+    builder.add("Grid test", [&ui]() { grid(&ui); });
+
+    auto menu = builder.build();
+    ui.input(menu);
 
     return 0;
 }

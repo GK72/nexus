@@ -1,10 +1,8 @@
-// **********************************************
-// ** gkpro @ 2020-05-23                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **              Text based UI               **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-09-27
+ *   Nexus Library
+ *     Text based User Interface - implementation
+ */
 
 #include "ui.h"
 
@@ -15,52 +13,6 @@
 
 namespace nxs {
 
-Message::Message(UI* ui, const std::string msg, int x, int y)
-    : m_ui(ui), m_msg(msg), m_x(x), m_y(y)
-{}
-
-void Message::execute() {
-    m_ui->print(TextBox{{ m_msg }}, m_x, m_y);
-}
-
-MessageNewScreen::MessageNewScreen(UI* ui, const std::string& msg, int x, int y)
-    : Message(ui, msg, x, y)
-{}
-
-void MessageNewScreen::execute() {
-    m_ui->clear();
-    Message::execute();
-    m_ui->waitKey();
-}
-
-void Menu::decCur() {
-    if (m_cursor == 0) m_cursor = m_elems.size() - 1;
-    else --m_cursor;
-}
-
-void Menu::incCur() {
-    if (m_cursor == m_elems.size() - 1) m_cursor = 0;
-    else ++m_cursor;
-}
-
-void Menu::select() const {
-    m_elems[m_cursor].action->execute();
-}
-
-TextBox Menu::toFormattedText() const {
-    TextBox ret;
-
-    size_t cursor = 0;
-    for (const auto& menuItem : m_elems) {
-        FormattedText text{ menuItem.name, cursor == m_cursor };
-        ret.push_back(text);
-        ++cursor;
-    }
-
-    return ret;
-}
-
-
 UI::UI() {
     setlocale(LC_ALL, "");
     initscr();
@@ -70,83 +22,10 @@ UI::UI() {
 }
 
 UI::~UI() {
+    nocbreak();
+    echo();
+    keypad(stdscr, FALSE);
     endwin();
-}
-
-void UI::create() {
-    initMenu(m_menu);
-}
-
-void UI::initMenu(Menu& menu) {
-    saveCur();
-    displayMenu(menu);
-    while (!m_terminate) {
-        switch (getChar()) {
-            case 'j':       menu.incCur();              break;
-            case 'k':       menu.decCur();              break;
-            case 'o':       menu.select();              break;
-            case 'q':       m_terminate = true;         break;
-            default :                                   break;
-        }
-        clear();
-        displayMenu(menu);
-    }
-}
-
-void UI::addMenu(const Menu& menu) {
-    m_menu = menu;
-}
-
-void UI::displayMenu(const Menu& menu) {
-    move(0, 0);
-    print(menu.toFormattedText());
-    refresh();
-}
-
-std::pair<int, int> UI::getCur() {
-    int x, y;
-    getyx(stdscr, y, x);
-    return { x, y };
-}
-
-void UI::saveCur() {
-    getyx(stdscr, m_tCurY, m_tCurX);
-}
-
-void UI::restoreCur() {
-    move(m_tCurY, m_tCurX);
-}
-
-int UI::getChar() {
-    m_lastch = getch();
-    return m_lastch;
-}
-
-void UI::clear() {
-    ::clear();
-    refresh();
-}
-
-void UI::print(const TextBox& text) {
-    for (const auto& line : text) {
-        // TODO: generalize for different formatting options
-        if (line.format.highlighted) {
-            highlightOn();
-        }
-        else {
-            highlightOff();
-        }
-        ncg::print(line.content);
-    }
-}
-
-void UI::print(const TextBox& text, int row, int col) {
-    move(row, col);
-    print(text);
-}
-
-MenuAction* UI::messageNewScreen(const std::string& msg) {
-    return new MessageNewScreen(this, msg);
 }
 
 void UI::highlightOn() {
@@ -157,35 +36,50 @@ void UI::highlightOff() {
     attroff(A_REVERSE);
 }
 
+void UI::clearScreen() {
+    clear();
+}
+
+int UI::getChar() {
+    return getch();
+}
+
 void UI::waitKey() {
     getch();
 }
 
-void UI::updateSize() {
-    getmaxyx(stdscr, m_maxRows, m_maxCols);
+void UI::render(CoordsRC coords, std::string_view text, const Format& format) {
+    if (format.highlighted) {
+        highlightOn();
+    }
+
+    ncg::print(
+        coords.r,
+        coords.c,
+        text.data()
+    );
+
+    highlightOff();
 }
 
-std::string UI::input(const std::string& msg, InputLambda process, const std::string& defaultStr) {
-    printw(msg.c_str());
-    refresh();
+std::string UI::input(CoordsRC pos, InputLambda process, const std::string& defaultStr) {
     std::string inputStr = defaultStr;
     m_previewSelected = "";
 
-    saveCur();
-    printw(inputStr.c_str());
+    render(pos, inputStr);
 
     while (true) {
         int cursorMov = 0;
         switch (int ch = getch()) {
         case 10:    // KEY: Enter
-            printw("\n");
             return !m_previewSelected.empty() ? m_previewSelected : inputStr;
+        case 127:
         case KEY_BACKSPACE:
             if (!inputStr.empty()) {
-                auto [x, y] = getCur();
-                move(y, x - 1);
+                move(pos.r, pos.c - 1);
                 clrtoeol();
                 inputStr.pop_back();
+                render(pos, inputStr);
             }
             break;
         case KEY_UP:    cursorMov = 1;  break;
@@ -197,34 +91,200 @@ std::string UI::input(const std::string& msg, InputLambda process, const std::st
             break;
         }
 
-        restoreCur();
-        printw(inputStr.c_str());
+        render(pos, inputStr);
         process(inputStr, cursorMov);
-        refresh();
     }
 }
 
-std::string UI::input(const std::string& msg, const std::string& defaultStr) {
-    return input(msg, [](const std::string& str, int) {}, defaultStr);
+std::string UI::input(CoordsRC pos, const std::string& defaultStr) {
+    return input(pos, [](const std::string& str, int) {}, defaultStr);
 }
 
-void UI::preview(const std::vector<std::string>& elems, int cursorMov) {
-    if (elems.empty()) { return; }
-
-    if (cursorMov == 1) {
-        m_previewSelection = std::max(0, m_previewSelection - 1);
+int UI::input(Menu& menu) {
+    menu.display();
+    bool loop = true;
+    while (loop) {
+        switch (getChar()) {
+            case 'j':   menu.incCur();   break;
+            case 'k':   menu.decCur();   break;
+            case 'o':   menu.select();   break;
+            case 'q':   loop = false;    break;
+            default :                    break;
+        }
+        clear();
+        menu.display();
     }
-    if (cursorMov == 2) {
-        m_previewSelection = std::min(
-            static_cast<int>(elems.size()) - 1,
-            m_previewSelection + 1
+
+    return menu.cursor();
+}
+
+// TODO: DRY
+int UI::input(UIInputGrid& menu) {
+    menu.display();
+    bool loop = true;
+    while (loop) {
+        switch (getChar()) {
+            case 'j':   menu.incCur();   break;
+            case 'k':   menu.decCur();   break;
+            case 'o':   menu.select();   break;
+            case 'q':   loop = false;    break;
+            default :                    break;
+        }
+        clear();
+        menu.display();
+    }
+
+    return menu.cursor();
+}
+
+Menu::Menu(UI* ui, std::vector<Option>&& options, CoordsRC coords)
+    : m_options(std::move(options))
+    , UIElement(ui, coords)
+{}
+
+void Menu::decCur() {
+    if (m_cursor == 0) { m_cursor = m_options.size() - 1; }
+    else { --m_cursor; }
+}
+
+void Menu::incCur() {
+    if (m_cursor == m_options.size() - 1) { m_cursor = 0; }
+    else { ++m_cursor; }
+}
+
+void Menu::select() const {
+    m_options[m_cursor].action->execute();
+}
+
+void Menu::display(CoordsRC offset) {
+    createUIElement()->display(offset);
+}
+
+// TODO: no UIElement contruction, work with existing ones
+std::unique_ptr<UIElement> Menu::createUIElement() const {
+    auto container = std::make_unique<UIContainer>(m_ui, m_pos);
+
+    size_t i = 0;
+    for (const auto& option : m_options) {
+        container->add(
+            std::make_unique<UIContent>(
+                m_ui,
+                CoordsRC{static_cast<int>(i), 0},
+                option.name,
+                Format{ i == m_cursor }
+            )
         );
+
+        ++i;
     }
 
-    printw("\n");
-    clrtoeol();
-    m_previewSelected = elems[m_previewSelection];
-    ncg::print(m_previewSelected);
+    return container;
 }
+
+UIInputGrid::UIInputGrid(UI* ui, CoordsRC coords, const std::vector<UIInput>& inputs)
+    : UIElement(ui, coords)
+    , m_inputs(inputs)
+{}
+
+void UIInputGrid::display(CoordsRC offset) {
+    for (int i = 0; auto& element : m_inputs) {
+        if (i == m_cursor) { element.highlightOn(); }
+        else { element.highlightOff(); }
+        element.display(CoordsRC{ i, 0 });
+        ++i;
+    }
+}
+
+void UIInputGrid::decCur() {
+    if (m_cursor == 0) { m_cursor = m_inputs.size() - 1; }
+    else { --m_cursor; }
+}
+
+void UIInputGrid::incCur() {
+    if (m_cursor == m_inputs.size() - 1) { m_cursor = 0; }
+    else { ++m_cursor; }
+}
+
+void UIInputGrid::select() {
+    m_inputs[m_cursor].execute();
+}
+
+void UIMessage::execute() {
+    m_ui->clearScreen();
+    display();
+    m_ui->waitKey();
+}
+
+void UIContainer::display(CoordsRC offset) {
+    // ui->render(this, m_pos);     // TODO: e.g. border, background
+    for (const auto& element : m_elements) {
+        element->display(m_pos + offset);
+    }
+}
+
+void UIContainer::add(std::unique_ptr<UIElement> element) {
+    m_elements.push_back(std::move(element));
+}
+
+UIContent::UIContent(UI* ui, CoordsRC coords, const std::string& name, const Format& format)
+    : UIElement(ui, coords)
+    , m_name(name)
+    , m_format(format)
+{}
+
+void UIContent::display(CoordsRC offset) {
+    m_ui->render(m_pos + offset, m_name, m_format);
+    refresh();
+}
+
+UIInput::UIInput(
+    UI* ui,
+    CoordsRC coords,
+    const std::string& name,
+    const Format& format,
+    const std::string& defaultInput
+)
+    : UIContent(ui, coords, name, format)
+    , m_inputStr(defaultInput)
+{}
+
+void UIInput::display(CoordsRC offset) {
+    m_inputOffset = CoordsRC{ 0, m_pos.c + static_cast<int>(m_name.size()) + 1 };
+    m_offset = offset;
+
+    m_ui->render(m_pos + m_offset, m_name, m_format);
+    m_ui->render(m_pos + offset + m_inputOffset, m_inputStr);
+}
+
+void UIInput::execute() {
+    m_inputStr = m_ui->input(m_pos + m_offset + m_inputOffset, m_inputStr);
+}
+
+void UIInput::highlightOn() {
+    m_format.highlighted = true;
+}
+
+void UIInput::highlightOff() {
+    m_format.highlighted = false;
+}
+
+// void UI::preview(const std::vector<std::string>& elems, int cursorMov) {
+    // if (elems.empty()) { return; }
+
+    // if (cursorMov == 1) {
+        // m_previewSelection = std::max(0, m_previewSelection - 1);
+    // }
+    // if (cursorMov == 2) {
+        // m_previewSelection = std::min(
+            // static_cast<int>(elems.size()) - 1,
+            // m_previewSelection + 1
+        // );
+    // }
+
+    // printw("\n");
+    // clrtoeol();
+    // m_previewSelected = elems[m_previewSelection];
+    // ncg::print(m_previewSelected);
+// }
 
 } // namespace nxs
