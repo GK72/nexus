@@ -24,6 +24,42 @@ function! EpochToDateTime()
     " lua require("epoch-to-date").display()
 endfunction
 
+function! CloseTerminal()
+    if g:term_id == 0
+        echo "No opened terminal!"
+    else
+        call chanclose(g:term_id)
+        let g:term_id = 0
+    endif
+endfunction
+
+function! RunInTerminal(m)
+    if g:term_id == 0
+        execute "split"
+        execute "terminal"
+        let g:term_id = b:terminal_job_id
+        wincmd J
+        wincmd k
+    endif
+
+    if a:m == "n"
+        normal! Y
+    elseif a:m == "v"
+        normal! Y
+    endif
+
+    let buffer = getreg('')
+    let lines = split(buffer, "\n")
+    call filter(lines, 'v:val != ""')
+
+    if a:m == "n" && len(lines) > 0
+        let lines[0] = trim(lines[0])
+    endif
+
+    call jobsend(g:term_id, lines)
+    call jobsend(g:term_id, "\n")
+endfunction
+
 function! InsertBashArgs()
     execute "read $HOME/.local/share/nvim/templates/bashArgs.sh"
 endfunction
