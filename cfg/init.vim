@@ -11,6 +11,8 @@ call plug#begin('~/.local/share/nvim/plugged')
     "Plug 'jiangmiao/auto-pairs'                 " Insert or delete brackets, parens, quotes in pair
     Plug 'tpope/vim-surround'                   " Surround text with quotes, brackets
     Plug 'preservim/nerdcommenter'
+    Plug 'gu-fan/riv.vim'
+    Plug 'gu-fan/InstantRst'
 
     " ---= Visuals
     Plug 'machakann/vim-highlightedyank'        " Brief highlight of yanked range
@@ -28,6 +30,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
     Plug 'junegunn/fzf.vim'
     Plug 'dyng/ctrlsf.vim'
+    Plug 'neovimhaskell/haskell-vim'
 
     Plug 'derekwyatt/vim-fswitch'               " Switching between source and header files
     Plug 'szw/vim-tags'                         " Ctag generator (TagsGenerate)
@@ -54,7 +57,7 @@ source ~/.local/share/nvim/plugin/functions.vim
 
 " ------------------------------------==[ Basic Settings ]==----------------------------------------
 
-
+let g:term_id = 0
 let g:gruvbox_contrast_dark='hard'
 
 color gruvbox
@@ -170,6 +173,9 @@ nnoremap , ;
 
 " ---= Terminal: exit key
 tnoremap <leader>q <C-\><C-n>
+nnoremap <silent> <leader>q :call CloseTerminal()<CR>
+nnoremap <silent> <leader>t :call RunInTerminal("n")<CR>
+vnoremap <silent> <leader>t :call RunInTerminal("v")<CR>
 
 " ---= Windows
 nnoremap <leader>v <C-w>v<C-w>l
