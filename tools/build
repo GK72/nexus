@@ -13,7 +13,7 @@ Optional parameters:
     -h | --help                             Print help
     -j | --jobs <N>                         Number of parallel jobs
     -l | --list                             List XBUILD environment variables
-    -r | --run <BINARY PATH>                Path to the binary to run (relative to BUILD PATH)
+    -r | --run                              Finds the executable in the build dir and runs it
     -t | --target <TARGET NAME>             Target to build
     -v | --compiler-ver                     Compiler version
          --args <"arg1, arg2, ...">         Arguments to the executed binary (in quotes)
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             -j | --jobs)            JOBS="$2";          shift; shift ;;
             -l | --list)            list; exit 0;       shift ;;
             -p | --path)            PATH_REPO="$2";     shift; shift ;;
-            -r | --run)             PATH_BIN="$2";      shift; shift ;;
+            -r | --run)             RUN=1;              shift ;;
             -t | --target)          TARGET="$2";        shift; shift ;;
             -v | --compiler-ver)    COMPILER_VER="$2";  shift; shift ;;
                  --args)            BINARY_ARGS="$2";   shift; shift ;;
@@ -159,10 +159,12 @@ if [[ ! -e "${PATH_REPO}/compile_commands.json" ]]; then
 fi
 
 # Run executable
-if [[ -n "${PATH_BIN}" ]]; then
+if [[ -n "${RUN}" ]]; then
+    PATH_BIN=$(find "${BUILD_DIR}" -name "${TARGET}")
+    echo "Executable found at: ${PATH_EXE}"
     if [[ -n "${GDB}" ]]; then
-        gdb --args "${BUILD_DIR}/${PATH_BIN}" ${(z)BINARY_ARGS}
+        gdb --args "${PATH_BIN}" ${(z)BINARY_ARGS}
     else
-        "${BUILD_DIR}/${PATH_BIN}" ${(z)BINARY_ARGS}
+        "${PATH_BIN}" ${(z)BINARY_ARGS}
     fi
 fi
