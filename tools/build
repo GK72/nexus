@@ -88,19 +88,19 @@ if [[ -z "${JOBS}" ]]; then
 fi
 
 # Setting up compilers
-if [[ "${COMPILER}" == "gcc" ]]; then
-    if [[ -z "${COMPILER_VER}" ]]; then
+if [[ -z "${COMPILER_VER}" ]]; then
+    if [[ "${COMPILER}" == "gcc" ]]; then
         COMPILER_C="gcc"
         COMPILER_CXX="g++"
-    else
-        COMPILER_C="gcc-${COMPILER_VER}"
-        COMPILER_CXX="g++-${COMPILER_VER}"
-    fi
-elif [[ "${COMPILER}" == "clang" ]]; then
-    if [[ -z "${COMPILER_VER}" ]]; then
+    elif [[ "${COMPILER}" == "clang" ]]; then
         COMPILER_C="clang"
         COMPILER_CXX="clang++"
-    else
+    fi
+else
+    if [[ "${COMPILER}" == "gcc" ]]; then
+        COMPILER_C="gcc-${COMPILER_VER}"
+        COMPILER_CXX="g++-${COMPILER_VER}"
+    elif [[ "${COMPILER}" == "clang" ]]; then
         COMPILER_C="clang-${COMPILER_VER}"
         COMPILER_CXX="clang++-${COMPILER_VER}"
     fi
