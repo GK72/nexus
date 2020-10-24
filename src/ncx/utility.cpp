@@ -1,5 +1,5 @@
 /*
- * gkpro @ 2020-04-25
+ * gkpro @ 2020-10-24
  *   Nexus Library
  *   Utility implementation
  */
@@ -45,6 +45,14 @@ std::string ipv6Formatter(const std::string& ipv6) {
     out.erase(out.size() - 1, 1);
 
     return out;
+}
+
+[[nodiscard]] std::string repeat(std::string_view sv, size_t n) {
+    std::string ret;
+    for (auto _ : range(n)) {
+        ret += sv;
+    }
+    return ret;
 }
 
 Progress::Progress(size_t total)
