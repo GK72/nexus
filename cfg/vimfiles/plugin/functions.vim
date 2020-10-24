@@ -33,14 +33,41 @@ function! CloseTerminal()
     endif
 endfunction
 
-function! RunInTerminal(m)
-    if g:term_id == 0
-        execute "split"
-        execute "terminal"
-        let g:term_id = b:terminal_job_id
-        wincmd J
-        wincmd k
+function! OpenTerminal()
+    execute "split"
+    execute "terminal"
+    let g:term_id = [b:terminal_job_id, bufnr('%')]
+    wincmd J
+    wincmd k
+    wincmd w
+endfunction
+
+function! SendTerminal(cmd)
+    silent! let ret = chansend(g:term_id[0], [a:cmd, ""])
+    if ret == 0
+        call OpenTerminal()
+        call chansend(g:term_id[0], [a:cmd, ""])
     endif
+endfunction
+
+function! RepoPath()
+    let cf = expand('%:p')
+    let repos = stridx(cf, "repos")
+    let repoNameStart = stridx(cf, "/", repos + 2)
+    let repoNameEnd = stridx(cf, "/", repoNameStart + 1)
+    return cf[0:repoNameEnd-1]
+endfunction
+
+function! Build(target)
+    call SendTerminal("build -p " . RepoPath() . " -t " . a:target)
+endfunction
+
+function! BuildAndRun(target)
+    call SendTerminal("build -p " . RepoPath() . " -t " . a:target . " -r")
+endfunction
+
+function! RunInTerminal(m)
+    call OpenTerminal()
 
     if a:m == "n"
         normal! Y

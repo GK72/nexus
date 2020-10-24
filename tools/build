@@ -161,7 +161,7 @@ fi
 # Run executable
 if [[ -n "${RUN}" ]]; then
     PATH_BIN=$(find "${BUILD_DIR}" -name "${TARGET}")
-    echo "Executable found at: ${PATH_EXE}"
+    echo "Executable found at: ${PATH_BIN}"
     if [[ -n "${GDB}" ]]; then
         gdb --args "${PATH_BIN}" ${(z)BINARY_ARGS}
     else
