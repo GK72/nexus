@@ -3,4 +3,5 @@ add_library(ui SHARED
 )
 
 target_link_libraries(ui PUBLIC -lncursesw)
+target_link_libraries(ui PUBLIC utility)
 target_include_directories(ui PRIVATE ../ncx)

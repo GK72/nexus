@@ -8,6 +8,10 @@ project("NexusLib")
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Position Indepentent Code for linking shared lib against static lib
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0)
         set(CMAKE_CXX_STANDARD 17)
