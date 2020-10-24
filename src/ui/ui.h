@@ -1,5 +1,5 @@
 /*
- * gkpro @ 2020-09-27
+ * gkpro @ 2020-10-24
  *   Nexus Library
  *     Text based User Interface - header
  */
@@ -47,6 +47,18 @@ protected:
     UI* m_ui;
     CoordsRC m_pos;
     CoordsRC m_length;       // TODO: clip at length
+};
+
+
+
+class UIFrame : UIElement {
+public:
+    UIFrame(UI* ui, CoordsRC coords, CoordsRC length, UIElement* element);
+    ~UIFrame() = default;
+
+    void display(CoordsRC offset = {}) override;
+private:
+    UIElement* m_element;
 };
 
 
