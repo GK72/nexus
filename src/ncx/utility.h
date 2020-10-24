@@ -1,5 +1,5 @@
 /*
- * gkpro @ 2020-04-25
+ * gkpro @ 2020-10-24
  *   Nexus Library
  *   Utility header
  */
@@ -48,6 +48,7 @@ concept Range = requires(T& t) {
 
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
+[[nodiscard]] std::string repeat(std::string_view sv, size_t n);
 
 [[nodiscard]] inline size_t subtractClip(size_t lhs, size_t rhs) {
     return lhs < rhs ? 0 : lhs - rhs;
@@ -287,32 +288,17 @@ std::vector<SearchResult> fuzzySearch(const std::string& pattern, const Range& e
 
 // -------------------------------------==[ Generators ]==--------------------------------------- //
 
-template <size_t N>
-[[nodiscard]] constexpr auto range() {
-    std::array<size_t, N> r;
-    std::iota(std::begin(r), std::end(r), 0);
-    return r;
-}
-
-template <size_t N, class Init>
-[[nodiscard]] constexpr auto range(Init init) {
-    std::array<size_t, N> r;
+template <class Length, class Init>
+[[nodiscard]] constexpr auto range(Init init, Length len) {
+    std::vector<Length> r(len);
+    // TODO(c++20): use std::views::iota
     std::iota(std::begin(r), std::end(r), init);
     return r;
 }
 
 template <class Length>
 [[nodiscard]] constexpr auto range(Length len) {
-    std::vector<Length> r(len);
-    std::iota(std::begin(r), std::end(r), 0);
-    return r;
-}
-
-template <class Length, class Init>
-[[nodiscard]] constexpr auto range(Length len, Init init) {
-    std::vector<Length> r(len);
-    std::iota(std::begin(r), std::end(r), init);
-    return r;
+    return range(Length(0), len);
 }
 
 // --------------------------------------==[ Classes ]==----------------------------------------- //
