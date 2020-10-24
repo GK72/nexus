@@ -33,7 +33,7 @@ void print(int row, int col, const std::string& separator, T&& first, Ts&&... ar
 template <class T>
 void print(int row, int col, T t) {
     move(row, col);
-    printw((toString(t) + "\n").c_str());
+    printw((toString(t)).c_str());
 }
 
 } // namespace nxs::ncg

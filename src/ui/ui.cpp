@@ -1,5 +1,5 @@
 /*
- * gkpro @ 2020-09-27
+ * gkpro @ 2020-10-24
  *   Nexus Library
  *     Text based User Interface - implementation
  */
@@ -11,11 +11,23 @@
 
 #include "ncg.h"
 
+constexpr auto FULL_BLOCK = "\u2588";
+
+constexpr auto BOX_HLINE     = "\u2500";
+constexpr auto BOX_HLINE_B   = "\u2501";
+constexpr auto BOX_VLINE     = "\u2502";
+constexpr auto BOX_VLINE_B   = "\u2503";
+constexpr auto BOX_TOP_LEFT  = "\u250c";
+constexpr auto BOX_TOP_RIGHT = "\u2510";
+constexpr auto BOX_BTM_LEFT  = "\u2514";
+constexpr auto BOX_BTM_RIGHT = "\u2518";
+
 namespace nxs {
 
 UI::UI() {
     setlocale(LC_ALL, "");
     initscr();
+    curs_set(0);
     keypad(stdscr, TRUE);
     noecho();
     cbreak();
@@ -66,7 +78,7 @@ std::string UI::input(CoordsRC pos, InputLambda process, const std::string& defa
     std::string inputStr = defaultStr;
     m_previewSelected = "";
 
-    render(pos, inputStr);
+    render(pos, inputStr + FULL_BLOCK);
 
     while (true) {
         int cursorMov = 0;
@@ -79,7 +91,7 @@ std::string UI::input(CoordsRC pos, InputLambda process, const std::string& defa
                 move(pos.r, pos.c - 1);
                 clrtoeol();
                 inputStr.pop_back();
-                render(pos, inputStr);
+                render(pos, inputStr + FULL_BLOCK);
             }
             break;
         case KEY_UP:    cursorMov = 1;  break;
@@ -91,7 +103,7 @@ std::string UI::input(CoordsRC pos, InputLambda process, const std::string& defa
             break;
         }
 
-        render(pos, inputStr);
+        render(pos, inputStr + FULL_BLOCK);
         process(inputStr, cursorMov);
     }
 }
@@ -213,6 +225,34 @@ void UIMessage::execute() {
     m_ui->clearScreen();
     display();
     m_ui->waitKey();
+}
+
+UIFrame::UIFrame(UI* ui, CoordsRC coords, CoordsRC length, UIElement* element)
+    : UIElement(ui, coords)
+    , m_element(element)
+{
+    m_length = length;
+}
+
+void UIFrame::display(CoordsRC offset) {
+    const auto line = nxs::repeat(BOX_HLINE, m_length.c);
+
+    m_ui->render(CoordsRC{ m_pos.r                 , m_pos.c }, line);
+    m_ui->render(CoordsRC{ m_pos.r + m_length.r - 1, m_pos.c }, line);
+
+    for (int i = 1; i < m_length.r - 1; ++i) {
+        m_ui->render(CoordsRC{ m_pos.r + i, m_pos.c }, BOX_VLINE);
+        m_ui->render(CoordsRC{ m_pos.r + i, m_pos.c + m_length.c - 1 }, BOX_VLINE);
+    }
+
+    m_ui->render(CoordsRC{ m_pos.r                 , m_pos.c                  }, BOX_TOP_LEFT);
+    m_ui->render(CoordsRC{ m_pos.r                 , m_pos.c + m_length.c - 1 }, BOX_TOP_RIGHT);
+    m_ui->render(CoordsRC{ m_pos.r + m_length.r - 1, m_pos.c                  }, BOX_BTM_LEFT);
+    m_ui->render(CoordsRC{ m_pos.r + m_length.r - 1, m_pos.c + m_length.c - 1 }, BOX_BTM_RIGHT);
+
+    if (m_element) {
+        m_element->display(CoordsRC{ m_pos.r + 1, m_pos.c + 1 });
+    }
 }
 
 void UIContainer::display(CoordsRC offset) {
