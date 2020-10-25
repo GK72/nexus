@@ -1,10 +1,8 @@
-// **********************************************
-// ** gkpro @ 2020-05-23                       **
-// **                                          **
-// **           ---  G-Library  ---            **
-// **           NCurses C++ wrapper            **
-// **                                          **
-// **********************************************
+/*
+ * gkpro @ 2020-10-25
+ *   Nexus Library
+ *     NCurses C++ wrapper
+ */
 
 #pragma once
 
@@ -35,5 +33,6 @@ void print(int row, int col, T t) {
     move(row, col);
     printw((toString(t)).c_str());
 }
+
 
 } // namespace nxs::ncg
