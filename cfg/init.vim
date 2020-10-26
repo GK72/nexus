@@ -6,6 +6,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'christoomey/vim-sort-motion'          " Sorting using text objects and motions (map: gs)
     Plug 'neomake/neomake'                      " For async running
     Plug 'scrooloose/nerdtree'                  " File explorer
+    Plug 'preservim/tagbar'                     " Tag browser
 
     " ---= Text editing
     "Plug 'jiangmiao/auto-pairs'                 " Insert or delete brackets, parens, quotes in pair
@@ -207,6 +208,7 @@ vnoremap K :m '<-2<CR>gv=gv
 
 " ---= Misc
 noremap <leader>n :NERDTreeToggle<CR>
+noremap <leader>m :TagbarToggle<CR>
 noremap <leader>no :noh<CR>
 noremap <leader>o :FSHere<CR>
 
