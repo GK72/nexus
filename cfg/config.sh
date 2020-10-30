@@ -157,6 +157,8 @@ function backup() {
     printf "Backing up config files to ${PATH_DIR_SCRIPT}\n"
     cp ~/.p10k.zsh "${PATH_DIR_SCRIPT}"
     cp ~/.zshrc "${PATH_DIR_SCRIPT}"
+    cp ~/.tmux.conf "${PATH_DIR_SCRIPT}"
+    cp ~/.config/powerline/config_files/themes/tmux/default.json "${PATH_DIR_SCRIPT}"/tmux.json
     cp ~/.config/nvim/init.vim "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/alias.zsh "${PATH_DIR_SCRIPT}"
     cp ~/.oh-my-zsh/custom/functions.zsh "${PATH_DIR_SCRIPT}"
@@ -169,6 +171,8 @@ function update() {
     printf "Updating config files from ${PATH_DIR_SCRIPT}\n"
     cp -iu "${PATH_DIR_SCRIPT}"/.p10k.zsh ~
     cp -iu "${PATH_DIR_SCRIPT}"/.zshrc ~
+    cp -iu "${PATH_DIR_SCRIPT}"/.tmux.conf ~
+    cp -iu "${PATH_DIR_SCRIPT}"/tmux.json ~/.config/powerline/config_files/themes/tmux/default.json
     cp -iu "${PATH_DIR_SCRIPT}"/init.vim ~/.config/nvim
     cp -iu "${PATH_DIR_SCRIPT}"/alias.zsh ~/.oh-my-zsh/custom
     cp -iu "${PATH_DIR_SCRIPT}"/functions.zsh ~/.oh-my-zsh/custom
