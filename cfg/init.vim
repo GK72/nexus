@@ -129,6 +129,17 @@ let g:cpp_experimental_template_highlight = 1
 let g:doxygen_enhanced_color=1
 let g:load_doxygen_syntax=1
 
+" ---= Syntastic
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 0
+let g:syntastic_check_on_open = 0
+let g:syntastic_check_on_wq = 0
+
+
 " ---= NerdTree
 " noremap <C-n> :NERDTreeToggle<CR>     " ctrl+n open/closes nerd tree
 " let g:NERDTreeQuitOnOpen = 1          " quit nerd tree on file open

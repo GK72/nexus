@@ -67,8 +67,6 @@ function! BuildAndRun(target)
 endfunction
 
 function! RunInTerminal(m)
-    call OpenTerminal()
-
     if a:m == "n"
         normal! Y
     elseif a:m == "v"
@@ -83,8 +81,13 @@ function! RunInTerminal(m)
         let lines[0] = trim(lines[0])
     endif
 
-    call jobsend(g:term_id, lines)
-    call jobsend(g:term_id, "\n")
+    for line in lines
+        call SendTerminal(line)
+    endfor
+
+    if len(lines) == 0 || len(lines) > 1
+        call SendTerminal("\n")
+    endif
 endfunction
 
 function! InsertBashArgs()
