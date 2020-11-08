@@ -48,6 +48,8 @@ concept Range = requires(T& t) {
 
 void printLog(const std::string_view& msg);
 std::string ipv6Formatter(std::string ipv6);
+
+[[nodiscard]] std::vector<std::string> strSplit(const std::string& str, std::string_view split);
 [[nodiscard]] std::string repeat(std::string_view sv, size_t n);
 
 [[nodiscard]] inline size_t subtractClip(size_t lhs, size_t rhs) {

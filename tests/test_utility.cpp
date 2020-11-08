@@ -27,5 +27,55 @@ TEST_CASE("GroupBy", "[utility]") {
         CHECK(group[2].first  == 3);
         CHECK(group[2].second == 4);
     }
+}
 
+TEST_CASE("String split", "[string]") {
+    SECTION("Empty string") {
+        CHECK(nxs::strSplit("", " ")[0] == "");
+    }
+
+    SECTION("One char") {
+        CHECK(nxs::strSplit("a", " ")[0] == "a");
+    }
+
+    SECTION("Two chars separated") {
+        auto result = nxs::strSplit("a b", " ");
+        CHECK(result[0] == "a");
+        CHECK(result[1] == "b");
+    }
+
+    SECTION("Three chars separated") {
+        auto result = nxs::strSplit("a b c", " ");
+        CHECK(result[0] == "a");
+        CHECK(result[1] == "b");
+        CHECK(result[2] == "c");
+    }
+
+    SECTION("Four chars separated") {
+        auto result = nxs::strSplit("a b c d", " ");
+        CHECK(result[0] == "a");
+        CHECK(result[1] == "b");
+        CHECK(result[2] == "c");
+        CHECK(result[3] == "d");
+    }
+
+    SECTION("Two words separated") {
+        auto result = nxs::strSplit("bla blabla", " ");
+        CHECK(result[0] == "bla");
+        CHECK(result[1] == "blabla");
+    }
+
+    SECTION("Three words separated") {
+        auto result = nxs::strSplit("bla blabla blaaaa", " ");
+        CHECK(result[0] == "bla");
+        CHECK(result[1] == "blabla");
+        CHECK(result[2] == "blaaaa");
+    }
+
+    SECTION("Three words separated - multichar split") {
+        auto result = nxs::strSplit("bla--blabla--blaaaa", "--");
+        CHECK(result[0] == "bla");
+        CHECK(result[1] == "blabla");
+        CHECK(result[2] == "blaaaa");
+    }
 }
