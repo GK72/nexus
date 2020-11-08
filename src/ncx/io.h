@@ -1,5 +1,5 @@
 /*
- * gkpro @ 2020-04-11
+ * gkpro @ 2020-10-07
  *   Nexus Library
  *   IO header
  */
@@ -8,11 +8,68 @@
 
 #include <any>
 #include <array>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "utility.h"
+
+
+namespace nxs {
+
+#ifndef NXSver
+inline
+#endif
+
+namespace latest {
+
+// ----------------------------------------==[ FILE ]==------------------------------------------ //
+
+template <class Callable>
+class File {
+public:
+    File(const std::string& path, Callable process);
+    ~File();
+
+    size_t read();
+
+private:
+    std::fstream m_file;
+    std::string m_buf;
+    Callable m_process;
+};
+
+template <class Callable>
+File<Callable>::File(const std::string& path, Callable process)
+    : m_file(path)
+    , m_process(process)
+{
+    if (!m_file.is_open()) {
+        std::cerr << "Could not open the file\n";
+    }
+}
+
+template <class Callable>
+File<Callable>::~File() {
+    m_file.close();
+}
+
+template <class Callable>
+size_t File<Callable>::read() {
+    size_t s = 0;
+
+    while (std::getline(m_file, m_buf)) {
+        m_process(m_buf);
+        ++s;
+    }
+
+    return s;
+}
+
+
+} // namespace trunk
+} // namespace nxs
 
 
 namespace nxs::IO {

@@ -7,6 +7,8 @@
 #include <tuple>
 #include <vector>
 
+#define NXSver 2020
+
 #include "arg.h"
 #include "datetime.h"
 #include "utility.h"

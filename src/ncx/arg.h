@@ -1,10 +1,13 @@
 /*
- * gkpro @ 2020-01-19
+ * gkpro @ 2020-10-07
  *   Nexus Library
  *   Argument parsing header
  */
 
 #pragma once
+
+#include <algorithm>
+#include <variant>
 
 #include <any>
 #include <map>
@@ -39,6 +42,97 @@ public:
 
 namespace nxs {
 
+#ifndef NXSver
+inline
+#endif
+
+namespace latest {
+
+using T_Arg= std::variant<bool, std::string, int>;
+
+class ArgumentNotFound : public std::runtime_error {
+public:
+    ArgumentNotFound(std::string_view msg) : std::runtime_error(msg.data()) {}
+};
+
+class InvalidArgument : public std::runtime_error {
+public:
+    InvalidArgument(std::string_view msg) : std::runtime_error(msg.data()) {}
+};
+
+struct Arg {
+    std::string name;
+    std::string argname;
+    std::string desc;
+    // T_Arg value;
+    std::string value;
+    bool flag = false;
+    bool required = false;
+    bool active = false;
+};
+
+class ArgParser {
+public:
+    // template <T> void add(const std::string& name, const std::string& argname, const std::string& desc, bool required = false);
+    void add(const std::string& name, const std::string& argname, const std::string& desc, bool flag = false, bool required = false);
+    void process(int argc, const char* args[]);
+
+    auto get(std::string_view name);
+
+private:
+    std::vector<Arg> m_args;
+
+    auto& find(std::string_view name) {
+        auto it = std::find_if(std::begin(m_args), std::end(m_args), [name](const Arg& arg) { return arg.name == name; });
+        if (it == std::end(m_args)) {
+            throw ArgumentNotFound(name);
+        }
+        return *it;
+    }
+
+    void setActive(std::string_view name) { find(name).active = true; }
+};
+
+inline auto ArgParser::get(std::string_view name) { return find(name).value; }
+
+// template <T>
+inline void ArgParser::add(const std::string& name, const std::string& argname, const std::string& desc, bool flag, bool required) {
+    // m_args.push_back(Arg<T>{ name, desc, T{}, required });
+    m_args.push_back(Arg{ name, argname, desc, "", flag, required });
+}
+
+inline void ArgParser::process(int argc, const char* args[]) {
+    for (size_t i = 1; i < argc; ++i) {
+        auto it = std::find_if(
+            std::begin(m_args),
+            std::end(m_args),
+            [&](const Arg& arg) { return arg.argname == std::string(args[i]); }
+        );
+
+        if (it == std::end(m_args)) {
+            throw InvalidArgument(std::string_view(args[i]));
+        }
+
+        auto& arg = *it;
+
+        arg.active = true;
+        if (arg.flag) {
+            arg.value = "true";
+        }
+        else {
+            arg.value = std::string(args[++i]);
+        }
+    }
+}
+
+} // namespace latest
+
+
+#if NXSver == 2020
+inline
+#endif
+
+namespace V2020 {
 
 struct Arg {
     std::string name;
@@ -127,5 +221,6 @@ private:
     ArgParser* m_parser;
 };
 
+} // namespace V2020
 
 } // namespace nxs
