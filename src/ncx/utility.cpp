@@ -47,6 +47,21 @@ std::string ipv6Formatter(const std::string& ipv6) {
     return out;
 }
 
+[[nodiscard]] std::vector<std::string> strSplit(const std::string& str, std::string_view split) {
+    std::vector<std::string> parts;
+    size_t start = 0;
+    size_t end = 0;
+
+    while (end = str.find(split, end), end != std::string::npos) {
+        parts.push_back(str.substr(start, end - start));
+        end += split.size();
+        start = end;
+    }
+    parts.push_back(str.substr(start));
+
+    return parts;
+}
+
 [[nodiscard]] std::string repeat(std::string_view sv, size_t n) {
     std::string ret;
     for (auto _ : range(n)) {
