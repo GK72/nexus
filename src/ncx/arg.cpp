@@ -9,6 +9,12 @@
 
 namespace nxs {
 
+#if NXSver == 2020
+inline
+#endif
+
+namespace V2020 {
+
 ArgParser::ArgParser(int argc, char* argv[])
 {
     m_argc = argc;
@@ -90,4 +96,5 @@ void ArgParser::setOptions()
 }
 
 
+} // namespace V2020
 } // namespace nxs
