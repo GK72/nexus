@@ -1,0 +1,14 @@
+[user]
+    email = gk.project72@gmail.com
+    name = GK72
+[core]
+    editor = nvim
+    pager = delta
+
+[delta]
+    line-numbers = true
+    syntax-theme = gruvbox
+    side-by-side = false
+
+[interactive]
+    diffFilter = delta --color-only
