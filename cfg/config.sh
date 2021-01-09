@@ -70,6 +70,10 @@ function install() {
         INSTALL_GRAPHVIZ="sudo pacman -S graphviz"
         INSTALL_TIMEWARRIOR="sudo pacman -S timewarrior"
         INSTALL_PERF="sudo pacman -S perf"
+        INSTALL_BAT="sudo pacman -Sy bat"
+        INSTALL_RIPGREP="sudo pacman -Sy ripgrep"
+        INSTALL_RG="sudo pacman -Sy rg"
+        INSTALL_FD="sudo pacman -Sy fd"
     }
 
     # ---------------------------------==[ Checking environment ]==---------------------------------
@@ -101,6 +105,18 @@ function install() {
 
     printf "Checking perf..."
     command -v perf >/dev/null 2>&1 && printPad OK 30 || eval "${PERF}"
+
+    printf "Checking bat..."
+    command -v perf >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_BAT}"
+
+    printf "Checking ripgrep..."
+    command -v perf >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_RIPGREP}"
+
+    printf "Checking rg..."
+    command -v perf >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_RG}"
+
+    printf "Checking fd..."
+    command -v perf >/dev/null 2>&1 && printPad OK 30 || eval "${INSTALL_FD}"
 
     # Doxygen
     printf "Checking doxygen..."
