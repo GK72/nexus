@@ -220,6 +220,23 @@ autocmd! User GoyoLeave nested call <SID>goyo_leave()
 lua require'lspconfig'.clangd.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'.on_attach }
 
+lua require'lspconfig'.bashls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.vimls.setup{ on_attach=require'completion'.on_attach }
+
+lua << EOF
+require'lspconfig'.jsonls.setup {
+    commands = {
+        Format = {
+            function()
+                vim.lsp.buf.range_formatting({},{0,0},{vim.fn.line("$"),0})
+            end
+        }
+    },
+    on_attach = require'completion'.on_attach
+}
+EOF
+
 lua <<EOF
 require'nvim-treesitter.configs'.setup {
     -- Modules and its options go here
