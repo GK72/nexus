@@ -147,15 +147,15 @@ cmake --build "${BUILD_DIR}" \
       --target "${TARGET}" \
       -- -j"${JOBS}"
 
-if [[ $? != 0 ]]; then
-    echo -e "${COLOR_RED}  ----==[ BUILD FAILED ! ]==----"
-    return 2
-fi
-
 # Link compile_commands.json to the root of the repo
 if [[ ! -e "${PATH_REPO}/compile_commands.json" ]]; then
     ln -sv "${BUILD_DIR}/compile_commands.json" \
         "${PATH_REPO}/compile_commands.json"
+fi
+
+if [[ $? != 0 ]]; then
+    echo -e "${COLOR_RED}  ----==[ BUILD FAILED ! ]==----"
+    return 2
 fi
 
 # Run executable
