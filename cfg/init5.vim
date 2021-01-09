@@ -1,17 +1,13 @@
 " ---------------------------------------==[ Plugins ]==--------------------------------------------
 call plug#begin('~/.local/share/nvim/plugged')
     " ---= Basics
-    Plug 'vim-airline/vim-airline'
-    Plug 'vim-airline/vim-airline-themes'
-    Plug 'christoomey/vim-sort-motion'          " Sorting using text objects and motions (map: gs)
-    Plug 'neomake/neomake'                      " For async running
-    Plug 'scrooloose/nerdtree'                  " File explorer
-    Plug 'preservim/tagbar'                     " Tag browser
-
     Plug 'neovim/nvim-lspconfig'
     Plug 'nvim-lua/completion-nvim'
     Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
     Plug 'nvim-treesitter/playground'
+    Plug 'nvim-lua/popup.nvim'
+    Plug 'nvim-lua/plenary.nvim'
+    Plug 'nvim-telescope/telescope.nvim'
 
     " ---= Text editing
     Plug 'tpope/vim-surround'                   " Surround text with quotes, brackets
@@ -21,19 +17,21 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'chrisbra/csv.vim'
 
     " ---= Visuals
-    Plug 'machakann/vim-highlightedyank'        " Brief highlight of yanked range
+    Plug 'vim-airline/vim-airline'
+    Plug 'vim-airline/vim-airline-themes'
+    Plug 'morhetz/gruvbox'
+
     Plug 'ryanoasis/vim-devicons'               " File type icons
+    Plug 'machakann/vim-highlightedyank'        " Brief highlight of yanked range
     Plug 'tmhedberg/SimpylFold'                 " Folding for Python
     Plug 'rickhowe/diffchar.vim'                " Detailed diff
 
-    Plug 'morhetz/gruvbox'
+    Plug 'scrooloose/nerdtree'                  " File explorer
+    Plug 'preservim/tagbar'                     " Tag browser
+
 
     " ---= Completion and searching
     Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
-    Plug 'junegunn/fzf.vim'
-    Plug 'dyng/ctrlsf.vim'
-
-    Plug 'szw/vim-tags'                         " Ctag generator (TagsGenerate)
 
     " ---= Git
     Plug 'airblade/vim-gitgutter'
@@ -166,11 +164,31 @@ noremap <leader>gy :GitGutterStageHunk<CR>
 noremap <leader>gu :GitGutterUndoHunk<CR>
 
 " ---= Searching
-noremap <leader>p :CtrlSF<space>
-noremap <leader>a :Ag<CR>
-noremap <leader>p :FZF<CR>
+nnoremap <leader>p <cmd>lua require('telescope.builtin').find_files()<cr>
+nnoremap <leader>a <cmd>lua require('telescope.builtin').live_grep()<cr>
+nnoremap <leader>s <cmd>lua require('telescope.builtin').grep_string()<cr>
+nnoremap <leader>b <cmd>lua require('telescope.builtin').buffers()<cr>
+nnoremap <leader>h <cmd>lua require('telescope.builtin').help_tags()<cr>
 
-nnoremap <leader>s :Ag <C-R>=expand("<cword>")<CR><CR>
+nnoremap <leader>fo <cmd>lua require('telescope.builtin').oldfiles()<cr>
+nnoremap <leader>fc <cmd>lua require('telescope.builtin').command_history()<cr>
+nnoremap <leader>fm <cmd>lua require('telescope.builtin').marks()<cr>
+nnoremap <leader>fq <cmd>lua require('telescope.builtin').quickfix()<cr>
+
+nnoremap <leader>ft <cmd>lua require('telescope.builtin').treesitter()<cr>
+nnoremap <leader>r <cmd>lua require('telescope.builtin').lsp_references()<cr>
+nnoremap <leader>fd <cmd>lua require('telescope.builtin').lsp_document_symbols()<cr>
+nnoremap <leader>fs <cmd>lua require('telescope.builtin').lsp_workspace_symbols()<cr>
+
+nnoremap <leader>fgc <cmd>lua require('telescope.builtin').git_commits()<cr>
+nnoremap <leader>fgs <cmd>lua require('telescope.builtin').git_status()<cr>
+nnoremap <leader>fgb <cmd>lua require('telescope.builtin').git_branches()<cr>
+
+" ---= Navigation
+noremap <leader>o :ClangdSwitchSourceHeader<CR>
+noremap <leader>d :lua vim.lsp.buf.definition()<CR>
+noremap <leader>e :lua vim.lsp.buf.signature_help()<CR>
+noremap <leader>ls :lua vim.lsp.buf.workspace_symbol()<CR>
 
 " ---= Moving text
 vnoremap J :m '>+1<CR>gv=gv
@@ -180,7 +198,6 @@ vnoremap K :m '<-2<CR>gv=gv
 noremap <leader>n :NERDTreeToggle<CR>
 noremap <leader>m :TagbarToggle<CR>
 noremap <leader>no :nohlsearch<CR>
-noremap <leader>o :ClangdSwitchSourceHeader<CR>
 
 vmap  <expr>  <LEFT>   DVB_Drag('left')
 vmap  <expr>  <RIGHT>  DVB_Drag('right')
