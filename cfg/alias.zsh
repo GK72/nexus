@@ -28,10 +28,5 @@ alias gs='git status'
 
 alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
 
-alias build='~/repos/nexus/tools/build'
+alias build='~/repos/nexus/tools/build.sh'
 alias datef=~/repos/nexus/tools/dateformat.sh
-
-# Builders
-
-alias btledger='build -p ~/repos/nexus/.worktrees/feat-ui -r bin/test_nexus && build -p ~/repos/ledger -- -DPATH_NEXUS_REPO=~/repos/nexus/.worktrees/feat-ui && ~/repos/ledger/build/debug-clang11/bin/test_ledger'
-alias bledger='build -p ~/repos/nexus/.worktrees/feat-ui -r bin/test_nexus && build -p ~/repos/ledger -- -DPATH_NEXUS_REPO=~/repos/nexus/.worktrees/feat-ui && ~/repos/ledger/build/debug-clang11/bin/ledger'
