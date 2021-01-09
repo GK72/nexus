@@ -9,6 +9,7 @@ Testing/
 .vscode/settings.json
 
 __pycache__/
+.cache/
 
 .ycm_extra_conf.py
 compile_commands.json
