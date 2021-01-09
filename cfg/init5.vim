@@ -179,8 +179,8 @@ vnoremap K :m '<-2<CR>gv=gv
 " ---= Misc
 noremap <leader>n :NERDTreeToggle<CR>
 noremap <leader>m :TagbarToggle<CR>
-noremap <leader>no :noh<CR>
-noremap <leader>o :FSHere<CR>
+noremap <leader>no :nohlsearch<CR>
+noremap <leader>o :ClangdSwitchSourceHeader<CR>
 
 vmap  <expr>  <LEFT>   DVB_Drag('left')
 vmap  <expr>  <RIGHT>  DVB_Drag('right')
@@ -191,15 +191,10 @@ vmap  <expr>  D        DVB_Duplicate()
 xmap <silent><expr>  ++  VMATH_YankAndAnalyse()
 nmap <silent>        ++  vip++
 
-nmap <silent> <F5> :call ClangCheck()<CR><CR>
-
 " ---= Command mappings
 command! Cmm call CommentAlignMiddle()
 
 " ------------------------------------==[ Auto Commands ]==-----------------------------------------
-
-autocmd FileType zsh | iab <buffer> $ "${}"<Left><Left><C-R>=Eatchar('\s')<CR>
-autocmd FileType sh | iab <buffer> $ "${}"<Left><Left><C-R>=Eatchar('\s')<CR>
 
 " ---= Goyo config
 function! s:goyo_enter()
