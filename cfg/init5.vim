@@ -41,6 +41,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'vim-scripts/L9'
     Plug 'vim-scripts/ReplaceWithRegister'
 
+    Plug 'mhinz/vim-startify'
     Plug 'junegunn/goyo.vim'
 call plug#end()
 
@@ -257,3 +258,9 @@ require'nvim-treesitter.configs'.setup {
     textobjects = { enable = true },
 }
 EOF
+
+" ---------------------------------------==[ Startify ]==-------------------------------------------
+
+let g:startify_commands = [
+    \ {'t': ['Terminal', ': term']}
+    \ ]
