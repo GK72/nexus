@@ -168,7 +168,7 @@ noremap <leader>gu :GitGutterUndoHunk<CR>
 nnoremap <leader>p <cmd>lua require('telescope.builtin').find_files()<cr>
 nnoremap <leader>a <cmd>lua require('telescope.builtin').live_grep()<cr>
 nnoremap <leader>s <cmd>lua require('telescope.builtin').grep_string()<cr>
-nnoremap <leader>b <cmd>lua require('telescope.builtin').buffers()<cr>
+nnoremap <leader>b <cmd>lua require('telescope.builtin').buffers{ show_all_buffers = true }<cr>
 nnoremap <leader>h <cmd>lua require('telescope.builtin').help_tags()<cr>
 
 nnoremap <leader>fo <cmd>lua require('telescope.builtin').oldfiles()<cr>
@@ -177,7 +177,7 @@ nnoremap <leader>fm <cmd>lua require('telescope.builtin').marks()<cr>
 nnoremap <leader>fq <cmd>lua require('telescope.builtin').quickfix()<cr>
 
 nnoremap <leader>ft <cmd>lua require('telescope.builtin').treesitter()<cr>
-nnoremap <leader>r <cmd>lua require('telescope.builtin').lsp_references()<cr>
+nnoremap <leader>fr <cmd>lua require('telescope.builtin').lsp_references()<cr>
 nnoremap <leader>fd <cmd>lua require('telescope.builtin').lsp_document_symbols()<cr>
 nnoremap <leader>fs <cmd>lua require('telescope.builtin').lsp_workspace_symbols()<cr>
 
@@ -190,6 +190,8 @@ noremap <leader>o :ClangdSwitchSourceHeader<CR>
 noremap <leader>d :lua vim.lsp.buf.definition()<CR>
 noremap <leader>e :lua vim.lsp.buf.signature_help()<CR>
 noremap <leader>ls :lua vim.lsp.buf.workspace_symbol()<CR>
+
+nnoremap <leader>w :lua vim.lsp.diagnostic.show_line_diagnostics()<CR>
 
 " ---= Moving text
 vnoremap J :m '>+1<CR>gv=gv
@@ -236,6 +238,7 @@ lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'
 lua require'lspconfig'.bashls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.vimls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.hls.setup{ on_attach=require'completion'.on_attach }
 
 lua << EOF
 require'lspconfig'.jsonls.setup {
