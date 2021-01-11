@@ -227,8 +227,19 @@ function! s:goyo_leave()
     highlight colorcolumn ctermbg=235
 endfunction
 
-autocmd! User GoyoEnter nested call <SID>goyo_enter()
-autocmd! User GoyoLeave nested call <SID>goyo_leave()
+function! TrimWhitespace()
+    let l:save = winsaveview()
+    keeppatterns %s/\s\+$//e
+    call winrestview(l:save)
+endfunction
+
+augroup GGROUP
+    autocmd!
+    autocmd! User GoyoEnter nested call <SID>goyo_enter()
+    autocmd! User GoyoLeave nested call <SID>goyo_leave()
+
+    autocmd BufWritePre * :call TrimWhitespace()
+augroup END
 
 " ------------------------------==[ Treesitter and LSP config ]==-----------------------------------
 
