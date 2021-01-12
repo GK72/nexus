@@ -12,11 +12,11 @@ export COLOR_RED='\033[0;31m'
 export COLOR_GREEN='\033[0;32m'
 
 # Build configuration
-export XBUILD_ENV_SET=1
-export XBUILD_TYPE="Debug"
-export XCOMPILER="clang"
-export XCOMPILER_VER="11"
-export XCOMPILER_C="${GCOMPILER}-${GCOMPILER_VER}"
-export XCOMPILER_CXX="${GCOMPILER}++-${GCOMPILER_VER}"
-export XBUILD_GEN="Ninja"
-export XBUILD_JOBS=4
+export NXS_BUILD_ENV_SET=1
+export NXS_BUILD_TYPE="Debug"
+export NXS_COMPILER="clang"
+export NXS_COMPILER_VER="11"
+export NXS_COMPILER_C="${NXS_COMPILER}-${NXS_COMPILER_VER}"
+export NXS_COMPILER_CXX="${NXS_COMPILER}++-${NXS_COMPILER_VER}"
+export NXS_BUILD_GEN="Ninja"
+export NXS_BUILD_JOBS=4

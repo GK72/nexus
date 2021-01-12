@@ -26,11 +26,11 @@ EOF
 function list() {
     echo "Default build settings"
     echo ""
-    echo "XBUILD_TYPE   = ${XBUILD_TYPE}"
-    echo "XBUILD_GEN    = ${XBUILD_GEN}"
-    echo "XBUILD_JOBS   = ${XBUILD_JOBS}"
-    echo "XCOMPILER     = ${XCOMPILER}"
-    echo "XCOMPILER_VER = ${XCOMPILER_VER}"
+    echo "NXS_BUILD_TYPE   = ${NXS_BUILD_TYPE}"
+    echo "NXS_BUILD_GEN    = ${NXS_BUILD_GEN}"
+    echo "NXS_BUILD_JOBS   = ${NXS_BUILD_JOBS}"
+    echo "NXS_COMPILER     = ${NXS_COMPILER}"
+    echo "NXS_COMPILER_VER = ${NXS_COMPILER_VER}"
 }
 
 NONE="<none>"
