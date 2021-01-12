@@ -246,7 +246,7 @@ augroup END
 lua require'lspconfig'.clangd.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'.on_attach }
 
-lua require'lspconfig'.bashls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.bashls.setup{ filetypes = { "sh", "zsh" }, on_attach=require'completion'.on_attach }
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.vimls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.hls.setup{ on_attach=require'completion'.on_attach }
