@@ -1,5 +1,6 @@
 build*/
-src/nrx/target
+src/nrx/target/
+src/nhs/dist-newstyle/
 Testing/
 
 .worktrees
