@@ -70,7 +70,7 @@ if [[ -z "${PATH_REPO}" ]]; then
     exit 1
 fi
 
-BUILD_TYPE="${BUILD_TYPE-$XBUILD_TYPE}"
+BUILD_TYPE="${BUILD_TYPE-$NXS_BUILD_TYPE}"
 if [[ -z "${BUILD_TYPE}" ]]; then
     echo "No build type specified"
     exit 2
@@ -144,16 +144,16 @@ if [[ ! -e "${BUILD_DIR}/${BUILD_FILE}" ]]; then
     )
 fi
 
-# Build
-cmake --build "${BUILD_DIR}" \
-      --target "${TARGET}" \
-      -- -j"${JOBS}"
-
 # Link compile_commands.json to the root of the repo
 if [[ ! -e "${PATH_REPO}/compile_commands.json" ]]; then
     ln -sv "${BUILD_DIR}/compile_commands.json" \
         "${PATH_REPO}/compile_commands.json"
 fi
+
+# Build
+cmake --build "${BUILD_DIR}" \
+      --target "${TARGET}" \
+      -- -j"${JOBS}"
 
 if [[ $? != 0 ]]; then
     echo -e "${COLOR_RED}  ----==[ BUILD FAILED ! ]==----"
