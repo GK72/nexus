@@ -160,7 +160,7 @@ if [[ $? != 0 ]]; then
     return 2
 fi
 
-VALGRIND_OPTIONS="--quiet --tool=memcheck"
+VALGRIND_OPTIONS="--tool=memcheck"
 
 # Run executable
 if [[ -n "${RUN}" ]]; then

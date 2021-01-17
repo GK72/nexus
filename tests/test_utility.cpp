@@ -1,5 +1,8 @@
 #include <catch2/catch.hpp>
 
+#include <list>
+#include <vector>
+
 #include "utility.h"
 
 // template <
@@ -78,4 +81,24 @@ TEST_CASE("String split", "[string]") {
         CHECK(result[1] == "blabla");
         CHECK(result[2] == "blaaaa");
     }
+}
+
+TEST_CASE("Transform if", "[ALG]") {
+    auto input = std::list<int>{ 1, 2, 3, 4, 5, 7, 8, 10 };
+
+    auto result = nxs::transform_if(
+        input,
+        [](const auto& x) { return x / 2.0; },
+        [](const auto& x) { return x & 1;   }
+    );
+
+    static_assert(std::is_same_v<decltype(result), std::vector<double>>);
+
+    CHECK(result.size() == 4);
+
+    CHECK(result[0] == 0.5);
+    CHECK(result[1] == 1.5);
+    CHECK(result[2] == 2.5);
+    CHECK(result[3] == 3.5);
+
 }

@@ -38,10 +38,12 @@ struct SearchResult {
 
 #ifdef __cpp_concepts
 template <class T>
-concept Range = requires(T& t) {
+concept CRange = requires(T& t) {
     std::begin(t);
     std::end(t);
 };
+#else
+#define CRange class
 #endif
 
 // ------------------------------------==[ Free Functions ]==------------------------------------ //
@@ -162,6 +164,33 @@ template <class T> T swapEndian32(T& x) {
 
 // -------------------------------------==[ Algorithms ]==--------------------------------------- //
 
+/**
+ * @brief Filters and transforms the elements in a range
+ *
+ * @param range     Input range for processing
+ * @param func      Transform function
+ *                      The type does not have to match with the input
+ * @param pred      Predicate used for filtering the elements
+ *
+ * @return          Filtered and transformed elements in a new std::vector
+ */
+template <CRange R
+         ,class CallableF
+         ,class CallableP>
+[[nodiscard]]
+auto transform_if(const R& range, CallableF func, CallableP pred) {
+    using T = decltype(func(*std::begin(range)));
+    std::vector<T> result;
+
+    for (const auto& e : range) {
+        if (pred(e)) {
+            result.push_back(func(e));
+        }
+    }
+
+    return result;
+}
+
 template <class Container>
 Container removeAllDuplicates(Container cont) {
     std::sort(std::begin(cont), std::end(cont));
@@ -187,16 +216,10 @@ constexpr auto AggregatePlusEquals = [](auto agg, const auto& value)          { 
  *
  * @return          A container with key-value pairs
  */
-template
-#ifdef __cpp_concepts
-    <Range KeysCont
-    ,Range ValueCont
-#else
-    <class KeysCont
-    ,class ValueCont
-#endif
-    ,class Predicate
-    ,class BinOp>
+template <CRange KeysCont
+         ,CRange ValueCont
+         ,class Predicate
+         ,class BinOp>
 [[nodiscard]]
 std::vector<std::pair<typename KeysCont::value_type, typename ValueCont::value_type>>
 groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)
@@ -237,8 +260,8 @@ groupBy(const KeysCont& keys, const ValueCont& values, Predicate p, BinOp op)
  *
  * @return          A priority sorted vector of results
  */
-template <class Range>
-std::vector<SearchResult> fuzzySearch(const std::string& pattern, const Range& elems) {
+template <CRange R>
+std::vector<SearchResult> fuzzySearch(const std::string& pattern, const R& elems) {
     std::vector<SearchResult> ret;
 
     std::string patternFuzzy;

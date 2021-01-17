@@ -4,51 +4,44 @@
  *   Template for using ArgParser
  */
 
+#define NXSver 2020
+
+#include <iostream>
 #include <memory>
 
 #include "arg.h"
 #include "utility.h"
 #include "ui.h"
+#include "sandbox_measure.h"
 
-void grid(nxs::UI* ui) {
-    auto x = nxs::UIInputGrid(ui, nxs::CoordsRC{}, {
-        nxs::UIInput(ui, nxs::CoordsRC{}, "Input 1:", nxs::Format{}, "default value one"),
-        nxs::UIInput(ui, nxs::CoordsRC{}, "Input 2:", nxs::Format{}, "default value two"),
-        nxs::UIInput(ui, nxs::CoordsRC{}, "Input 3:", nxs::Format{}, "default value three")
-    });
+constexpr int UNKNOWN_ERROR = 255;
 
-    ui->input(x);
+void runUI();
 
-    // nxs::UIMessage(ui, x.result(0)).execute();
-}
+int run([[maybe_unused]] const nxs::ArgParser& args) {
+    if (args.get<bool>("ui")) {
+        runUI();
+    }
 
-int run(const nxs::ArgParser& args)
-{
-    // nxs::print("Empty sandbox");
-
-    auto ui = nxs::UI();
-    auto builder = nxs::MenuBuilder(ui);
-    builder.add<nxs::UIMessage>("Help", "A message");
-    builder.add("Grid test", [&ui]() { grid(&ui); });
-
-    auto menu = builder.build();
-    ui.input(menu);
+    if (args.get<bool>("measure")) {
+        nxs::sandbox::run();
+    }
 
     return 0;
 }
 
-nxs::ArgParser argParsing(int argc, char* argv[])
-{
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
+nxs::ArgParser argParsing(int argc, char* argv[]) {
     nxs::ArgParser args(argc, argv);
     nxs::ArgFactory factory(&args);
     factory.add("path", "Path to something");
     factory.addFlag("debug", "Debug flag");
-    factory.addFlag("measure", "Measuring flag");
+    factory.addFlag("ui", "UI sandbox");
+    factory.addFlag("measure", "Measuring");
     return args;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     nxs::ArgParser args = argParsing(argc, argv);
 
     try { args.process(); }
@@ -64,6 +57,11 @@ int main(int argc, char* argv[])
     }
     catch (const std::runtime_error & e) {
         nxs::print(e.what());
+        return UNKNOWN_ERROR;
     }
 }
 
+
+void runUI() {
+    nxs::UI();
+}
