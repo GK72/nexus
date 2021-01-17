@@ -13,6 +13,7 @@
 #include "utility.h"
 #include "ui.h"
 #include "sandbox_measure.h"
+#include "sandbox_pmr.h"
 
 constexpr int UNKNOWN_ERROR = 255;
 
@@ -27,6 +28,10 @@ int run([[maybe_unused]] const nxs::ArgParser& args) {
         nxs::sandbox::run();
     }
 
+    if (args.get<bool>("pmr")) {
+        nxs::sandbox::pmr();
+    }
+
     return 0;
 }
 
@@ -38,6 +43,7 @@ nxs::ArgParser argParsing(int argc, char* argv[]) {
     factory.addFlag("debug", "Debug flag");
     factory.addFlag("ui", "UI sandbox");
     factory.addFlag("measure", "Measuring");
+    factory.addFlag("pmr", "PMR");
     return args;
 }
 
