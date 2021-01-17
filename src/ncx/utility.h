@@ -16,6 +16,7 @@
 #include <regex>
 #include <string>
 #include <string_view>
+#include <sstream>
 #include <type_traits>
 #include <vector>
 
@@ -73,6 +74,12 @@ template<class ...Ts> Lambdas(Ts...) -> Lambdas<std::decay_t<Ts>...>;
 
 // ----== String functions ==----
 
+inline std::string toString(const void* ptr) {
+    std::stringstream ss;
+    ss << ptr;
+    return ss.str();
+}
+
 template <class T>
 [[nodiscard]] std::string toString(T&& in) {
     Lambdas stringify{
@@ -86,6 +93,7 @@ template <class T>
         ,[](const unsigned int x)                { return std::to_string(x); }
         ,[](const size_t x)                      { return std::to_string(x); }
         ,[](const float x)                       { return std::to_string(x); }
+        ,[](const void* x)                       { return toString(x); }
         ,[](const char* x)                       { return std::string(x); }
         ,[](char* x)                             { return std::string(x); }
         ,[](std::string_view x)                  { return std::string(x); }
@@ -106,25 +114,38 @@ template <class T, class ...Ts>
 }
 
 template <class T, class ...Ts>
-void print(const std::string& separator, T&& first, Ts&&... args) {
+void printnl(const std::string& separator, T&& first, Ts&&... args) {
     std::cout << toString(std::forward<T>(first));
-    (std::cout << ... << (separator + toString(std::forward<Ts>(args)))) << '\n';
+    (std::cout << ... << (separator + toString(std::forward<Ts>(args))));
+}
+
+template <class T, class ...Ts>
+void print(const std::string& separator, T&& first, Ts&&... args) {
+    printnl(separator, first, args...);
+    std::cout << '\n';
 }
 
 template <class T, class ...Ts>
 void printr(const std::string& separator, T&& first, Ts&&... args) {
-    std::cout << toString(std::forward<T>(first));
-    (std::cout << ... << (separator + toString(std::forward<Ts>(args)))) << '\r' << std::flush;
+    printnl(separator, first, args...);
+    std::cout << '\r';
+}
+
+template <class T>
+void printnl(T&& t) {
+    std::cout << toString(std::forward<T>(t));
 }
 
 template <class T>
 void print(T&& t) {
-    std::cout << toString(std::forward<T>(t)) << '\n';
+    printnl(t);
+    std::cout << '\n';
 }
 
 template <class T>
 void printr(T&& t) {
-    std::cout << toString(std::forward<T>(t)) << '\r' << std::flush;
+    printnl(t);
+    std::cout << '\r' << std::flush;
 }
 
 template <class T>
