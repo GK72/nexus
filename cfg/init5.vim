@@ -321,3 +321,13 @@ EOF
 let g:startify_commands = [
     \ {'t': ['Terminal', ': term']}
     \ ]
+
+let g:tagbar_type_rst = {
+            \ 'ctagstype' : 'ReStructuredText',
+            \ 'kinds' : [
+            \     'c:chapter',
+            \     's:article',
+            \     'S:section',
+            \ ],
+            \ "sort" : 0
+            \ }

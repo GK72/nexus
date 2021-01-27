@@ -7,6 +7,8 @@ elif [[ ${DAY:1} == 2 ]]; then
     DAY_SUFFIX="nd"
 elif [[ ${DAY:1} == 1 ]]; then
     DAY_SUFFIX="st"
+else
+    DAY_SUFFIX="th"
 fi
 
-date +"%A, %d${DAY_SUFFIX} %B %Y - %H:%M"
+date +"%d${DAY_SUFFIX} %B %Y - %H:%M (%A)"
