@@ -17,6 +17,10 @@ Optional parameters:
     -t | --target <TARGET NAME>             Target to build
     -v | --compiler-ver                     Compiler version
          --args <"arg1, arg2, ...">         Arguments to the executed binary (in quotes)
+         --gcov-dir                         Directory in which the GCOV should run (goes through find)
+         --gcov-exclude                     Source file exclude filter for GCOV
+         --gcov-filter                      Source file filter for GCOV
+         --gcov-keep                        Do not delete gcda files after processing
          --gdb                              Run in gdb
          --valgrind                         Run valgrind
          --                                 Forwarding arguments to CMake
@@ -32,6 +36,9 @@ function list() {
     echo "NXS_COMPILER     = ${NXS_COMPILER}"
     echo "NXS_COMPILER_VER = ${NXS_COMPILER_VER}"
 }
+
+GCOV_FAIL_LIMIT=90
+GCOV_HTML_DIR="~/tmp/coverage-test"
 
 NONE="<none>"
 FWD_ARGS="${NONE}"
@@ -49,6 +56,10 @@ while [[ $# -gt 0 ]]; do
             -t | --target)          TARGET="$2";        shift; shift ;;
             -v | --compiler-ver)    COMPILER_VER="$2";  shift; shift ;;
                  --args)            BINARY_ARGS="$2";   shift; shift ;;
+                 --gcov-dir)        GCOV_DIR="$2";      shift; shift ;;
+                 --gcov-exclude)    GCOV_EXCLUDE="$2";  shift; shift ;;
+                 --gcov-filter)     GCOV_FILTER="$2";   shift; shift ;;
+                 --gcov-keep)       GCOV_KEEP=1;        shift;;
                  --gdb)             GDB=1;              shift;;
                  --valgrind)        VALGRIND=1;         shift;;
             --)                     FWD_ARGS="";        shift ;;
@@ -160,11 +171,17 @@ if [[ $? != 0 ]]; then
     return 2
 fi
 
-VALGRIND_OPTIONS="--tool=memcheck"
+# VALGRIND_OPTIONS="--tool=memcheck"
+VALGRIND_OPTIONS="--tool=massif"
 
 # Run executable
 if [[ -n "${RUN}" ]]; then
     PATH_BIN=$(find "${BUILD_DIR}" -name "${TARGET}")
+    if [[ $(echo "${PATH_BIN}" | wc -l) -gt 1 ]]; then
+        echo -e "Multiple executable found:\n${PATH_BIN}"
+        exit 3
+    fi
+
     echo "Executable found at: ${PATH_BIN}"
     if [[ -n "${GDB}" ]]; then
         gdb --args "${PATH_BIN}" ${(z)BINARY_ARGS}
@@ -172,5 +189,68 @@ if [[ -n "${RUN}" ]]; then
         valgrind "${(z)VALGRIND_OPTIONS}" "${PATH_BIN}" ${(z)BINARY_ARGS}
     else
         "${PATH_BIN}" ${(z)BINARY_ARGS}
+        RETCODE_BIN=$?
     fi
+fi
+
+if [[ $RETCODE_BIN != 0 ]]; then
+    if [[ "${PATH_BIN}" =~ /test/ ]]; then
+        echo -e "${COLOR_RED}  ----==[ TEST FAILED ! ]==----"
+    else
+        echo -e "${COLOR_RED}  ----==[ Executable returned with error ! ]==----"
+    fi
+    exit 5
+fi
+
+if [[ "${BUILD_TYPE}" == "coverage" ]]; then
+    if [[ -z "${GCOV_DIR}" ]]; then
+        echo -e "${COLOR_BLUE}  ----==[ Missing gcov dir ! ]==----"
+        exit 1
+    fi
+
+    if [[ -e "${GCOV_HTML_DIR}" ]]; then
+        rm -rf "${GCOV_HTML_DIR}"
+    fi
+
+    mkdir -p "${GCOV_HTML_DIR}"
+
+    GCOV_WORK_DIR=$(find "${BUILD_DIR}" -type d -name "${GCOV_DIR}")
+    RUN_GCOV="gcovr ${GCOV_WORK_DIR} \
+        --object-directory ${GCOV_WORK_DIR} \
+        --root ${PATH_REPO} \
+        --filter .\*${GCOV_DIR}/.\*${GCOV_FILTER}.\* \
+        --exclude .\*test/Test.\* \
+        --fail-under-line ${GCOV_FAIL_LIMIT} \
+        --print-summary \
+        --html-details \
+        --output ${GCOV_HTML_DIR}/main.html"
+
+        # --fail-under-branch ${GCOV_FAIL_LIMIT} \
+
+    if [[ -n "${GCOV_EXCLUDE}" ]]; then
+        RUN_GCOV+=" --exclude .\*${GCOV_EXCLUDE}.\*"
+    fi
+
+    if [[ -z "${GCOV_KEEP}" ]]; then
+        RUN_GCOV+=" --delete"
+    fi
+
+    eval "${RUN_GCOV}"
+fi
+
+RETCODE_COV=$?
+if [[ $RETCODE_COV != 0 ]]; then
+    echo -e "${COLOR_PURPLE}  ----==[ COVERAGE TEST FAILED ! ]==----"
+    if [[ $RETCODE_COV == 2 ]]; then
+        echo -e "${COLOR_PURPLE}         Line coverage under ${GCOV_FAIL_LIMIT}%"
+    elif [[ $RETCODE_COV == 4 ]]; then
+        echo -e "${COLOR_PURPLE}        Branch coverage under ${GCOV_FAIL_LIMIT}%"
+    elif [[ $RETCODE_COV == 6 ]]; then
+        echo -e "${COLOR_PURPLE}    Line and branch coverage under ${GCOV_FAIL_LIMIT}%"
+    else
+        echo -e "${COLOR_RED}  ----==[ Unknown GCOV error ! ]==----"
+    fi
+    exit 4
+else
+    echo -e "${COLOR_GREEN}  ----==[ COVERAGE TEST PASSED ]==----"
 fi
