@@ -10,6 +10,7 @@
 export COLOR_DEF='\033[0m'
 export COLOR_RED='\033[0;31m'
 export COLOR_GREEN='\033[0;32m'
+export COLOR_PURPLE='\033[1;35m'
 
 # Build configuration
 export NXS_BUILD_ENV_SET=1
