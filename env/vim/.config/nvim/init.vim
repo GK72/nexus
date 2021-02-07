@@ -283,6 +283,7 @@ highlight normal ctermfg=white
 
 lua require'lspconfig'.clangd.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.rls.setup{ on_attach=require'completion'.on_attach }
 
 lua require'lspconfig'.bashls.setup{ filetypes = { "sh", "zsh" }, on_attach=require'completion'.on_attach }
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
@@ -314,22 +315,15 @@ nvim_lsp.gopls.setup {
     },
 }
 
-nvim_lsp.rust_analyzer.setup({
-    on_attach=on_attach,
+nvim_lsp.rls.setup({
+    -- cmd = { "rustup", "run", "nightly", "rls" },
     settings = {
-        ["rust-analyzer"] = {
-            assist = {
-                importGranularity = "module",
-                importPrefix = "by_self",
-            },
-            cargo = {
-                loadOutDirsFromCheck = true
-            },
-            procMacro = {
-                enable = true
-            },
-        }
-    }
+        rust = {
+            unstable_features = true,
+            build_on_save = false,
+            all_features = true,
+        },
+    },
 })
 
 require'lspconfig'.jsonls.setup {

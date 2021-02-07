@@ -1,4 +1,3 @@
-
 use crate::types::HitRecord;
 use crate::types::Material;
 use crate::ray::Ray;

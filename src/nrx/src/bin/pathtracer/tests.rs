@@ -1,4 +1,5 @@
-#[macro_use] pub mod utils;
+#[path = "../../tests/utils.rs"]
+#[macro_use] pub mod macros;
 
 #[cfg(test)]
 mod vector {
@@ -50,11 +51,22 @@ mod vector {
 #[cfg(test)]
 pub mod pathtracer {
     use crate::ray::Ray;
-    use crate::sphere::Primitive;
+    use crate::scene::Primitive;
     use crate::sphere::Sphere;
     use crate::types::Material;
     use crate::vector::Vec3D;
-    use super::utils::*;
+
+    fn approx(lhs: f64, rhs: f64, epsilon: f64) -> bool {
+        (lhs - rhs).abs() < epsilon
+    }
+
+    fn approx_vec_3d(lhs: &Vec3D, rhs: &Vec3D, epsilon: f64) -> bool {
+        approx(lhs.x, rhs.x, epsilon)
+        && approx(lhs.y, rhs.y, epsilon)
+        && approx(lhs.z, rhs.z, epsilon)
+    }
+
+    // use crate::utils::*;
 
     #[test]
     fn ray_distance_along() {

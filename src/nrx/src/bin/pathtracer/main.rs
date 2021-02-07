@@ -9,6 +9,8 @@ pub mod sphere;
 pub mod types;
 pub mod vector;
 
+pub mod tests;
+
 fn main() -> std::io::Result<()> {
     let args = args::ArgParser::new(std::env::args().collect());
 
