@@ -30,6 +30,8 @@ elseif (MSVC)
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
+find_package(benchmark REQUIRED)
+
 include(cmake/Conan.cmake)
 run_conan()
 

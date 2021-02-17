@@ -8,6 +8,10 @@ target_include_directories(sandbox PRIVATE ${CMAKE_HOME_DIRECTORY}/include)
 target_include_directories(sandbox PRIVATE ../ncx)
 target_include_directories(sandbox PRIVATE ../ui)
 
+add_executable (bench bench.cpp)
+
+target_link_libraries(bench benchmark::benchmark)
+
 add_executable (worklog worklog.cpp)
 
 target_link_libraries (worklog PRIVATE utility)
