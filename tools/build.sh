@@ -89,8 +89,8 @@ fi
 
 # Setting default values
 if [[ -z "${COMPILER}" ]]; then
-    COMPILER="${XCOMPILER}"
-    COMPILER_VER="${XCOMPILER_VER}"
+    COMPILER="${NXS_COMPILER}"
+    COMPILER_VER="${NXS_COMPILER_VER}"
 fi
 
 GENERATOR="${XBUILD_GEN-"Unix Makefiles"}"
