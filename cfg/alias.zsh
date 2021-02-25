@@ -17,6 +17,7 @@ alias rsyncp="rsync -avz --info=progress2"
 alias gap='git add --patch'
 alias gc='git commit'
 alias gca='git commit --amend'
+alias gcp='git cherry-pick'
 alias gch='git checkout'
 alias gd='git diff'
 alias gdc='git diff --cached'
@@ -30,3 +31,7 @@ alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
 
 alias build='~/repos/nexus/tools/build.sh'
 alias datef=~/repos/nexus/tools/dateformat.sh
+
+alias wls='~/repos/nexus/build/release-gcc/bin/worklog show summary'
+alias wli='~/repos/nexus/build/release-gcc/bin/worklog start'
+alias wlo='~/repos/nexus/build/release-gcc/bin/worklog end'
