@@ -236,21 +236,21 @@ if [[ "${BUILD_TYPE}" == "coverage" ]]; then
     fi
 
     eval "${RUN_GCOV}"
-fi
 
-RETCODE_COV=$?
-if [[ $RETCODE_COV != 0 ]]; then
-    echo -e "${COLOR_PURPLE}  ----==[ COVERAGE TEST FAILED ! ]==----"
-    if [[ $RETCODE_COV == 2 ]]; then
-        echo -e "${COLOR_PURPLE}         Line coverage under ${GCOV_FAIL_LIMIT}%"
-    elif [[ $RETCODE_COV == 4 ]]; then
-        echo -e "${COLOR_PURPLE}        Branch coverage under ${GCOV_FAIL_LIMIT}%"
-    elif [[ $RETCODE_COV == 6 ]]; then
-        echo -e "${COLOR_PURPLE}    Line and branch coverage under ${GCOV_FAIL_LIMIT}%"
+    RETCODE_COV=$?
+    if [[ $RETCODE_COV != 0 ]]; then
+        echo -e "${COLOR_PURPLE}  ----==[ COVERAGE TEST FAILED ! ]==----"
+        if [[ $RETCODE_COV == 2 ]]; then
+            echo -e "${COLOR_PURPLE}         Line coverage under ${GCOV_FAIL_LIMIT}%"
+        elif [[ $RETCODE_COV == 4 ]]; then
+            echo -e "${COLOR_PURPLE}        Branch coverage under ${GCOV_FAIL_LIMIT}%"
+        elif [[ $RETCODE_COV == 6 ]]; then
+            echo -e "${COLOR_PURPLE}    Line and branch coverage under ${GCOV_FAIL_LIMIT}%"
+        else
+            echo -e "${COLOR_RED}  ----==[ Unknown GCOV error ! ]==----"
+        fi
+        exit 4
     else
-        echo -e "${COLOR_RED}  ----==[ Unknown GCOV error ! ]==----"
+        echo -e "${COLOR_GREEN}  ----==[ COVERAGE TEST PASSED ]==----"
     fi
-    exit 4
-else
-    echo -e "${COLOR_GREEN}  ----==[ COVERAGE TEST PASSED ]==----"
 fi
