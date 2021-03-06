@@ -8,6 +8,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'nvim-lua/popup.nvim'
     Plug 'nvim-lua/plenary.nvim'
     Plug 'nvim-telescope/telescope.nvim'
+    Plug 'nvim-telescope/telescope-symbols.nvim'
 
     " ---= Text editing
     Plug 'tpope/vim-surround'                   " Surround text with quotes, brackets
