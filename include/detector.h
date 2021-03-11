@@ -1,15 +1,28 @@
+/*
+ * gkpro @ 2020-07-25
+ *   Nexus Library
+ *     Detection Idiom header
+ *
+ *   Basic building blocks for creating metafunctions that
+ *   can detect the validity of a C++ expression
+ *
+ *   NOTE: no helper metafunctions for actual detections (yet)
+ *         see unittests for example usage
+ */
+
 #pragma once
+
 #include <type_traits>
 
 namespace nxs {
 
-// ----------------------------------==[ Exposition-only ]==----------------------------------------
+namespace detail {
 
 template <class Default
          ,class AlwaysVoid
          ,template <class...> class Op
          ,class... Args>
-struct x_detector {
+struct detector {
     using value_t = std::false_type;
     using type    = Default;
 };
@@ -17,33 +30,37 @@ struct x_detector {
 template <class Default
          ,template <class...> class MetaFunc
          ,class... Args>
-struct x_detector<Default, std::void_t<MetaFunc<Args...>>, MetaFunc, Args...> {
+struct detector<Default, std::void_t<MetaFunc<Args...>>, MetaFunc, Args...> {
     using value_t = std::true_type;
     using type = MetaFunc<Args...>;
 };
 
 // Not A Type
-struct x_NAT {
-    x_NAT()                      = delete;
-    ~x_NAT()                     = delete;
-    x_NAT(const x_NAT&)          = delete;
-    void operator=(const x_NAT&) = delete;
+struct NAT {
+    NAT()                      = delete;
+    ~NAT()                     = delete;
+    NAT(const NAT&)            = delete;
+    NAT(NAT&&)                 = delete;
+    void operator=(const NAT&) = delete;
+    void operator=(NAT&&)      = delete;
 };
+
+} // namespace detail
 
 // ------------------------------==[ Detector meta functions ]==------------------------------------
 
 template <template <class...> class MetaFunc
          ,class... Args>
-using is_detected = typename x_detector<x_NAT, void, MetaFunc, Args...>::value_t;
+using is_detected = typename detail::detector<detail::NAT, void, MetaFunc, Args...>::value_t;
 
 template <template <class...> class MetaFunc
          ,class... Args>
-using detected_t = typename x_detector<x_NAT, void, MetaFunc, Args...>::type;
+using detected_t = typename detail::detector<detail::NAT, void, MetaFunc, Args...>::type;
 
 template <class Default
          ,template <class...> class MetaFunc
          ,class... Args>
-using detected_or = x_detector<Default, void, MetaFunc, Args...>;
+using detected_or = detail::detector<Default, void, MetaFunc, Args...>;
 
 template <class Default
          ,template <class...> class MetaFunc
