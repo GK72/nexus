@@ -38,7 +38,7 @@ function list() {
 }
 
 GCOV_FAIL_LIMIT=90
-GCOV_HTML_DIR="~/tmp/coverage-test"
+GCOV_HTML_DIR="${HOME}/tmp/coverage-test"
 
 NONE="<none>"
 FWD_ARGS="${NONE}"
