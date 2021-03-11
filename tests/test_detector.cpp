@@ -4,11 +4,11 @@
 
 struct S {
     using type = void;
-    int member;
-    int func() { return 1; }
+    int member;                 // NOLINT
+    int func() { return 1; }    // NOLINT
 };
 
-void freeFunc(int) {}
+void freeFunc(int) {}           // NOLINT
 
 template <class T> using has_type   = typename T::type;
 template <class T> using has_no     = typename T::no;
@@ -19,7 +19,7 @@ template <class T> using is_func    = decltype(freeFunc(std::declval<T>()));
 TEST_CASE("Detection Idiom", "[compileTime]") {
     SECTION("Detection") {
         static_assert(nxs::is_detected_v<has_type  , S>);
-        static_assert(nxs::is_detected_v<has_type  , S>);
+        static_assert(!nxs::is_detected_v<has_no   , S>);
         static_assert(nxs::is_detected_v<has_member, S>);
         static_assert(nxs::is_detected_v<has_func  , S>);
         static_assert(nxs::is_detected_v<is_func   , int>);
@@ -33,7 +33,8 @@ TEST_CASE("Detection Idiom", "[compileTime]") {
     }
 
     SECTION("Detection with default type") {
-        nxs::detected_or_t<short, has_no, S> x;
+        nxs::detected_or_t<short, has_no, S> x{};
         static_assert(std::is_same_v<short, decltype(x)>);
+        CHECK(true);
     }
 }
