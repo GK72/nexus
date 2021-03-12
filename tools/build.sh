@@ -93,11 +93,11 @@ if [[ -z "${COMPILER}" ]]; then
     COMPILER_VER="${NXS_COMPILER_VER}"
 fi
 
-GENERATOR="${XBUILD_GEN-"Unix Makefiles"}"
+GENERATOR="${NXS_BUILD_GEN-"Unix Makefiles"}"
 TARGET="${TARGET-"all"}"
 
 if [[ -z "${JOBS}" ]]; then
-    JOBS="${XBUILD_JOBS-1}"
+    JOBS="${NXS_BUILD_JOBS-1}"
 fi
 
 # Setting up compilers
@@ -191,15 +191,15 @@ if [[ -n "${RUN}" ]]; then
         "${PATH_BIN}" ${(z)BINARY_ARGS}
         RETCODE_BIN=$?
     fi
-fi
 
-if [[ $RETCODE_BIN != 0 ]]; then
-    if [[ "${PATH_BIN}" =~ /test/ ]]; then
-        echo -e "${COLOR_RED}  ----==[ TEST FAILED ! ]==----"
-    else
-        echo -e "${COLOR_RED}  ----==[ Executable returned with error ! ]==----"
+    if [[ $RETCODE_BIN != 0 ]]; then
+        if [[ "${PATH_BIN}" =~ /test/ ]]; then
+            echo -e "${COLOR_RED}  ----==[ TEST FAILED ! ]==----"
+        else
+            echo -e "${COLOR_RED}  ----==[ Executable returned with error ! ]==----"
+        fi
+        exit $RETCODE_BIN
     fi
-    exit 5
 fi
 
 if [[ "${BUILD_TYPE}" == "coverage" ]]; then
@@ -235,7 +235,7 @@ if [[ "${BUILD_TYPE}" == "coverage" ]]; then
         RUN_GCOV+=" --delete"
     fi
 
-    eval "${RUN_GCOV}"
+    eval "(cd ${GCOV_WORK_DIR} && ${RUN_GCOV})"
 
     RETCODE_COV=$?
     if [[ $RETCODE_COV != 0 ]]; then
