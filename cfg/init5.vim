@@ -231,6 +231,7 @@ endfunction
 function! TrimWhitespace()
     let l:save = winsaveview()
     keeppatterns %s/\s\+$//e
+    keeppatterns %s/\($\n\s*\)\+\%$//e
     call winrestview(l:save)
 endfunction
 

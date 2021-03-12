@@ -21,3 +21,5 @@ export NXS_COMPILER_C="${NXS_COMPILER}-${NXS_COMPILER_VER}"
 export NXS_COMPILER_CXX="${NXS_COMPILER}++-${NXS_COMPILER_VER}"
 export NXS_BUILD_GEN="Ninja"
 export NXS_BUILD_JOBS=4
+
+CMD_SED_EPOCH2DT='sed -r '"'"'s/(.*)([[:digit:]]{10})([[:digit:]]{6})(.*)/echo \1$(date -d @\2.\3 +"%H:%M:%S:%N")\4/;e'"'"
