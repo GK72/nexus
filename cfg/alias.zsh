@@ -26,6 +26,7 @@ alias gdjq='git-diff-jq'
 alias gl="git --no-pager log --decorate --graph --date=format:'%a %d %b %Y %H:%M:%S' --pretty=tformat:'%C(178)%h %C(029)%cd %C(027)%<(20,trunc)%cn %C(250)%s %C(auto)%d' -n10"
 alias gp='git push origin HEAD:refs/for/master'
 alias gs='git status'
+alias gri='git rebase -i HEAD~10'
 
 alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
 
