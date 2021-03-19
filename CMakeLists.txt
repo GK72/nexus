@@ -46,7 +46,6 @@ include(cmake/settings.cmake)
 include(cmake/doxygen.cmake)
 enable_doxygen()
 
-add_subdirectory("src")
-add_subdirectory("tests")
+add_subdirectory(src)
 
 enable_testing()
