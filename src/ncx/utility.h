@@ -179,6 +179,17 @@ template <class T> T swapEndian32(T& x) {
 
 // -------------------------------------==[ Algorithms ]==--------------------------------------- //
 
+template <CRange R1, CRange R2>
+R1& extend(R1& dest, const R2& src) {
+    std::copy(
+        std::begin(src),
+        std::end(src),
+        std::back_inserter(dest)
+    );
+
+    return dest;
+}
+
 /**
  * @brief Filters and transforms the elements in a range
  *
