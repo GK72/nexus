@@ -1,6 +1,7 @@
 add_executable(test_nexus
     test.cpp
     test_allocator.cpp
+    test_expr.cpp
     test_datetime.cpp
     test_detector.cpp
     test_io_tokenizer.cpp

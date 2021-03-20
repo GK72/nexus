@@ -100,5 +100,14 @@ TEST_CASE("Transform if", "[ALG]") {
     CHECK(result[1] == 1.5);
     CHECK(result[2] == 2.5);
     CHECK(result[3] == 3.5);
+}
+
+TEST_CASE("Extend", "[ALG]") {
+    auto x = std::vector{ 4, 7, 5 };
+    auto y = std::vector{ 9, 1, 3 };
+
+    nxs::extend(x, y);
+
+    CHECK(x == (std::vector{ 4, 7, 5, 9, 1, 3 }));
 
 }
