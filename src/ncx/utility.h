@@ -22,12 +22,6 @@
 
 namespace nxs {
 
-#ifndef NDEBUG
-#define DBGMSG(msg, value) nxs::print("", "[DBG] ", __FILE__, ":", __FUNCTION__, ":", __LINE__,  "  \"", msg, "\"  = ", value);
-#else
-#define DBGMSG(msg, value) ((void)0)
-#endif
-
 // ---------------------------------------==[ Structs ]==---------------------------------------- //
 
 struct SearchResult {
@@ -397,3 +391,15 @@ private:
 
 
 } // namespace nxs
+
+#ifndef NDEBUG
+// NOLINTNEXTLINE
+#define DBGMSG(...) nxs::print("",                                              \
+        "[DBG] ",                                                               \
+        nxs::strSplit(__FILE__, "/").back(), ":",                               \
+        __FUNCTION__, ":",                                                      \
+        __LINE__, "   ",                                                        \
+        ##__VA_ARGS__);
+#else
+#define DBGMSG(msg, value) ((void)0)
+#endif
