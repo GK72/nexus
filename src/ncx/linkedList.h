@@ -26,15 +26,18 @@ struct Node : public NodeBase {
 template <class T>
 class ListIterator {
 public:
+    using Self = ListIterator<T>;
     using NodeType = Node<T>;
+    using value_type = T;
+    using reference = T&;
 
     ListIterator(NodeBase* x) : m_node(x) {}
 
-    [[nodiscard]] auto operator*() noexcept { return static_cast<NodeType*>(m_node)->value; }
-    auto operator++()    noexcept { m_node = m_node->next; return *this; }
-    auto operator++(int) noexcept {
-        auto* tmp = m_node->next;
-        m_node = tmp;
+    [[nodiscard]] reference operator*() noexcept { return static_cast<NodeType*>(m_node)->value; }
+    Self& operator++()    noexcept { m_node = m_node->next; return *this; }
+    Self  operator++(int) noexcept {
+        Self tmp = *this;
+        m_node = tmp.m_node->next;
         return tmp;
     }
 
@@ -47,7 +50,9 @@ private:
     NodeBase* m_node;
 };
 
-inline void init(NodeBase& node) noexcept { node.next = node.prev = &node; }
+inline void init(NodeBase& node) noexcept {
+    node.next = node.prev = &node;
+}
 
 /**
  * @brief Hook the left node before the right node
@@ -67,6 +72,13 @@ bool operator==(ListIterator<T> lhs, ListIterator<T> rhs) noexcept {
 
 } // namespace detail
 
+/**
+ * @brief   A doubly linked list
+ *
+ * Has a sentinel node, of which prev and next pointers refer to itself if
+ * there are no other node i.e. the list is empty, else its next always
+ * refers to the first node (used by `begin()`)
+ */
 template <class T,
           class Alloc = Allocator<detail::Node<T>>>
 class LinkedList {
@@ -87,9 +99,9 @@ public:
     [[nodiscard]] auto end()   noexcept { return detail::ListIterator<T>(&m_node); }
 
     /**
-     * @brief   Push an element at the end of the list
+     * @brief   Append an element to the end of the list
      */
-    void push(const T& x) {
+    void append(const T& x) {
         insert(x, end());
     }
 

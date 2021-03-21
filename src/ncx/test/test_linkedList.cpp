@@ -29,16 +29,32 @@ TEST_CASE("hook node", "[linkedList], [data]") {
     CHECK(nodeNew.next == &node2);
 }
 
-TEST_CASE("push", "[linkedList], [data]") {
+TEST_CASE("append", "[linkedList], [data]") {
     nxs::LinkedList<int> list;
-    list.push(2);
+    list.append(2);
 
     CHECK(*list.begin() == 2);
     CHECK(++list.begin() == std::end(list));
 
-    list.push(3);
+    list.append(3);
     auto it = list.begin();
     CHECK(*it == 2);
     ++it;
     CHECK(*it == 3);
+}
+
+TEST_CASE("for each loop", "[linkedList], [data]") {
+    nxs::LinkedList<int> list;
+    list.append(2);
+    list.append(5);
+    list.append(8);
+
+    for (auto& x : list) {
+        x *= 2;
+    }
+
+    auto it = std::begin(list);
+    CHECK(*it++ == 4);
+    CHECK(*it++ == 10);
+    CHECK(*it++ == 16);
 }
