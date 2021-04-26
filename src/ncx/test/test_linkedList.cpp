@@ -11,9 +11,9 @@ TEST_CASE("iterator", "[linkedList], [data]") {
 TEST_CASE("hook node", "[linkedList], [data]") {
     using namespace nxs::detail;
 
-    NodeBase node1 {};
-    NodeBase node2 {};
-    NodeBase nodeNew {};
+    ListNodeBase node1 {};
+    ListNodeBase node2 {};
+    ListNodeBase nodeNew {};
 
     node1.prev = &node1;
     node1.next = &node2;
