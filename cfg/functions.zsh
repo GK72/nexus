@@ -18,3 +18,11 @@ function find-time-range() {
         -exec "${(z)COMMAND}" {} \;
         # -exec $(echo "${COMMAND}") {} \;          # Bash
 }
+
+function diffj() {
+    DIFF_MINUS="$1"
+    DIFF_PLUS="$2"
+
+    if [[ ${#FLAGS_DIFFJ} -eq 0 ]]; then FLAGS_DIFFJ=(); fi
+    diff <(jq . "$DIFF_MINUS") <(jq . "$DIFF_PLUS") "$FLAGS_DIFFJ[@]"
+}
