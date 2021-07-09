@@ -20,7 +20,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     " ---= Visuals
     Plug 'vim-airline/vim-airline'
     Plug 'vim-airline/vim-airline-themes'
-    Plug 'morhetz/gruvbox'
+    Plug 'sainnhe/edge'
 
     Plug 'ryanoasis/vim-devicons'               " File type icons
     Plug 'machakann/vim-highlightedyank'        " Brief highlight of yanked range
@@ -57,9 +57,12 @@ source ~/.local/share/nvim/plugin/functions.vim
 " ------------------------------------==[ Basic Settings ]==----------------------------------------
 
 let g:term_id = 0
-let g:gruvbox_contrast_dark='hard'
+let g:edge_style = 'aura'
 
-color gruvbox
+set t_Co=256
+color edge
+
+" set termguicolors
 
 if &encoding != 'utf-8'
     set encoding=utf-8
@@ -95,19 +98,10 @@ set wildmode=longest:full,full
 set path+=**
 set ignorecase              " case insensitive matching
 
-"set termguicolors
 "set copyindent              " copy indent from the previous line
 
 filetype plugin indent on   " allows auto-indenting depending on file type
 syntax on                   " syntax highlighting
-
-" Some coloring
-highlight cursorline cterm=bold ctermbg=235
-highlight colorcolumn ctermbg=233
-highlight VertSplit ctermfg=237 ctermbg=234
-
-highlight normal ctermfg=white
-hi! link String GruvboxAqua
 
 " ------------------------------------==[ Configuration ]==-----------------------------------------
 
@@ -274,6 +268,23 @@ require'nvim-treesitter.configs'.setup {
     textobjects = { enable = true },
 }
 EOF
+
+highlight! link TSAttribute Black
+highlight! link TSFunction Green
+highlight! link TSNamespace Cyan
+highlight! link TSNumber Red
+highlight! link TSParameter Grey
+highlight! link TSParameterReference Grey
+highlight! link TSString Red
+highlight! link TSText Red
+highlight! link TSMath Red
+highlight! link TSVariable White
+
+highlight cursorline cterm=bold ctermbg=236
+highlight colorcolumn ctermbg=233
+highlight VertSplit ctermfg=237 ctermbg=234
+
+highlight normal ctermfg=white
 
 lua << EOF
 local system_name
