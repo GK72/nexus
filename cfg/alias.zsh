@@ -9,17 +9,13 @@ alias egrep='egrep --color=auto'
 
 alias ag='ag --color-match "0;36"'
 
-alias tws='timew start'
-alias twt='timew stop'
-alias twss='timew summary'
-alias twc='timew continue'
-
 alias rsyncp="rsync -avz --info=progress2"
 
 alias gap='git add --patch'
 alias gbv='git --no-pager branch -v'
 alias gc='git commit'
-alias gca='git commit --amend'
+alias gca='git commit --amend --no-edit'
+alias gcam='git commit --amend'
 alias gch='git checkout'
 alias gcp='git cherry-pick'
 alias gd='git diff'
@@ -34,9 +30,13 @@ alias gwl='git worktree list'
 
 alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
 
-alias build='~/repos/nexus/tools/build.sh'
-alias datef=~/repos/nexus/tools/dateformat.sh
+alias build='~/.local/bin/build.sh'
 
-alias wls='~/repos/nexus/build/release-gcc/bin/worklog show summary'
-alias wli='~/repos/nexus/build/release-gcc/bin/worklog start'
-alias wlo='~/repos/nexus/build/release-gcc/bin/worklog end'
+alias tws='timew start'
+alias twt='timew stop'
+alias twss='timew summary'
+alias twc='timew continue'
+
+alias wls='~/.local/bin/worklog show summary'
+alias wli='~/.local/bin/worklog start'
+alias wlo='~/.local/bin/worklog end'
