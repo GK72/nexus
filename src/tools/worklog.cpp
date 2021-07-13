@@ -13,7 +13,7 @@
 #include "datetime.h"
 #include "utility.h"
 
-static const auto pathDir          = nxs::joinStr("/", getenv("HOME"), ".worklog");
+static const auto pathDir          = getenv("NXS_WORKLOG");
 static const auto filenameData     = "data";
 
 constexpr char eof = 26;
