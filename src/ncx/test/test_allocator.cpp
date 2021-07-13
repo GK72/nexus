@@ -25,10 +25,12 @@ TEST_CASE("buffer allocator - allocate and construct", "[alloc]") {
     CHECK(buf[1] == 101);
 }
 
+bool destructed = false;
+
 struct S {
     int rep;
     S(int x) : rep(x) {}
-    ~S() { rep = 255; }
+    ~S() { destructed = true; }
 };
 
 TEST_CASE("buffer allocator - destroy", "[alloc]") {
@@ -40,7 +42,7 @@ TEST_CASE("buffer allocator - destroy", "[alloc]") {
     CHECK(ptr->rep == 1);
 
     alloc.destroy(ptr);
-    CHECK(ptr->rep == 255);
+    CHECK(destructed);
 }
 
 TEST_CASE("buffer allocator - overflow", "[alloc]") {
