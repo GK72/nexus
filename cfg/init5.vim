@@ -275,7 +275,7 @@ highlight! link TSNamespace Cyan
 highlight! link TSNumber Red
 highlight! link TSParameter Grey
 highlight! link TSParameterReference Grey
-highlight! link TSString Red
+highlight! link TSString Green
 highlight! link TSText Red
 highlight! link TSMath Red
 highlight! link TSVariable White
