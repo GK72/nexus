@@ -20,8 +20,7 @@ while [[ $# -gt 0 ]]; do
             *)                      break;;
         esac
     else
-        FWD_ARGS="${FWD_ARGS}$1 "
-        shift
+        FWD_ARGS="${FWD_ARGS}$1 "       # forward FWD_ARGS without quotes
     fi
     shift
 done
