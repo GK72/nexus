@@ -37,7 +37,9 @@ COMPLETION_WAITING_DOTS="true"
 # or set a custom format using the strftime function format specifications,
 # see 'man strftime' for details.
 # HIST_STAMPS="mm/dd/yyyy"
-HISTFILE=~/.zsh_history
+export HISTFILE=${HOME}/.zsh_history
+export HISTSIZE=10000
+export SAVEHIST=10000
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
