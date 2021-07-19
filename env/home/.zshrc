@@ -87,9 +87,14 @@ lfcd () {
 
 bindkey -s '^o' 'lfcd\n'
 
+bindkey "^[[1;5C" forward-word
+bindkey "^[[1;5D" backward-word
+bindkey '\e[H'    beginning-of-line
+bindkey '\e[F'    end-of-line
+bindkey "\e[3~"   delete-char
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 source ~/repos/nexus.git/master/env/load.zsh
 source ~/.cenv  # custom env
