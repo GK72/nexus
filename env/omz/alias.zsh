@@ -40,3 +40,5 @@ alias twc='timew continue'
 alias wls='~/.local/bin/worklog show summary'
 alias wli='~/.local/bin/worklog start'
 alias wlo='~/.local/bin/worklog end && wls day | tail -n1 | cut -c13-'
+
+alias jrn='(cd ~/jrn && nvim .)'

@@ -40,6 +40,7 @@ COMPLETION_WAITING_DOTS="true"
 export HISTFILE=${HOME}/.zsh_history
 export HISTSIZE=10000
 export SAVEHIST=10000
+export HIST_STAMPS="yyyy-mm-dd"
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
@@ -73,6 +74,9 @@ fi
 # Inline vim editor
 autoload edit-command-line; zle -N edit-command-line
 bindkey '^e' edit-command-line
+
+autoload -Uz compinit
+compinit
 
 # Use LF for cd and bind key to CTRL-O
 lfcd () {

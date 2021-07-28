@@ -16,6 +16,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'gu-fan/riv.vim'
     Plug 'gu-fan/InstantRst'
     Plug 'chrisbra/csv.vim'
+    Plug 'godlygeek/tabular'
 
     " ---= Visuals
     Plug 'vim-airline/vim-airline'
@@ -295,6 +296,7 @@ require'nvim-treesitter.configs'.setup {
 }
 EOF
 
+highlight! link Comment Grey
 highlight! link TSAttribute Black
 highlight! link TSFunction Green
 highlight! link TSNamespace Cyan
