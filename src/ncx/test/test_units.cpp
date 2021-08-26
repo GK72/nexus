@@ -16,6 +16,10 @@ TEST_CASE("Units/Bytes: Conversions", "[units]") {
         CHECK(unit_cast<byte>(15_bit) == 1_byte);
         CHECK(unit_cast<byte>(16_bit) == 2_byte);
     }
+    SECTION("Units_Bytes, Convertible") {
+        static_assert(!std::is_convertible_v<byte, kByte>);
+        static_assert(std::is_convertible_v<kByte, byte>);
+    }
 
     SECTION("Implicit conversion between representations")
         CHECK(Unit<int>(8) == Unit<long>(8));
