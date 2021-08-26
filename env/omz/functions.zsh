@@ -2,6 +2,38 @@ function colormap() {
     for i in {0..255}; do print -Pn "%K{$i} %k%F{$i}${(l:3::0:)i}%f " ${${(M)$((i%8)):#7}:+$'\n'}; done
 }
 
+function disas() {
+        objdump -D -M intel "$1" | bat --language asm --paging=never
+}
+
+function godbolt() {
+    SOURCE_FILE="$1"
+    gcc -std=c++20 -O3 "$SOURCE_FILE" -S -o - -masm=intel | c++filt | grep -vE '\s+\.'
+}
+
+function field() {
+    FIELD_NUM="$1"
+    read INPUT
+    echo "$INPUT" | awk '{print $'"$FIELD_NUM"'}'
+}
+
+function batch-confirm() {
+    CMD="$1"
+    SELECTION="$2"
+
+    for LINE in $(eval "$SELECTION"); do
+        CMDRUN="$CMD $LINE"
+        echo -n "Run cmd: ${CMDRUN}? "
+        read ANS
+        if [[ $ANS == y ]]; then
+            eval "$CMDRUN"
+        elif [[ $ANS == q ]]; then
+            echo "Aborted"
+            return 1
+        fi
+    done
+}
+
 function find-time-range() {
     PATH_FIND="$1"
     PATTERN="$2"
