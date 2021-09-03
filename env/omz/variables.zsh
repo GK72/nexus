@@ -15,12 +15,10 @@ export COLOR_PURPLE='\033[1;35m'
 # Build configuration
 export NXS_BUILD_ENV_SET=1
 export NXS_BUILD_TYPE="Debug"
-export NXS_COMPILER="clang"
-export NXS_COMPILER_VER="11"
-export NXS_COMPILER_C="${NXS_COMPILER}-${NXS_COMPILER_VER}"
-export NXS_COMPILER_CXX="${NXS_COMPILER}++-${NXS_COMPILER_VER}"
+export NXS_COMPILER=gcc
+# export NXS_COMPILER_VER=
 export NXS_BUILD_GEN="Ninja"
-export NXS_BUILD_JOBS=4
+export NXS_BUILD_JOBS=$(($(nproc) / 2))
 
 export NXS_GITLOG_DATE=cd       # git log alias date: ad/cd (author date / commit date)
 
