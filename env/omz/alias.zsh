@@ -27,6 +27,7 @@ alias gl="git --no-pager log --decorate --graph --date=format:'%a %d %b %Y %H:%M
 alias gp='git push origin HEAD:refs/for/master'
 alias gs='git status'
 alias gri='git rebase -i HEAD~10'
+alias grp='git restore --patch'
 alias gwl='git worktree list'
 
 alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
