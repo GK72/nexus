@@ -51,11 +51,8 @@ function! SendTerminal(cmd)
 endfunction
 
 function! RepoPath()
-    let cf = expand('%:p')
-    let repos = stridx(cf, "repos")
-    let repoNameStart = stridx(cf, "/", repos + 2)
-    let repoNameEnd = stridx(cf, "/", repoNameStart + 1)
-    return cf[0:repoNameEnd-1]
+    let repopath = system("git rev-parse --show-toplevel")
+    return repopath
 endfunction
 
 function! Build(target)
@@ -64,6 +61,10 @@ endfunction
 
 function! BuildAndRun(target)
     call SendTerminal("build -p " . RepoPath() . " -t " . a:target . " -r")
+endfunction
+
+function! BuildAndRunArgs(target, args)
+    call SendTerminal("build -p " . RepoPath() . " -t " . a:target . " -r --args " . a:args)
 endfunction
 
 function! RunInTerminal(m)
