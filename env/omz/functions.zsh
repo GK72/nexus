@@ -13,8 +13,9 @@ function godbolt() {
 
 function field() {
     FIELD_NUM="$1"
-    read INPUT
-    echo "$INPUT" | awk '{print $'"$FIELD_NUM"'}'
+    while read INPUT; do
+        awk '{print $'"$FIELD_NUM"'}' <<< "$INPUT"
+    done
 }
 
 function gl() {
