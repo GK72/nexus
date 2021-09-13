@@ -17,6 +17,21 @@ function field() {
     echo "$INPUT" | awk '{print $'"$FIELD_NUM"'}'
 }
 
+function gl() {
+    if [ $# -eq 0 ]; then
+        ARGS="-n10"
+    else
+        ARGS="$@"
+    fi
+
+    git --no-pager log \
+        --decorate \
+        --graph \
+        --date=format:'%a %d %b %Y %H:%M:%S' \
+        --pretty="tformat:%C(178)%h %C(029)%${NXS_GITLOG_DATE:-cd} %C(027)%<(20,trunc)%cn %C(250)%s %C(auto)%d" \
+        ${(z)ARGS}
+}
+
 function batch-confirm() {
     CMD="$1"
     SELECTION="$2"
