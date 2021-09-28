@@ -75,8 +75,7 @@ fi
 autoload edit-command-line; zle -N edit-command-line
 bindkey '^e' edit-command-line
 
-autoload -Uz compinit
-compinit
+source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 
 # Use LF for cd and bind key to CTRL-O
 lfcd () {
