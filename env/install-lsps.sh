@@ -5,4 +5,6 @@ sudo npm install -g dockerfile-language-server-nodejs       # https://github.com
 sudo npm install -g vscode-json-languageserver              # https://github.com/vscode-langservers/vscode-json-languageserver
 sudo npm install -g vim-language-server                     # https://github.com/iamcco/vim-language-server
 
+yarn global add yaml-language-server
+
 python3 -m pip install --user jedi-language-server
