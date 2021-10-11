@@ -212,6 +212,8 @@ command! Cmm call CommentAlignMiddle()
 
 " ------------------------------------==[ Auto Commands ]==-----------------------------------------
 
+autocmd FileType git set foldmethod=syntax
+
 " ---= Goyo config
 function! s:goyo_enter()
     set noshowmode
@@ -247,6 +249,7 @@ lua require'lspconfig'.bashls.setup{ filetypes = { "sh", "zsh" }, on_attach=requ
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.vimls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.hls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.yamlls.setup{}
 
 lua << EOF
 local nvim_lsp = require'lspconfig'
@@ -297,6 +300,8 @@ require'nvim-treesitter.configs'.setup {
 EOF
 
 highlight! link Comment Grey
+highlight! link DiffText White
+
 highlight! link TSAttribute Black
 highlight! link TSFunction Green
 highlight! link TSNamespace Cyan
