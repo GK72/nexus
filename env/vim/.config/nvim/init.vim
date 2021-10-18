@@ -9,6 +9,9 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'nvim-lua/plenary.nvim'
     Plug 'nvim-telescope/telescope.nvim'
     Plug 'nvim-telescope/telescope-symbols.nvim'
+    Plug 'hrsh7th/nvim-cmp'
+    Plug 'hrsh7th/cmp-nvim-lsp'
+    Plug 'hrsh7th/cmp-buffer'
 
     " ---= Text editing
     Plug 'tpope/vim-surround'                   " Surround text with quotes, brackets
@@ -318,6 +321,58 @@ highlight colorcolumn ctermbg=233
 highlight VertSplit ctermfg=237 ctermbg=234
 
 highlight normal ctermfg=white
+
+lua <<EOF
+  -- Setup nvim-cmp.
+  local cmp = require'cmp'
+
+  cmp.setup({
+    -- snippet = {
+      -- expand = function(args)
+        -- For `vsnip` user.
+        -- vim.fn["vsnip#anonymous"](args.body)
+
+        -- For `luasnip` user.
+        -- require('luasnip').lsp_expand(args.body)
+
+        -- For `ultisnips` user.
+        -- vim.fn["UltiSnips#Anon"](args.body)
+      -- end,
+    -- },
+    mapping = {
+      ['<C-d>'] = cmp.mapping.scroll_docs(-4),
+      ['<C-f>'] = cmp.mapping.scroll_docs(4),
+      ['<C-Space>'] = cmp.mapping.complete(),
+      ['<C-e>'] = cmp.mapping.close(),
+      ['<CR>'] = cmp.mapping.confirm({ select = true }),
+    },
+    sources = {
+      { name = 'nvim_lsp' },
+
+      -- For vsnip user.
+      -- { name = 'vsnip' },
+
+      -- For luasnip user.
+      -- { name = 'luasnip' },
+
+      -- For ultisnips user.
+      -- { name = 'ultisnips' },
+
+      { name = 'buffer' },
+    }
+  })
+
+  -- Setup lspconfig.
+  require('lspconfig')["clangd"].setup {
+    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+  }
+  require('lspconfig')["bashls"].setup {
+    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+  }
+  require('lspconfig')["jedi_language_server"].setup {
+    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+  }
+EOF
 
 lua << EOF
 local system_name
