@@ -3,7 +3,7 @@ function colormap() {
 }
 
 function disas() {
-        objdump -D -M intel "$1" | bat --language asm --paging=never
+    objdump -D -M intel "$1" | bat --language asm --paging=never
 }
 
 function godbolt() {
@@ -18,6 +18,7 @@ function field() {
     done
 }
 
+# git log
 function gl() {
     if [ $# -eq 0 ]; then
         ARGS="-n10"
@@ -31,23 +32,6 @@ function gl() {
         --date=format:'%a %d %b %Y %H:%M:%S' \
         --pretty="tformat:%C(178)%h %C(029)%${NXS_GITLOG_DATE:-cd} %C(027)%<(20,trunc)%cn %C(250)%s %C(auto)%d" \
         ${(z)ARGS}
-}
-
-function batch-confirm() {
-    CMD="$1"
-    SELECTION="$2"
-
-    for LINE in $(eval "$SELECTION"); do
-        CMDRUN="$CMD $LINE"
-        echo -n "Run cmd: ${CMDRUN}? "
-        read ANS
-        if [[ $ANS == y ]]; then
-            eval "$CMDRUN"
-        elif [[ $ANS == q ]]; then
-            echo "Aborted"
-            return 1
-        fi
-    done
 }
 
 function find-time-range() {

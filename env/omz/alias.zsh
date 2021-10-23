@@ -29,9 +29,9 @@ alias gri='git rebase -i HEAD~10'
 alias grp='git restore --patch'
 alias gwl='git worktree list'
 
-alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
+alias tmuxa='tmux attach-session || tmux'
 
-alias build='~/.local/bin/build.sh'
+alias clearcache='sudo sh -c "echo 1 > /proc/sys/vm/drop_caches"'
 
 alias tws='timew start'
 alias twt='timew stop'

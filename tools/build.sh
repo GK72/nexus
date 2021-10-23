@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
 function usage() {
     cat << EOF
@@ -13,7 +13,7 @@ Optional parameters:
     -h | --help                             Print help
     -j | --jobs <N>                         Number of parallel jobs
     -l | --list                             List XBUILD environment variables
-    -r | --run                              Finds the executable in the build dir and runs it
+    -r | --run                              Find the executable in the build dir and run it
     -t | --target <TARGET NAME>             Target to build
     -v | --compiler-ver                     Compiler version
          --args <"arg1, arg2, ...">         Arguments to the executed binary (in quotes)
@@ -28,13 +28,13 @@ EOF
 }
 
 function list() {
-    echo "Default build settings"
-    echo ""
+    echo -e "Default build settings\n"
     echo "NXS_BUILD_TYPE   = ${NXS_BUILD_TYPE}"
     echo "NXS_BUILD_GEN    = ${NXS_BUILD_GEN}"
     echo "NXS_BUILD_JOBS   = ${NXS_BUILD_JOBS}"
     echo "NXS_COMPILER     = ${NXS_COMPILER}"
     echo "NXS_COMPILER_VER = ${NXS_COMPILER_VER}"
+    echo "NXS_BUILD_IMAGE  = ${NXS_BUILD_IMAGE}"
 }
 
 GCOV_FAIL_LIMIT=90
@@ -46,30 +46,30 @@ FWD_ARGS="${NONE}"
 while [[ $# -gt 0 ]]; do
     if [[ "${FWD_ARGS}" == "${NONE}" ]]; then
         case $1 in
-            -b | --build_type)      BUILD_TYPE="$2";    shift; shift ;;
-            -c | --compiler)        COMPILER="$2";      shift; shift ;;
-            -d | --delete)          DELETE=1;           shift ;;
-            -j | --jobs)            JOBS="$2";          shift; shift ;;
-            -l | --list)            list; exit 0;       shift ;;
-            -p | --path)            PATH_REPO="$2";     shift; shift ;;
-            -r | --run)             RUN=1;              shift ;;
-            -t | --target)          TARGET="$2";        shift; shift ;;
-            -v | --compiler-ver)    COMPILER_VER="$2";  shift; shift ;;
-                 --args)            BINARY_ARGS="$2";   shift; shift ;;
-                 --gcov-dir)        GCOV_DIR="$2";      shift; shift ;;
-                 --gcov-exclude)    GCOV_EXCLUDE="$2";  shift; shift ;;
-                 --gcov-filter)     GCOV_FILTER="$2";   shift; shift ;;
-                 --gcov-keep)       GCOV_KEEP=1;        shift;;
-                 --gdb)             GDB=1;              shift;;
-                 --valgrind)        VALGRIND=1;         shift;;
-            --)                     FWD_ARGS="";        shift ;;
-            -h | --help)            usage ${0##*/};     exit 0; shift ;;
-            *)                      usage; exit 255;    shift ;;
+            -b | --build_type)      BUILD_TYPE="$2";    shift ;;
+            -c | --compiler)        COMPILER="$2";      shift ;;
+            -d | --delete)          DELETE=1;           ;;
+            -j | --jobs)            JOBS="$2";          shift ;;
+            -l | --list)            list; exit 0;       ;;
+            -p | --path)            PATH_REPO="$2";     shift ;;
+            -r | --run)             RUN=1;              ;;
+            -t | --target)          TARGET="$2";        shift ;;
+            -v | --compiler-ver)    COMPILER_VER="$2";  shift ;;
+                 --args)            BINARY_ARGS="$2";   shift ;;
+                 --gcov-dir)        GCOV_DIR="$2";      shift ;;
+                 --gcov-exclude)    GCOV_EXCLUDE="$2";  shift ;;
+                 --gcov-filter)     GCOV_FILTER="$2";   shift ;;
+                 --gcov-keep)       GCOV_KEEP=1;        ;;
+                 --gdb)             GDB=1;              ;;
+                 --valgrind)        VALGRIND=1;         ;;
+            --)                     FWD_ARGS="";        ;;
+            -h | --help)            usage ${0##*/};     exit 0;;
+            *)                      usage; exit 255;;
         esac
     else
         FWD_ARGS="${FWD_ARGS}$1 "
-        shift
     fi
+    shift
 done
 
 # -------------------------------------==[ Initializing ]==-----------------------------------------
@@ -162,9 +162,13 @@ if [[ ! -e "${PATH_REPO}/compile_commands.json" ]]; then
 fi
 
 # Build
-cmake --build "${BUILD_DIR}" \
-      --target "${TARGET}" \
-      -- -j"${JOBS}"
+CMD_BUILD="cmake --build ${BUILD_DIR} --target ${TARGET} -- -j${JOBS}"
+
+if [[ -n "${NXS_BUILD_IMAGE}" ]]; then
+    CMD_BUILD="docker run --volume ${PWD}:${PWD} ${NXS_BUILD_IMAGE} ${CMD_BUILD}"
+fi
+
+eval "${CMD_BUILD}"
 
 if [[ $? != 0 ]]; then
     echo -e "${COLOR_RED}  ----==[ BUILD FAILED ! ]==----"
