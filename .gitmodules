@@ -1,0 +1,9 @@
+[submodule ".deps/imgui"]
+	path = .deps/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule ".deps/ChaiScript"]
+	path = .deps/ChaiScript
+	url = https://github.com/ChaiScript/ChaiScript.git
+[submodule ".deps/spdlog"]
+	path = .deps/spdlog
+	url = https://github.com/gabime/spdlog.git
