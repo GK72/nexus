@@ -18,3 +18,5 @@ compile_commands.json
 tags
 
 Cargo.lock
+
+imgui.ini
