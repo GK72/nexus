@@ -24,6 +24,8 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'chrisbra/csv.vim'
     Plug 'godlygeek/tabular'
 
+    Plug 'lervag/vimtex'
+
     " ---= Visuals
     Plug 'vim-airline/vim-airline'
     Plug 'vim-airline/vim-airline-themes'
@@ -65,6 +67,10 @@ source ~/.local/share/nvim/plugin/functions.vim
 
 let g:term_id = 0
 let g:edge_style = 'aura'
+let g:vimtex_view_general_viewer = 'okular'
+let g:vimtex_view_general_options = '--unique file:@pdf\#src:@line@tex'
+let g:vimtex_view_general_options_latexmk = '--unique'
+let g:vimtex_fold_enabled = "true"
 
 set t_Co=256
 color edge
@@ -278,6 +284,7 @@ lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.vimls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.hls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.yamlls.setup{}
+lua require'lspconfig'.texlab.setup{}
 
 lua << EOF
 
@@ -337,7 +344,6 @@ cmp.setup({
         ['<C-f>'] = cmp.mapping.scroll_docs(4),
         ['<C-Space>'] = cmp.mapping.complete(),
         ['<C-e>'] = cmp.mapping.close(),
-        ['<CR>'] = cmp.mapping.confirm({ select = true }),
     },
     sources = {
         { name = 'nvim_lsp' },
@@ -380,6 +386,9 @@ require('lspconfig')["hls"].setup {
     capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
 }
 require('lspconfig')["yamlls"].setup {
+    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+}
+require('lspconfig')["texlab"].setup {
     capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
 }
 
