@@ -67,6 +67,11 @@ function! BuildAndRunArgs(target, args)
     call SendTerminal("build -p " . RepoPath() . " -t " . a:target . " -r --args " . a:args)
 endfunction
 
+function! Godbolt()
+    let file = getreg('%')
+    call SendTerminal("clear && godbolt " . file)
+endfunction
+
 function! RunInTerminal(m)
     if a:m == "n"
         normal! Y

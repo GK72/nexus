@@ -221,6 +221,7 @@ nmap <silent>        ++  vip++
 
 " ---= Command mappings
 command! Cmm call CommentAlignMiddle()
+command! Ce call Godbolt()
 
 " ------------------------------------==[ Auto Commands ]==-----------------------------------------
 
