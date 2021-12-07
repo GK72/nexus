@@ -7,8 +7,10 @@ function disas() {
 }
 
 function godbolt() {
-    SOURCE_FILE="$1"
-    gcc -std=c++20 -O3 "$SOURCE_FILE" -S -o - -masm=intel | c++filt | grep -vE '\s+\.'
+    local SOURCE_FILE="$1"
+    shift
+    local CXX_FLAGS="$@"
+    gcc -std=c++20 -O3 "$CXX_FLAGS" "$SOURCE_FILE" -S -o - -masm=intel | c++filt | grep -vE '\s+\.'
 }
 
 function field() {
@@ -57,4 +59,15 @@ function diffj() {
 
     if [[ ${#FLAGS_DIFFJ} -eq 0 ]]; then FLAGS_DIFFJ=(); fi
     diff <(jq . "$DIFF_MINUS") <(jq . "$DIFF_PLUS") "$FLAGS_DIFFJ[@]"
+}
+
+function random-string() {
+    local LENGTH="$1"
+    local PATTERN="$2"
+
+    if [[ -z $LENGTH ]]; then
+        echo -e "Usage: random-string LENGTH [PATTERN]\n\nPattern is given to 'tr'"
+    else
+        cat /dev/urandom | base64 | tr -dc "${PATTERN:="0-9a-zA-Z"}" | head -c${LENGTH}
+    fi
 }
