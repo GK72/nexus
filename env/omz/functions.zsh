@@ -2,6 +2,12 @@ function colormap() {
     for i in {0..255}; do print -Pn "%K{$i} %k%F{$i}${(l:3::0:)i}%f " ${${(M)$((i%8)):#7}:+$'\n'}; done
 }
 
+# Change git worktree
+function cw() {
+    local SELECTION=$(git worktree list | field 1 | fzf --height=20% --layout=reverse)
+    [[ -n "${SELECTION}" ]] && cd "${SELECTION}"
+}
+
 function disas() {
     objdump -D -M intel "$1" | bat --language asm --paging=never
 }
