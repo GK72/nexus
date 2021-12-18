@@ -7,6 +7,9 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'hrsh7th/cmp-nvim-lsp'
     Plug 'hrsh7th/cmp-buffer'
     Plug 'hrsh7th/cmp-path'
+    Plug 'hrsh7th/cmp-vsnip'
+    Plug 'hrsh7th/vim-vsnip'
+
     Plug 'onsails/lspkind-nvim'                 " Pictograms for completion
 
     Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
@@ -226,6 +229,7 @@ command! Ce call Godbolt()
 " ------------------------------------==[ Auto Commands ]==-----------------------------------------
 
 autocmd FileType git set foldmethod=syntax
+autocmd FileType go setlocal noexpandtab
 
 " ---= Goyo config
 function! s:goyo_enter()
@@ -282,6 +286,7 @@ lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'
 
 lua require'lspconfig'.bashls.setup{ filetypes = { "sh", "zsh" }, on_attach=require'completion'.on_attach }
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.gopls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.vimls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.hls.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.yamlls.setup{}
@@ -296,6 +301,18 @@ local nvim_lsp = require'lspconfig'
 local on_attach = function(client)
     require'completion'.on_attach(client)
 end
+
+nvim_lsp.gopls.setup {
+    cmd = {"gopls", "serve"},
+    settings = {
+        gopls = {
+            analyses = {
+                unusedparams = true,
+            },
+                staticcheck = true,
+        },
+    },
+}
 
 nvim_lsp.rust_analyzer.setup({
     on_attach=on_attach,
@@ -340,11 +357,18 @@ lspkind.init()
 local cmp = require'cmp'
 
 cmp.setup({
+    snippet = {
+        expand = function(args)
+        vim.fn["vsnip#anonymous"](args.body)
+        end,
+    },
+
     mapping = {
         ['<C-d>'] = cmp.mapping.scroll_docs(-4),
         ['<C-f>'] = cmp.mapping.scroll_docs(4),
         ['<C-Space>'] = cmp.mapping.complete(),
-        ['<C-e>'] = cmp.mapping.close(),
+        --['<C-e>'] = cmp.mapping.close(),
+        ['<C-e>'] = cmp.mapping.confirm({ select = true }),
     },
     sources = {
         { name = 'nvim_lsp' },
@@ -381,6 +405,9 @@ require('lspconfig')["vimls"].setup {
     capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
 }
 require('lspconfig')["dockerls"].setup {
+    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+}
+require('lspconfig')["gopls"].setup {
     capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
 }
 require('lspconfig')["hls"].setup {
