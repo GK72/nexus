@@ -72,11 +72,16 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+autoload -U compinit
+autoload -U bashcompinit
+compinit
+bashcompinit
+
 # Inline vim editor
 autoload edit-command-line; zle -N edit-command-line
 bindkey '^e' edit-command-line
 
-source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+# source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 
 # Use LF for cd and bind key to CTRL-O
 lfcd () {

@@ -9,6 +9,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'hrsh7th/cmp-path'
     Plug 'hrsh7th/cmp-vsnip'
     Plug 'hrsh7th/vim-vsnip'
+    Plug 'andersevenrud/cmp-tmux'
 
     Plug 'onsails/lspkind-nvim'                 " Pictograms for completion
 
@@ -42,6 +43,7 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'scrooloose/nerdtree'                  " File explorer
     Plug 'preservim/tagbar'                     " Tag browser
 
+    Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 
     " ---= Completion and searching
     Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
@@ -61,10 +63,10 @@ call plug#end()
 
 " -----------------------------==[ Custom Plugins and Functions ]==---------------------------------
 
-source ~/.local/share/nvim/plugin/arrownavigation.vim
-source ~/.local/share/nvim/plugin/dragvisuals.vim
-source ~/.local/share/nvim/plugin/vmath.vim
-source ~/.local/share/nvim/plugin/functions.vim
+source ~/.config/nvim/arrownavigation.vim
+source ~/.config/nvim/dragvisuals.vim
+source ~/.config/nvim/vmath.vim
+source ~/.config/nvim/functions.vim
 
 " ------------------------------------==[ Basic Settings ]==----------------------------------------
 
@@ -118,6 +120,8 @@ set ignorecase              " case insensitive matching
 
 filetype plugin indent on   " allows auto-indenting depending on file type
 syntax on                   " syntax highlighting
+
+set mouse=
 
 " ------------------------------------==[ Configuration ]==-----------------------------------------
 
@@ -295,6 +299,8 @@ lua require'lspconfig'.texlab.setup{}
 
 lua << EOF
 
+require("nxv")
+
 -- LSP config
 
 local nvim_lsp = require'lspconfig'
@@ -363,11 +369,31 @@ cmp.setup({
         ['<C-Space>'] = cmp.mapping.complete(),
         --['<C-e>'] = cmp.mapping.close(),
         ['<C-e>'] = cmp.mapping.confirm({ select = true }),
+        ['<C-n>'] = function(fallback)
+          if cmp.visible() then
+            cmp.select_next_item()
+          else
+            fallback()
+          end
+         end,
+         ['<C-p>'] = function(fallback)
+           if cmp.visible() then
+             cmp.select_prev_item()
+           else
+             fallback()
+           end
+         end
     },
     sources = {
         { name = 'nvim_lsp' },
         { name = 'path' },
         { name = 'buffer' , keyword_length = 3 },
+        { name = 'tmux',
+            option = {
+                all_panes = true,
+                label = '[tmux]'
+            }
+        },
     },
     formatting = {
         format = lspkind.cmp_format {
@@ -376,6 +402,7 @@ cmp.setup({
                 nvim_lsp = "[LSP]",
                 path = "[path]",
                 buffer = "[buf]",
+                tmux = "[tmux]",
             }
         }
     },
@@ -426,34 +453,32 @@ else
 end
 
 -- set the path to the sumneko installation; if you previously installed via the now deprecated :LspInstall, use
-local sumneko_root_path = "/home/gkpro/repos/lua-language-server"
-local sumneko_binary = sumneko_root_path.."/bin/"..system_name.."/lua-language-server"
+local sumneko_root_path = "/usr/lib/lua-language-server"
+local sumneko_binary = sumneko_root_path.."/bin/".."/lua-language-server"
 
-require'lspconfig'.sumneko_lua.setup {
-    cmd = {sumneko_binary, "-E", sumneko_root_path .. "/main.lua"};
-    settings = {
-        Lua = {
-            runtime = {
-                -- Tell the language server which version of Lua you're using (most likely LuaJIT in the case of Neovim)
-                version = 'LuaJIT',
-                -- Setup your lua path
-                path = vim.split(package.path, ';'),
-            },
-            diagnostics = {
-                -- Get the language server to recognize the `vim` global
-                globals = {'vim'},
-            },
-            workspace = {
-                -- Make the server aware of Neovim runtime files
-                library = {
-                    [vim.fn.expand('$VIMRUNTIME/lua')] = true,
-                    [vim.fn.expand('$VIMRUNTIME/lua/vim/lsp')] = true,
-                },
-            },
-        },
-    },
-    on_attach = require'completion'.on_attach
-}
+-- require'lspconfig'.sumneko_lua.setup {
+--     -- cmd = {sumneko_binary, "-E", sumneko_root_path .. "/main.lua"};
+--     settings = {
+--         Lua = {
+--             runtime = {
+--                 -- Tell the language server which version of Lua you're using (most likely LuaJIT in the case of Neovim)
+--                 version = 'LuaJIT',
+--             },
+--             diagnostics = {
+--                 -- Get the language server to recognize the `vim` global
+--                 globals = {'vim'},
+--             },
+--             workspace = {
+--                 -- Make the server aware of Neovim runtime files
+--                 library = vim.api.nvim_get_runtime_file("", true),
+--             },
+--             telemetry = {
+--                 enable = false,
+--             },
+--         },
+--     },
+--     on_attach = require'completion'.on_attach
+-- }
 EOF
 
 " ---------------------------------------==[ Startify ]==-------------------------------------------

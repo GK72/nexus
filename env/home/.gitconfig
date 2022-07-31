@@ -7,7 +7,6 @@
 
 [delta]
     line-numbers = true
-    syntax-theme = gruvbox
     side-by-side = false
 
 [interactive]
