@@ -45,3 +45,4 @@ alias wlo='~/.local/bin/worklog end && wls day | tail -n1 | cut -c13-'
 alias jrn='(cd ~/jrn && nvim .)'
 
 alias calw='cal --week --monday'
+alias start-dockerd='sudo nohup dockerd 2>&1 > /tmp/dockerd.log &'

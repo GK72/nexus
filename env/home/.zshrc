@@ -60,6 +60,8 @@ else
   export EDITOR='nvim'
 fi
 
+export XDG_CONFIG_HOME=~/nxs/env/vim/.config/
+
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
 
@@ -81,7 +83,9 @@ bashcompinit
 autoload edit-command-line; zle -N edit-command-line
 bindkey '^e' edit-command-line
 
-# source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+if [[ -d ~/repos/zsh-autocomplete ]]; then
+    source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+fi
 
 # Use LF for cd and bind key to CTRL-O
 lfcd () {
