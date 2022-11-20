@@ -50,7 +50,7 @@ setopt hist_ignore_space      # ignore commands that start with space
 setopt hist_verify            # show command with history expansion to user before running it
 setopt share_history          # share command history data
 
-export XDG_CONFIG_HOME=~/nxs/env
+export XDG_CONFIG_HOME=~/nxs/env/vim/.config/
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
