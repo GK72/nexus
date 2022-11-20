@@ -75,6 +75,7 @@ let g:edge_style = 'aura'
 let g:vimtex_view_general_viewer = 'okular'
 let g:vimtex_view_general_options = '--unique file:@pdf\#src:@line@tex'
 let g:vimtex_view_general_options_latexmk = '--unique'
+" let g:vimtex_compiler_method = 'latexrun'
 let g:vimtex_fold_enabled = "true"
 
 set t_Co=256
@@ -288,6 +289,7 @@ highlight normal ctermfg=white
 lua require'lspconfig'.clangd.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.rust_analyzer.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.java_language_server.setup{ on_attach=require'completion'.on_attach }
 
 lua require'lspconfig'.bashls.setup{ filetypes = { "sh", "zsh" }, on_attach=require'completion'.on_attach }
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
@@ -320,6 +322,10 @@ nvim_lsp.gopls.setup {
         },
     },
 }
+
+nvim_lsp.java_language_server.setup({
+    cmd = { "/home/gkpro/repos/tools/java-language-server/dist/lang_server_linux.sh" },
+})
 
 require'lspconfig'.jsonls.setup {
     commands = {
