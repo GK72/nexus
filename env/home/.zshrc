@@ -50,7 +50,6 @@ setopt hist_ignore_space      # ignore commands that start with space
 setopt hist_verify            # show command with history expansion to user before running it
 setopt share_history          # share command history data
 
-export LC_ALL=C.UTF-8
 export XDG_CONFIG_HOME=~/nxs/env
 
 # Would you like to use another custom folder than $ZSH/custom?
@@ -61,7 +60,8 @@ export XDG_CONFIG_HOME=~/nxs/env
 # export MANPATH="/usr/local/man:$MANPATH"
 
 # You may need to manually set your language environment
-# export LANG=en_US.UTF-8
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
 
 # Preferred editor for local and remote sessions
 if [[ -n $SSH_CONNECTION ]]; then

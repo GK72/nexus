@@ -287,7 +287,7 @@ highlight normal ctermfg=white
 
 lua require'lspconfig'.clangd.setup{ on_attach=require'completion'.on_attach }
 lua require'lspconfig'.jedi_language_server.setup{ on_attach=require'completion'.on_attach }
-lua require'lspconfig'.rls.setup{ on_attach=require'completion'.on_attach }
+lua require'lspconfig'.rust_analyzer.setup{ on_attach=require'completion'.on_attach }
 
 lua require'lspconfig'.bashls.setup{ filetypes = { "sh", "zsh" }, on_attach=require'completion'.on_attach }
 lua require'lspconfig'.dockerls.setup{ on_attach=require'completion'.on_attach }
@@ -320,17 +320,6 @@ nvim_lsp.gopls.setup {
         },
     },
 }
-
-nvim_lsp.rls.setup({
-    -- cmd = { "rustup", "run", "nightly", "rls" },
-    settings = {
-        rust = {
-            unstable_features = true,
-            build_on_save = false,
-            all_features = true,
-        },
-    },
-})
 
 require'lspconfig'.jsonls.setup {
     commands = {
@@ -410,36 +399,23 @@ cmp.setup({
         native_menu = false,
         ghost_text = true
     }
+
 })
 
 -- Setup lspconfig.
-require('lspconfig')["clangd"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["jedi_language_server"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["bashls"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["vimls"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["dockerls"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["gopls"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["hls"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["yamlls"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
-require('lspconfig')["texlab"].setup {
-    capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
-}
+
+local capabilities = require('cmp_nvim_lsp').default_capabilities()
+
+require('lspconfig')["rust_analyzer"].setup { capabilities = capabilities }
+require('lspconfig')["clangd"].setup { capabilities = capabilities }
+require('lspconfig')["jedi_language_server"].setup { capabilities = capabilities }
+require('lspconfig')["bashls"].setup { capabilities = capabilities }
+require('lspconfig')["vimls"].setup { capabilities = capabilities }
+require('lspconfig')["dockerls"].setup { capabilities = capabilities }
+require('lspconfig')["gopls"].setup { capabilities = capabilities }
+require('lspconfig')["hls"].setup { capabilities = capabilities }
+require('lspconfig')["yamlls"].setup { capabilities = capabilities }
+require('lspconfig')["texlab"].setup { capabilities = capabilities }
 
 local system_name
 if vim.fn.has("mac") == 1 then
