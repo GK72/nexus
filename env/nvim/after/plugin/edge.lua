@@ -1,3 +1,10 @@
+vim.g.edge_style = "default"
+vim.g.edge_transparent_background = 0
+vim.g.edge_enable_italic = 1
+vim.g.edge_dim_foreground = 0
+
+vim.cmd('colorscheme edge')   -- dsdsd
+
 vim.cmd[[highlight! link Comment Grey]]
 vim.cmd[[highlight! link DiffText White]]
 

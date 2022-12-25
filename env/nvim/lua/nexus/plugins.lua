@@ -3,8 +3,7 @@ vim.cmd [[packadd packer.nvim]]
 return require('packer').startup(function(use)
     use 'wbthomason/packer.nvim'
 
-    use { 'vim-airline/vim-airline' }
-    use { 'vim-airline/vim-airline-themes' }
+    use { 'nvim-lualine/lualine.nvim' }
     use { 'sainnhe/edge', config = function() vim.cmd('colorscheme edge') end }
 
     use { 'nvim-telescope/telescope.nvim', tag = '0.1.0',
@@ -24,7 +23,7 @@ return require('packer').startup(function(use)
             { 'williamboman/mason-lspconfig.nvim' },
 
             -- Autocompletion
-             {'hrsh7th/nvim-cmp' },
+            { 'hrsh7th/nvim-cmp' },
             { 'hrsh7th/cmp-buffer' },
             { 'hrsh7th/cmp-path' },
             { 'saadparwaiz1/cmp_luasnip' },
