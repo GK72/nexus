@@ -49,4 +49,5 @@ return require('packer').startup(function(use)
     use { 'preservim/tagbar' }
 
     use { 'mhinz/vim-startify' }
+    use { 'lervag/vimtex' }
 end)
