@@ -2,20 +2,19 @@
 
 function usage() {
     cat << EOF
-usage: ${1##*/} -p | --path <REPO PATH> [OPTIONS...]
+usage: ${1##*/} -p | --project <REPO PATH> [OPTIONS...]
 
-    -p | --path <REPO PATH>                 Path to the repository
+    -p | --project <REPO PATH>              Path to the repository
 
 Optional parameters:
-    -b | --build_type <BUILD TYPE>          Type of the build e.g. Debug, Release
-    -c | --compiler <COMPILER NAME>         Compiler used by CMake
+    -b | --build-type <BUILD TYPE>          Type of the build e.g. Debug, Release
     -d | --delete                           Make a clean build
     -h | --help                             Print help
     -j | --jobs <N>                         Number of parallel jobs
-    -l | --list                             List XBUILD environment variables
+    -l | --list                             List NXS_BUILD environment variables
     -r | --run                              Find the executable in the build dir and run it
+    -s | --sanitizer                        Turn on sanitizers (asan or tsan)
     -t | --target <TARGET NAME>             Target to build
-    -v | --compiler-ver                     Compiler version
          --args <"arg1, arg2, ...">         Arguments to the executed binary (in quotes)
          --gcov-dir                         Directory in which the GCOV should run (goes through find)
          --gcov-exclude                     Source file exclude filter for GCOV
@@ -32,8 +31,6 @@ function list() {
     echo "NXS_BUILD_TYPE   = ${NXS_BUILD_TYPE}"
     echo "NXS_BUILD_GEN    = ${NXS_BUILD_GEN}"
     echo "NXS_BUILD_JOBS   = ${NXS_BUILD_JOBS}"
-    echo "NXS_COMPILER     = ${NXS_COMPILER}"
-    echo "NXS_COMPILER_VER = ${NXS_COMPILER_VER}"
     echo "NXS_BUILD_IMAGE  = ${NXS_BUILD_IMAGE}"
 }
 
@@ -46,15 +43,14 @@ FWD_ARGS="${NONE}"
 while [[ $# -gt 0 ]]; do
     if [[ "${FWD_ARGS}" == "${NONE}" ]]; then
         case $1 in
-            -b | --build_type)      BUILD_TYPE="$2";    shift ;;
-            -c | --compiler)        COMPILER="$2";      shift ;;
+            -b | --build-type)      BUILD_TYPE="$2";    shift ;;
             -d | --delete)          DELETE=1;           ;;
             -j | --jobs)            JOBS="$2";          shift ;;
             -l | --list)            list; exit 0;       ;;
-            -p | --path)            PATH_REPO="$2";     shift ;;
+            -p | --project)         PATH_REPO="$2";     shift ;;
             -r | --run)             RUN=1;              ;;
+            -s | --sanitizer)       SANITIZER="$2";     shift ;;
             -t | --target)          TARGET="$2";        shift ;;
-            -v | --compiler-ver)    COMPILER_VER="$2";  shift ;;
                  --args)            BINARY_ARGS="$2";   shift ;;
                  --gcov-dir)        GCOV_DIR="$2";      shift ;;
                  --gcov-exclude)    GCOV_EXCLUDE="$2";  shift ;;
@@ -87,36 +83,16 @@ if [[ -z "${BUILD_TYPE}" ]]; then
     exit 2
 fi
 
-# Setting default values
-if [[ -z "${COMPILER}" ]]; then
-    COMPILER="${NXS_COMPILER}"
-    COMPILER_VER="${NXS_COMPILER_VER}"
-fi
-
 GENERATOR="${NXS_BUILD_GEN-"Unix Makefiles"}"
 TARGET="${TARGET-"all"}"
 
 if [[ -z "${JOBS}" ]]; then
-    JOBS="${NXS_BUILD_JOBS-1}"
+    JOBS="${NXS_BUILD_JOBS-$(($(nproc)-2))}"
 fi
 
-# Setting up compilers
-if [[ -z "${COMPILER_VER}" ]]; then
-    if [[ "${COMPILER}" == "gcc" ]]; then
-        COMPILER_C="gcc"
-        COMPILER_CXX="g++"
-    elif [[ "${COMPILER}" == "clang" ]]; then
-        COMPILER_C="clang"
-        COMPILER_CXX="clang++"
-    fi
-else
-    if [[ "${COMPILER}" == "gcc" ]]; then
-        COMPILER_C="gcc-${COMPILER_VER}"
-        COMPILER_CXX="g++-${COMPILER_VER}"
-    elif [[ "${COMPILER}" == "clang" ]]; then
-        COMPILER_C="clang-${COMPILER_VER}"
-        COMPILER_CXX="clang++-${COMPILER_VER}"
-    fi
+if [[ -z "${CXX}" ]]; then
+    echo "CXX environment variable is not set"
+    exit 3
 fi
 
 # Checking build file according to the provided generator
@@ -126,8 +102,8 @@ elif [[ "${GENERATOR}" == "Unix Makefiles" ]]; then
     BUILD_FILE="Makefile"
 fi
 
-
-BUILD_DIR="${PATH_REPO}/build/${BUILD_TYPE:l}-${COMPILER}${COMPILER_VER}"
+BUILD_DIR_SUFFIX="${SANITIZER:+-${SANITIZER}}"
+BUILD_DIR="${PATH_REPO}/build/${BUILD_TYPE:l}-${CXX##*/}${BUILD_DIR_SUFFIX}"
 
 if [[ -n "${DELETE}" ]]; then
     echo "Removing ${BUILD_DIR}"
@@ -146,9 +122,8 @@ fi
 if [[ ! -e "${BUILD_DIR}/${BUILD_FILE}" ]]; then
     (cd "${BUILD_DIR}" &&
     cmake "${FWD_ARGS}" \
+          "${SANITIZER:+-DSANITIZERS=${SANITIZER}}" \
           -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-          -DCMAKE_C_COMPILER="${COMPILER_C}" \
-          -DCMAKE_CXX_COMPILER="${COMPILER_CXX}" \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
           -G"${GENERATOR}" \
           "${PATH_REPO}"
