@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "units.h"
+#include "nxs/units.h"
 
 using namespace nxs::units;
 using namespace literals;

@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "detector.h"
+#include "nxs/detector.h"
 
 struct S {
     using type = void;

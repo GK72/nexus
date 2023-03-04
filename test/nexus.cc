@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "coro.h"
-#include "data.h"
+#include "nxs/coro.h"
+#include "nxs/data.h"
 
 #include <array>
 #include <cstdint>
