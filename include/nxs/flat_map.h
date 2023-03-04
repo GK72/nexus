@@ -89,7 +89,6 @@ public:
         return iter;
     }
 
-    // Don't we need an abs()?
     [[nodiscard]] constexpr difference_type operator-(self other) const noexcept {
         return _iter.key - other._iter.key;
     }

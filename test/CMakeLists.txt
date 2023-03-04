@@ -1,5 +1,6 @@
 add_executable(test_nexus
     detector.cc
+    expected.cc
     flat_map.cc
     nexus.cc
     units.cc
