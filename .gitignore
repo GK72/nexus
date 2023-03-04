@@ -1,23 +1,20 @@
+# Build and developer files
 build*/
-src/nrx/target/
-src/nhs/dist-newstyle/
-Testing/
 
-.worktrees
+compile_commands.json
+tags
 
-.vscode/
-.vscode/c_cpp_properties.json
-.vscode/settings.json
-
+# Caches
 __pycache__/
 .cache/
 .clangd/
 
-.ycm_extra_conf.py
-compile_commands.json
-tags
+# Conan files
+CMakeUserPresets.json
+conan.lock
+conanbuildinfo.txt
+conaninfo.txt
+graph_info.json
+
+# Misc
 packer_compiled.lua
-
-Cargo.lock
-
-imgui.ini

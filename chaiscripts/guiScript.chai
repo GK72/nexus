@@ -1,4 +1,0 @@
-GuiBegin("Chai");
-GuiText("Hello Chai and ImGui");
-GuiCheckbox("Demo Window", state.showDemoWindow);
-GuiEnd();
