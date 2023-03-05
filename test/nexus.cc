@@ -9,6 +9,8 @@
 #include <string_view>
 #include <tuple>
 
+using namespace std::literals::string_view_literals;
+
 nxs::generator<int> incrementer() {
     int i = 0;
 
@@ -85,7 +87,7 @@ TEST_CASE("Factorial", "[nxs][coro]") {
 
 TEST_CASE("data_view", "[nxs]") {
     SECTION("view from string") {
-        static constexpr auto data = std::string_view("\x01\x02");
+        static constexpr auto data = "\x01\x02"sv;
         const auto view_be = nxs::data_view(data);
         const auto view_le = nxs::data_view_le(data);
         CHECK(view_be.as_number<std::uint16_t>(0) == 258);
@@ -109,7 +111,7 @@ TEST_CASE("data_view", "[nxs]") {
     }
 
     SECTION("interpreting as string") {
-        static constexpr auto data = std::string_view("\x61\x62\x63");
+        static constexpr auto data = "\x61\x62\x63"sv;
         const auto view = nxs::data_view(data);
         CHECK(view.as_string(0, 3) == "abc");
     }
@@ -121,8 +123,13 @@ TEST_CASE("data_view subview", "[nxs]") {
 }
 
 TEST_CASE("data_view dynamic length string", "[nxs]") {
-    static constexpr auto data = std::string_view("\x04\x61\x62\x63\x64\x65");
+    static constexpr auto data = "\x04\x61\x62\x63\x64\x65"sv;
     CHECK(nxs::data_view(data).as_dyn_string(0) == "abcd");
+}
+
+TEST_CASE("data_view hexdump", "[nxs]") {
+    static constexpr auto data = "Hello nexus"sv;
+    CHECK(fmt::format("{}", nxs::data_view(data).to_hex()) == "\n0000: 48 65 6c 6c 6f 20 6e 65 78 75 73"sv);
 }
 
 TEST_CASE("data_view out of bounds access", "[nxs][error]") {
@@ -131,7 +138,6 @@ TEST_CASE("data_view out of bounds access", "[nxs][error]") {
         std::ignore = nxs::data_view(data).as_number(1, 2);
     }
     catch (const nxs::out_of_data_bounds& ex) {
-        using namespace std::string_view_literals;;
         CHECK(ex.what() == "Pos: 1, Len: 2, Size: 2 (End: 3)"sv);
     }
 }

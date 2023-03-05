@@ -11,10 +11,3 @@ target_include_directories(nexus PUBLIC
 target_link_libraries(nexus PUBLIC
     ${CONAN_LIBS}
 )
-
-install(TARGETS nexus)
-
-install(
-    DIRECTORY ${CMAKE_HOME_DIRECTORY}/include/
-    DESTINATION "include"
-)

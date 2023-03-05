@@ -2,6 +2,7 @@
 
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 #include <cassert>
 #include <cstddef>
@@ -131,6 +132,11 @@ public:
         const auto str_length = as_number(pos, length_bytes);
         boundary_check(pos, str_length);
         return as_string(pos + length_bytes, str_length);
+    }
+
+    [[nodiscard]]
+    auto to_hex() const {
+        return spdlog::to_hex(m_data);
     }
 
 private:

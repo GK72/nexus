@@ -50,4 +50,6 @@ return require('packer').startup(function(use)
 
     use { 'mhinz/vim-startify' }
     use { 'lervag/vimtex' }
+
+    use { 'iamcco/markdown-preview.nvim' }
 end)

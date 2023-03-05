@@ -31,7 +31,6 @@ function list() {
     echo "NXS_BUILD_TYPE   = ${NXS_BUILD_TYPE}"
     echo "NXS_BUILD_GEN    = ${NXS_BUILD_GEN}"
     echo "NXS_BUILD_JOBS   = ${NXS_BUILD_JOBS}"
-    echo "NXS_BUILD_IMAGE  = ${NXS_BUILD_IMAGE}"
 }
 
 GCOV_FAIL_LIMIT=90
@@ -118,10 +117,9 @@ fi
 
 # -----------------------------------------==[ MAIN ]==---------------------------------------------
 
-# Generate build files if hasn't been already
 if [[ ! -e "${BUILD_DIR}/${BUILD_FILE}" ]]; then
     (cd "${BUILD_DIR}" &&
-    cmake "${FWD_ARGS}" \
+    cmake "${(z)FWD_ARGS}" \
           "${SANITIZER:+-DSANITIZERS=${SANITIZER}}" \
           -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -130,19 +128,12 @@ if [[ ! -e "${BUILD_DIR}/${BUILD_FILE}" ]]; then
     )
 fi
 
-# Link compile_commands.json to the root of the repo
-if [[ ! -e "${PATH_REPO}/compile_commands.json" ]]; then
+if [[ ! -h "${PATH_REPO}/compile_commands.json" ]]; then
     ln -sv "${BUILD_DIR}/compile_commands.json" \
         "${PATH_REPO}/compile_commands.json"
 fi
 
-# Build
 CMD_BUILD="cmake --build ${BUILD_DIR} --target ${TARGET} -- -j${JOBS}"
-
-if [[ -n "${NXS_BUILD_IMAGE}" ]]; then
-    CMD_BUILD="docker run --volume ${PWD}:${PWD} ${NXS_BUILD_IMAGE} ${CMD_BUILD}"
-fi
-
 eval "${CMD_BUILD}"
 
 if [[ $? != 0 ]]; then

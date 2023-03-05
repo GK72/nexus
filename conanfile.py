@@ -6,7 +6,7 @@ required_conan_version = ">=1.52.0"
 class Nexus(ConanFile):
     name = "nexus"
     description = "Nexus Library"
-    version = "0.0.1"
+    version = "0.1.0"
 
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
@@ -52,11 +52,11 @@ class Nexus(ConanFile):
         cmake.install()
 
     def package_info(self):
-        self.cpp_info.libs = ["nxs"]
-        self.cpp_info.set_property("cmake_file_name", "nxs")
-        self.cpp_info.set_property("cmake_target_name", "nxs::nxs")
-        self.cpp_info.names["cmake_find_package"] = "nxs"
-        self.cpp_info.names["cmake_find_package_multi"] = "nxs"
+        self.cpp_info.libs = ["nexus"]
+        self.cpp_info.set_property("cmake_file_name", "nexus")
+        self.cpp_info.set_property("cmake_target_name", "nexus::nexus")
+        self.cpp_info.names["cmake_find_package"] = "nexus"
+        self.cpp_info.names["cmake_find_package_multi"] = "nexus"
 
         if self.settings.os in ["Linux", "Macos"]:
             self.cpp_info.system_libs.append("pthread")

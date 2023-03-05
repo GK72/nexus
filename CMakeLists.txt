@@ -4,7 +4,7 @@ if (CMAKE_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     message(FATAL_ERROR "Building in-source is not supported! Create a build dir and remove ${CMAKE_SOURCE_DIR}/CMakeCache.txt")
 endif()
 
-project("NexusLib")
+project("Nexus" VERSION 0.1.0)
 
 include(cmake/conan.cmake)
 run_conan()
@@ -22,3 +22,5 @@ if(NOT PACKAGING)
 endif()
 
 enable_testing()
+
+include(cmake/install.cmake)
