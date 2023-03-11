@@ -6,7 +6,8 @@ This project demonstrates the usage of a dependency via Conan.
 
 ```sh
 export NEXUS_PATH=$(git rev-parse --show-toplevel)
-$NEXUS_PATH/tools/build -p $NEXUS_PATH/example-project -t install -- -DCMAKE_PREFIX_INSTALL=$NEXUS_PATH/example-project/env
+$NEXUS_PATH/tools/build -p $NEXUS_PATH/example-project -- -DCMAKE_INSTALL_PREFIX=$NEXUS_PATH/example-project/env
+$NEXUS_PATH/tools/build -p $NEXUS_PATH/example-project -t install
 ```
 
 To use static analysis, use the build script's flag.
@@ -16,11 +17,12 @@ For more information, see the script's help.
 # Packaging
 
 ```sh
-docker build $NEXUS_PATH/example-project/env --tag local/example:latest
+cd $NEXUS_PATH/example-project/env
+docker build . --tag local/example:latest
 ```
 
 # Test run
 
 ```
-docker -it --rm local/example:latest /bin/example
+docker run -it --rm local/example:latest /bin/example
 ```
