@@ -27,6 +27,6 @@ conan_cmake_run(
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 
 set(CONAN_SYSTEM_INCLUDES ON)
-conan_basic_setup(NO_OUTPUT_DIRS)
+conan_basic_setup()
 
 endmacro()

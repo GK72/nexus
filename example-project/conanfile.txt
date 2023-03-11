@@ -3,3 +3,9 @@ nexus/0.1.0
 
 [generators]
 cmake
+
+[options]
+nexus:shared=True
+
+[imports]
+lib, *.so* -> ./lib         # CMake install depends on this
