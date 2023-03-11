@@ -11,3 +11,5 @@ target_include_directories(nexus PUBLIC
 target_link_libraries(nexus PUBLIC
     ${CONAN_LIBS}
 )
+
+code_analysis(nexus PRIVATE)

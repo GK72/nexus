@@ -14,4 +14,7 @@
 int main() {
     using namespace std::literals::string_view_literals;
     spdlog::info(nxs::data_view("Hello Nexus"sv).to_hex());
+
+    // Build it with sanitizers enabled and see it firing
+    [[maybe_unused]] int* y = new int(3);
 }

@@ -1,4 +1,4 @@
-install(TARGETS nexus EXPORT nexusTargets)
+install(TARGETS nexus project_warnings EXPORT nexusTargets)
 install(DIRECTORY "${CMAKE_HOME_DIRECTORY}/include/" DESTINATION "include")
 export(EXPORT nexusTargets FILE "${CMAKE_CURRENT_BINARY_DIR}/nexusTargets.cmake")
 

@@ -12,4 +12,6 @@ set(CMAKE_CXX_STANDARD 23)
 include(conan.cmake)
 run_conan()
 
+find_package(nexus CONFIG REQUIRED)
+
 add_subdirectory(src)
