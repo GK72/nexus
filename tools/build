@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import logging
 
 import os
 import shlex
@@ -10,6 +9,17 @@ import shutil
 
 from enum import Enum
 from typing import List
+
+DESCRIPTION="""
+Convenience build script for improved developer workflow.
+
+The script has the ability to run a given target (optionally in gdb) with
+the command line given arguments.
+
+It manages separate build directories for different build configurations.
+
+`compile_commands.json` is automatically linked to the root of the project.
+"""
 
 
 def create_symlink(src: str, dst: str):
@@ -107,7 +117,12 @@ def create_compile_cmd_symlink(src: str, dst: str):
     )
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog="Build script",
+        description=DESCRIPTION,
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
     parser.add_argument("-b", "--build-type", default="Debug")
     parser.add_argument("-d", "--delete", action="store_true", help="Clean build")
     parser.add_argument("-g", "--generator", default="'Unix Makefiles'", choices=["'Unix Makefiles'", "Ninja"])
@@ -116,12 +131,12 @@ def parse_arguments():
     parser.add_argument("-s", "--sanitizer", default="nosan", choices=["asan", "tsan"])
     parser.add_argument("-t", "--target", default="all")
     parser.add_argument("-r", "--run", action="store_true")
-    parser.add_argument(      "--args", dest="executable_args", nargs="+", default="")
-    parser.add_argument(      "--gdb", action="store_true")
+    parser.add_argument(      "--args", dest="executable_args", nargs="+", default="", help="Forwarding arguments to the target to be run")
+    parser.add_argument(      "--gdb", action="store_true", help="Run in GDB")
     parser.add_argument("-v", "--verbose", action="store_true")
 
     subparsers = parser.add_subparsers()
-    parser_fwd = subparsers.add_parser("--", prefix_chars="+")
+    parser_fwd = subparsers.add_parser("--", prefix_chars="+", help="Forwarding arguments to CMake configuring")
     parser_fwd.add_argument("forward_args", nargs="*")
 
     return parser.parse_args()
