@@ -12,4 +12,13 @@ target_link_libraries(nexus PUBLIC
     ${CONAN_LIBS}
 )
 
+target_sources(nexus
+    PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+    FILES
+    ph.cxx
+)
+
 code_analysis(nexus PRIVATE)
+
+add_executable(main main.cc)
+target_link_libraries(main nexus)

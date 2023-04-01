@@ -23,4 +23,4 @@ endif()
 
 enable_testing()
 
-include(cmake/install.cmake)
+# include(cmake/install.cmake)
