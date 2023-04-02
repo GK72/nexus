@@ -3,6 +3,7 @@ build*/
 
 compile_commands.json
 tags
+gdb.txt
 
 # Caches
 __pycache__/

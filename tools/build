@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
+import time
 
 import os
 import shlex
@@ -13,7 +15,9 @@ from typing import List
 DESCRIPTION="""
 Convenience build script for improved developer workflow.
 
-The script has the ability to run a given target (optionally in gdb) with
+Everything beyond double dash (`--`) is forwarded as is to CMake configuring.
+
+The script has the ability to run a given target (optionally in GDB) with
 the command line given arguments.
 
 It manages separate build directories for different build configurations.
@@ -21,22 +25,69 @@ It manages separate build directories for different build configurations.
 `compile_commands.json` is automatically linked to the root of the project.
 """
 
+EPILOG="""
+Minimal example
+  build -p ~/repos/nexus
+
+Example with running tests in GDB
+  build -p ~/repos/nexus -t test_nexus -s asan -r --exe-args '[units]' --gdb -- -DSUPPRESS_COMPILER_WERROR=1
+"""
+
+
+class AnsiColors(Enum):
+    DARK_GREY = "\x1b[30;1m"
+    RED       = "\x1b[31;20m"
+    BOLD_RED  = "\x1b[31;1m"
+    GREEN     = "\x1b[32;20m"
+    YELLOW    = "\x1b[33;20m"
+    BLUE      = "\x1b[34;20m"
+    PURPLE    = "\x1b[35;20m"
+    CYAN      = "\x1b[36;20m"
+    WHITE     = "\x1b[37;1m"
+    GREY      = "\x1b[38;20m"
+    DEFAULT   = "\x1b[0m"
+
+
+class ColorLogFormatter(logging.Formatter):
+    format = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
+
+    formats = {
+        logging.DEBUG:    AnsiColors.DARK_GREY.value + format + AnsiColors.DEFAULT.value,
+        logging.INFO:     AnsiColors.WHITE.value + format + AnsiColors.DEFAULT.value,
+        logging.WARNING:  AnsiColors.YELLOW.value + format + AnsiColors.DEFAULT.value,
+        logging.ERROR:    AnsiColors.RED.value + format + AnsiColors.DEFAULT.name,
+        logging.CRITICAL: AnsiColors.BOLD_RED.value + format + AnsiColors.DEFAULT.value
+    }
+
+    def format(self, record):
+        log_fmt = self.formats.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(ColorLogFormatter())
+
+logger = logging.getLogger("Builder")
+logger.addHandler(log_handler)
+
 
 def create_symlink(src: str, dst: str):
     if not os.path.exists(dst):
         os.symlink(src, dst)
 
 
-def shell(command: str, verbose=False) -> int:
-    """ Run a shell command
+def run_command(command: str, shell=False) -> int:
+    """ Run a command
 
-    Returns with the code returned by the process
+    Returns with the code returned by the process.
+    Raises exception if the `command` is not valid.
     """
 
-    if verbose:
-        print(command)
+    if command in ["", None]:
+        raise Exception("Command cannot be empty or `None`")
 
-    result = subprocess.run(shlex.split(command))
+    result = subprocess.run(shlex.split(command), shell=shell)
     return result.returncode
 
 
@@ -45,12 +96,11 @@ def configure(project: str,
               build_type: str,
               generator: str,
               sanitizer: str,
-              verbose: bool,
               forward_args: List[str] =None,
               **kwargs):
     """ Configure a CMake a project
 
-    project: full path to the project
+    Note: no error checking (arguments should be validate beforehand)
     """
 
     cmake_cmd = " ".join([
@@ -66,39 +116,65 @@ def configure(project: str,
     if forward_args is not None:
         cmake_cmd += f" {' '.join(forward_args)}"
 
-    shell(cmake_cmd, verbose=verbose)
+    run_command(cmake_cmd)
 
 
 def build(build_dir: str,
           target: str,
-          jobs: int,
-          verbose: bool):
+          jobs: int):
     """ Build a configured CMake project """
 
-    shell(f"cmake --build {build_dir} --target {target} -- -j{jobs}", verbose=verbose)
+    start = time.time()
+    retcode = run_command(f"cmake --build {build_dir} --target {target} -- -j{jobs}")
+    logger.debug("Build took {:.3f} seconds".format(time.time() - start))
+    if retcode != 0:
+        raise Exception("Build failed")
 
 
 def find_file(target: str, where: str) -> str:
+    """ Find a file in a given path
+
+    Raises exception if the file cannot be found.
+    """
+
     # TODO: check for multiple finds
     for root, dir, files in os.walk(where):
         if target in files:
             return os.path.join(root, target)
+    raise Exception(f"`{target}` cannot be found in `{where}`")
 
 
 def run(build_dir: str, target: str, args: List[str], gdb: bool):
+    """ Run the specified target with the given arguments (if any) optionally in GDB """
+
+    if target == "all":
+        raise Exception("No explicit `target` were given to `run`")
+
     exe = find_file(target, build_dir)
-    print("Running executable: ", end="")
+
+    if len(args) > 0:
+        exe = " ".join([exe, "".join(args)])
+
+    logger.info(f"Running executable: {exe}")
 
     if not gdb:
-        retcode = shell(" ".join([exe, "".join(args)]), verbose=True)
-        print(f"Executable returned with {retcode}")
+        retcode = run_command(exe)
+        logger.info(f"Executable returned with {retcode}")
     else:
-        shell(" ".join(["gdb", "--args", exe, "".join(args)]), verbose=True)
+        run_command(" ".join(["gdb", "--args", exe]))
 
     return
 
 
 def create_build_path(project: str, build_type: str, compiler: str, sanitizer: str) -> str:
+    """ Create a build path with the build dir containing the following information
+
+    * build type in lowercase, e.g. `debug` or `release`
+    * compiler name - source: CC and CXX
+    * compiler version (if not the default is in use) - source: CC and CXX
+    * sanitizers (if used)
+    """
+
     if sanitizer == "nosan":
         san = ""
     else:
@@ -110,29 +186,41 @@ def create_build_path(project: str, build_type: str, compiler: str, sanitizer: s
         f"{build_type.lower()}-{os.path.basename(compiler)}{san}"
     )
 
+
 def create_compile_cmd_symlink(src: str, dst: str):
     create_symlink(
         os.path.join(src, "compile_commands.json"),
         os.path.join(dst, "compile_commands.json")
     )
 
-def parse_arguments():
+
+def checks():
+    """ Generic sanity check(s) """
+    if os.getenv("CC") == "" or os.getenv("CXX") == "":
+        raise Exception("Compiler environment variables are not defined (CC and/or CXX)!")
+
+
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="Build script",
+        usage="build --project PATH [options]",
         description=DESCRIPTION,
+        epilog=EPILOG,
         formatter_class=argparse.RawTextHelpFormatter
     )
+
+    parser.add_argument("-p", "--project", required=True)
 
     parser.add_argument("-b", "--build-type", default="Debug")
     parser.add_argument("-d", "--delete", action="store_true", help="Clean build")
     parser.add_argument("-g", "--generator", default="'Unix Makefiles'", choices=["'Unix Makefiles'", "Ninja"])
     parser.add_argument("-j", "--jobs", default=1)
-    parser.add_argument("-p", "--project", required=True)
     parser.add_argument("-s", "--sanitizer", default="nosan", choices=["asan", "tsan"])
     parser.add_argument("-t", "--target", default="all")
     parser.add_argument("-r", "--run", action="store_true")
-    parser.add_argument(      "--args", dest="executable_args", nargs="+", default="", help="Forwarding arguments to the target to be run")
+    parser.add_argument(      "--exe-args", nargs="+", default="", help="Forwarding arguments to the target to be run")
     parser.add_argument(      "--gdb", action="store_true", help="Run in GDB")
+    parser.add_argument(      "--no-configure", action="store_true", help="Skip CMake reconfiguring")
     parser.add_argument("-v", "--verbose", action="store_true")
 
     subparsers = parser.add_subparsers()
@@ -142,26 +230,33 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def checks():
-    if os.getenv("CC") == "" or os.getenv("CXX") == "":
-        raise Exception("Compiler environment variables are not defined (CC and/or CXX)!")
-
-
 def main():
     args = parse_arguments()
     checks()
 
     build_dir = create_build_path(args.project, args.build_type, os.getenv("CXX"), args.sanitizer)
 
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
     if args.delete:
         if input(f"Are you sure to remove `{build_dir}` (press 'y' to proceed): ") == "y":
             shutil.rmtree(build_dir)
 
-    configure(build_dir=build_dir, **vars(args))
-    create_compile_cmd_symlink(build_dir, args.project)
-    build(build_dir, args.target, args.jobs, args.verbose)
-    run(build_dir, args.target, args.executable_args, args.gdb)
+    if not args.no_configure:
+        configure(build_dir=build_dir, **vars(args))
+        create_compile_cmd_symlink(build_dir, args.project)
+
+    build(build_dir, args.target, args.jobs)
+
+    if args.run:
+        run(build_dir, args.target, args.exe_args, args.gdb)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as ex:
+        logger.error(f"Exception: {ex}")
