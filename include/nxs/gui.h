@@ -1,5 +1,12 @@
 #pragma once
 
+#include "gfx_types.h"
+#include "ring.h"
+#include "types.h"
+#include "utils.h"
+
+#include <spdlog/spdlog.h>
+
 #include <any>
 #include <concepts>
 #include <map>
@@ -7,14 +14,12 @@
 
 #include <stdio.h>
 
-#include <spdlog/spdlog.h>
 #include <GL/glew.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
 #include <GLFW/glfw3.h>
 
-#include "types.h"
 
 // Conversions from-to custom types for avoiding direct use of ImGui implementation.
 // Must be defined before `imgui.h` include (alternatively `imconfig.h` could be
@@ -47,8 +52,6 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
-
-#include "utils.h"
 
 namespace nxs {
 
@@ -268,7 +271,7 @@ public:
 
     Menu& item(const std::string& name, bool* selected, const std::string& shortcut = "") {
         if (m_active) {
-            ImGui::MenuItem(name.c_str(), shortcut == "" ? nullptr : shortcut.c_str(), selected);
+            ImGui::MenuItem(name.c_str(), shortcut.empty() ? nullptr : shortcut.c_str(), selected);
         }
         return *this;
     }

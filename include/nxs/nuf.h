@@ -1,5 +1,11 @@
 #pragma once
 
+#include "nxs/gui.h"
+#include "nxs/utils.h"
+#include "nxs/memory.h"
+
+#include <fmt/format.h>
+
 #include <array>
 #include <chrono>
 #include <list>
@@ -8,11 +14,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <fmt/format.h>
-
-#include "nxs/gui.h"
-#include "nxs/utils.h"
 
 namespace nuf {
 

@@ -1,7 +1,6 @@
 #include <exception>
 #include <memory_resource>
 
-// #include "nxs/gui.h"
 #include "nxs/nuf.h"
 #include "nxs/utils.h"
 

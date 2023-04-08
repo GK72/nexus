@@ -6,7 +6,6 @@ add_library(imguiBackendGL
 
 add_executable(example-gui
     main.cc
-    # engine_impl_gl.cpp
 )
 
 target_link_libraries(example-gui PUBLIC

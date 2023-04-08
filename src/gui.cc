@@ -1,5 +1,12 @@
 #include "nxs/gui.h"
 
+namespace {
+    void logOpenGLversion() {
+        const auto version = std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+        spdlog::info("OpenGL Version: {}", version);
+    }
+}
+
 namespace nxs {
 
 gui::gui(const std::string& title, nxs::vec2 pos)
@@ -8,7 +15,7 @@ gui::gui(const std::string& title, nxs::vec2 pos)
 {
     glfwSetErrorCallback([](int err, const char* msg) { spdlog::error("{} {}", err, msg); });
 
-    if (not glfwInit()) {
+    if (glfwInit() == 0) {
         throw std::runtime_error("Failed to initialize GUI");
     }
 
@@ -23,7 +30,7 @@ gui::gui(const std::string& title, nxs::vec2 pos)
         throw std::runtime_error("Failed to initialize GLEW");
     }
 
-    spdlog::info("OpenGL Version: {}", std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))));
+    logOpenGLversion();
 
     glfwSwapInterval(1); // Enable vsync
 
