@@ -4,5 +4,13 @@ fmt/9.1.0
 rapidjson/1.1.0
 spdlog/1.11.0
 
+imgui/1.88
+glew/2.2.0
+glfw/3.3.8
+
+[imports]
+res/bindings, imgui_impl_glfw.* -> bindings
+res/bindings, imgui_impl_opengl* -> bindings
+
 [generators]
 cmake

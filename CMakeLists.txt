@@ -16,6 +16,7 @@ set_project_warnings(project_warnings)
 include(cmake/settings.cmake)
 
 add_subdirectory(src)
+add_subdirectory(example-gui)
 
 if(NOT PACKAGING)
     add_subdirectory(test)
