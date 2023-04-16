@@ -49,14 +49,12 @@ class AnsiColors(Enum):
 
 
 class ColorLogFormatter(logging.Formatter):
-    format = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
-
     formats = {
-        logging.DEBUG:    AnsiColors.DARK_GREY.value + format + AnsiColors.DEFAULT.value,
-        logging.INFO:     AnsiColors.WHITE.value + format + AnsiColors.DEFAULT.value,
-        logging.WARNING:  AnsiColors.YELLOW.value + format + AnsiColors.DEFAULT.value,
-        logging.ERROR:    AnsiColors.RED.value + format + AnsiColors.DEFAULT.name,
-        logging.CRITICAL: AnsiColors.BOLD_RED.value + format + AnsiColors.DEFAULT.value
+        logging.DEBUG:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.DARK_GREY.value, AnsiColors.DEFAULT.value),
+        logging.INFO:     "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+        logging.WARNING:  "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.YELLOW.value, AnsiColors.DEFAULT.value),
+        logging.ERROR:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.RED.value, AnsiColors.DEFAULT.value),
+        logging.CRITICAL: "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.BOLD_RED.value, AnsiColors.DEFAULT.value)
     }
 
     def format(self, record):
