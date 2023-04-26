@@ -50,8 +50,8 @@ class AnsiColors(Enum):
 
 class ColorLogFormatter(logging.Formatter):
     formats = {
-        logging.DEBUG:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.DARK_GREY.value, AnsiColors.DEFAULT.value),
-        logging.INFO:     "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+        logging.DEBUG:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.BLUE.value, AnsiColors.DEFAULT.value),
+        logging.INFO:     "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.GREEN.value, AnsiColors.DEFAULT.value),
         logging.WARNING:  "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.YELLOW.value, AnsiColors.DEFAULT.value),
         logging.ERROR:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.RED.value, AnsiColors.DEFAULT.value),
         logging.CRITICAL: "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.BOLD_RED.value, AnsiColors.DEFAULT.value)
@@ -158,7 +158,7 @@ def run(build_dir: str, target: str, args: List[str], gdb: bool):
     exe = find_file(target, build_dir)
 
     if len(args) > 0:
-        exe = " ".join([exe, "".join(args)])
+        exe = " ".join([exe, " ".join(args)])
 
     logger.info(f"Running executable: {exe}")
 
