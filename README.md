@@ -7,6 +7,21 @@ C++ library; a collection of knowledge.
 
 The commits are following the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+# CppFront
+
+`cppfront` is automatically called for `cpp2` sources by using
+`https://github.com/modern-cmake/cppfront`.
+
+Install `cppfront` via the following command:
+
+    build -p deps/cx2cmake/ -b Release -t install -- -DCMAKE_INSTALL_PREFIX=$HOME/.local/
+
+Enable `cppfront` in subdirectories with:
+
+    cppfront_enable(TARGETS ${target_name})
+
+C++ syntax 2 is referred as `cx2` in this repo.
+
 # Project structure
 
 ```
