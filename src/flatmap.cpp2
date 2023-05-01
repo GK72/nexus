@@ -1,0 +1,29 @@
+#include <fmt/core.h>
+
+nxs: namespace = {
+detail: namespace = {
+
+_iterator: <Container> type = {
+    value: type == Container::iterator;
+}
+
+} // namespace detail
+
+flat_map: <KeyContainer, MappedContainer> type = {
+    key_container_type: type == KeyContainer;
+    mapped_container_type: type == MappedContainer;
+
+    empty:(this) = m_keys.empty();
+    size:(this) = m_keys.size();
+    keys:(this) -> key_container_type = { return m_keys; }
+    values:(this) -> mapped_container_type = { return m_values; }
+
+    m_keys: key_container_type;
+    m_values: mapped_container_type;
+}
+
+} // namespace nxs
+
+main:() = {
+    fmt::print("Hello world");
+}
