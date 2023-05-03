@@ -1,3 +1,29 @@
+/*
+template <typename T>
+struct is_std_array : std::false_type {};
+
+template <typename T, std::size_t N>
+struct is_std_array<std::array<T, N>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_std_array_v = is_std_array<T>::value;
+*/
+/*
+is_std_array: <T> type = {
+    this: std::false_type;
+}
+
+Array: <T, N: std::size_t> type = {
+    this: std::array<T, N>;
+}
+
+is_std_array: <T: Array> type = {
+    this: std::true_type;
+}
+
+is_std_array_v: <T> type == is_std_array<T>::value;
+*/
+
 nxs: namespace = {
 detail: namespace = {
 
@@ -91,7 +117,7 @@ flat_map_iterator: <ContainerType, Iterators> type = {
 
 } // namespace detail
 
-flat_map: <Key, T, KeyContainer, MappedContainer> type = {
+flat_map: <Key, T, Compare, KeyContainer, MappedContainer> type = {
 /*
     template <template <typename> typename MetaFunc>
     struct iterators {
@@ -125,7 +151,7 @@ flat_map: <Key, T, KeyContainer, MappedContainer> type = {
 
     size_type            : type == std::size_t;
     difference_type      : type == std::ptrdiff_t;
-
+/*
     iterator_pair              : type == iterators<detail::meta::_iterator>;
     const_iterator_pair        : type == iterators<detail::meta::_const_iterator>;
     reverse_iterator_pair      : type == iterators<detail::meta::_reverse_iterator>;
@@ -135,7 +161,7 @@ flat_map: <Key, T, KeyContainer, MappedContainer> type = {
     const_iterator        : type == detail::flat_map_iterator<self, const_iterator_pair>;
     reverse_iterator      : type == detail::flat_map_iterator<self, reverse_iterator_pair>;
     const_reverse_iterator: type == detail::flat_map_iterator<self, const_reverse_iterator_pair>;
-
+*/
     key_container_type   : type == KeyContainer;
     mapped_container_type: type == MappedContainer;
 /*
@@ -153,6 +179,93 @@ flat_map: <Key, T, KeyContainer, MappedContainer> type = {
     keys  : (this) -> forward key_container_type    = _keys;
     values: (this) -> forward mapped_container_type = _values;
 
+/*
+    [[nodiscard]] constexpr mapped_type& at(const key_type& key) const noexcept {
+        const auto keyEqual = [&key](const auto& ref) { return key == ref.first; };
+        const auto iter = std::find_if(begin(), end(), keyEqual);
+
+        return *iter.value();
+    }
+*/
+/*
+    at: (key: key_type) -> forward mapped_type = {
+        keyEqual: const _ = :(ref) -> _ = key$ == ref.first;
+        iter: const _ = std::find_if(begin(), end(), keyEqual);
+
+        // return iter*.value();
+    }
+*/
+
+/*
+    constexpr std::pair<iterator, bool> insert(const std::pair<Key, T>& value) {
+        const auto keyEqual = [&value](const auto& ref) { return value.first == ref.first; };
+        auto iter = std::find_if(begin(), end(), keyEqual);
+
+        if (iter != end()) {
+            return { iter, false };
+        }
+
+        auto key_iter = std::upper_bound(std::begin(_keys), std::end(_keys), value.first, Compare());
+        key_iter = _keys.insert(key_iter, value.first);
+
+        const auto value_iter = _values.insert(
+            std::next(std::begin(_values), std::distance(std::begin(_keys), key_iter)),
+            value.second
+        );
+
+        return { iterator_pair{ key_iter, value_iter }, true };
+    }
+*/
+/*
+    insert: (value: std::pair<Key, T>) -> std::pair<iterator, bool> = {
+        keyEqual: const _ = :(ref) -> _ = value.first == ref.first;
+        iter: _ = std::find_if(begin(), end(), keyEqual);
+
+        if iter != end() {
+            return (iter, false);
+        }
+
+        key_iter: _ = std::upper_bound(std::begin(_keys), std::end(_keys), value.first, Compare());
+        key_iter = _keys.insert(key_iter, value.first);
+
+        value_iter: const _ = _values.insert(
+            std::next(std::begin(_values), std::distance(std::begin(_keys), key_iter)),
+            value.second
+        );
+
+        return (iterator_pair(key_iter, value_iter), true);
+    }
+*/
+
+/*
+    [[nodiscard]] constexpr mapped_type& operator[](const key_type& key) {
+        const auto keyEqual = [&key](const auto& ref) { return key == ref.first; };
+        const auto iter = std::find_if(begin(), end(), keyEqual);
+
+        if (iter == end()) {
+            const auto& [inserted, _] = insert({ key, T{} });
+            return *inserted.value();
+        }
+
+        return *iter.value();
+    }
+*/
+/*
+    operator[]: (key) -> forward mapped_type = {
+        keyEqual: const _ = :(ref) -> _ = key$ == ref.first;
+        iter: const _ = std::find_if(begin(), end(), keyEqual);
+
+        if iter == end() {
+            inserted: const _ = insert((key, T()));
+            first: const _ = inserted.first;
+            // return first*.value();
+        }
+
+        // return iter*.value();
+    }
+*/
+
+/*
     begin: (this) -> iterator = {
         return iterator_pair(std::begin(_keys), std::begin(_values));
     }
@@ -200,10 +313,11 @@ flat_map: <Key, T, KeyContainer, MappedContainer> type = {
     crend: (this) -> const_reverse_iterator = {
         return const_reverse_iterator_pair(std::crend(_keys), std::crend(_values));
     }
-
+*/
     private _keys  : key_container_type;
     private _values: mapped_container_type;
 
+/*
     private range_initialize: <Iter> (this, copy first: Iter, copy last: Iter) = {
         // TODO: is_std_array_v
         if is_std_array_v<key_container_type> {
@@ -220,12 +334,17 @@ flat_map: <Key, T, KeyContainer, MappedContainer> type = {
             }
         }
     }
+*/
 }
 
-static_map: <Key, T, Capacity> type == flat_map<Key, T, std::less<Key>, std::array<Key, Capacity>, std::array<T, Capacity>>;
+static_map: <Key, T, Capacity: std::size_t> type
+    == flat_map<Key, T, std::less<Key>, std::array<Key, Capacity>, std::array<T, Capacity>>;
 
 } // namespace nxs
 
 main:() = {
+    dMap: nxs::flat_map<int, std::string, std::less<int>, std::vector<int>, std::vector<std::string>> = ();
+    // sMap: nxs::static_map<int, int, 2> = (std::pair(1, 2), std::pair(3, 4));
+
     std::puts("Hello world");
 }
