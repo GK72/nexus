@@ -4,7 +4,25 @@ require('lualine').setup {
         theme = 'auto',
         component_separators = { left = '', right = ''},
         section_separators = { left = '', right = ''},
-        -- component_separators = '|',
-        -- section_separators = '',
     },
+    tabline = {
+        lualine_a = {
+            {
+                'buffers',
+                show_filename_only = true,
+                hide_filename_extension = false,
+                show_modified_status = true,
+
+                mode = 4,       -- buffer name + buffer number
+                max_length = vim.o.columns * 2 / 3,
+                use_mode_colors = false,
+
+                symbols = {
+                    modified = ' ●',
+                    alternate_file = '#',
+                    directory = '',
+                },
+            }
+        }
+    }
 }
