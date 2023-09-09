@@ -11,13 +11,10 @@ The commits are following the [Conventional Commits](https://www.conventionalcom
 
 ```
 ├── ci                      CI-like workflow
-├── cmake                   CMake files and library (only library files are installed for the public)
-├── conanfile.py            Conan recipe for Nexus Library
-├── conanfile.txt           Dependencies (CMake input)
-├── env                     Environment related files
-├── example-project         Demo usage
+├── cmake
+├── env                     Environment related files (Shell, NeoVim, Tmux, etc...)
 ├── include                 Public headers
 ├── src                     Implementation detail (static/shared libraries)
-├── test                    Unit tests
+├── unit-tests
 └── tools                   Developer tools
 ```

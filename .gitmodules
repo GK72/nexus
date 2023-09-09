@@ -1,0 +1,9 @@
+[submodule "deps/nova"]
+	path = deps/nova
+	url = git@github.com:GK72/nova-cpp.git
+[submodule "deps/chai"]
+	path = deps/chai
+	url = https://github.com/ChaiScript/ChaiScript.git
+[submodule "deps/yui"]
+	path = deps/yui
+	url = git@github.com:lafette21/yui-cpp

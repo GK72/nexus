@@ -4,23 +4,17 @@ if (CMAKE_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     message(FATAL_ERROR "Building in-source is not supported! Create a build dir and remove ${CMAKE_SOURCE_DIR}/CMakeCache.txt")
 endif()
 
-project("Nexus" VERSION 0.1.0)
-
-include(cmake/conan.cmake)
-run_conan()
+project("Nexus" VERSION 0.2.0)
 
 add_library(project_warnings INTERFACE)
-include(cmake/compilerWarnings.cmake)
+include(cmake/compiler-warnings.cmake)
 set_project_warnings(project_warnings)
 
 include(cmake/settings.cmake)
 
+add_subdirectory(deps)
+add_subdirectory(include)
 add_subdirectory(src)
 
-if(NOT PACKAGING)
-    add_subdirectory(test)
-endif()
-
 enable_testing()
-
-include(cmake/install.cmake)
+add_subdirectory(unit-tests)

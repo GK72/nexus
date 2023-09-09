@@ -1,15 +1,11 @@
-add_library(nexus
-    ph.cc
-)
+add_library(chai-bindings chai_bindings.cc)
+target_link_libraries(chai-bindings PUBLIC chaiscript)
 
-target_include_directories(nexus PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_HOME_DIRECTORY}/include>
-    $<INSTALL_INTERFACE:include>
-    ${CONAN_INCLUDE_DIRS}
-)
+add_executable(nexus-app main.cc)
 
-target_link_libraries(nexus PUBLIC
-    ${CONAN_LIBS}
+target_link_libraries(nexus-app PRIVATE
+    chai-bindings
+    nexus
+    nova
+    fmt
 )
-
-code_analysis(nexus PRIVATE)

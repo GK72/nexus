@@ -1,7 +1,7 @@
 namespace nxs {
 
-// Placeholder header for library implementation (non-header-only files)
-
-int testFunc();
+int ph() {
+    return 1;
+}
 
 } // namespace nxs
