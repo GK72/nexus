@@ -1,1 +1,8 @@
-Checks: 'clang-analyzer-*,cppcoreguidelines-*,performance-*,readability-*,portability-*,misc-*'
+Checks: 'clang-analyzer-*,
+         cppcoreguidelines-*,
+         performance-*,
+         readability-*,
+         portability-*,
+         misc-*,
+         -readability-identifier-length,
+         '
