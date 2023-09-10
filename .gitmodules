@@ -7,3 +7,6 @@
 [submodule "deps/yui"]
 	path = deps/yui
 	url = git@github.com:lafette21/yui-cpp
+[submodule "deps/imgui"]
+	path = deps/imgui
+	url = https://github.com/ocornut/imgui.git

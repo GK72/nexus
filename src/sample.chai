@@ -1,1 +1,6 @@
-print(welcome("Nexus"));
+for (var x = 0; x < img.width(); ++x) {
+    for (var y = 0; y < img.height(); ++y) {
+        img.at(x, y) = x * y | 0xFF000000;
+        for (var i = 0; i < 200; ++i) {}
+    }
+}

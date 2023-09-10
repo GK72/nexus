@@ -4,6 +4,7 @@ build*/
 compile_commands.json
 tags
 gdb.txt
+imgui.ini
 
 # Caches
 __pycache__/

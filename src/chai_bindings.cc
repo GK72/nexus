@@ -20,4 +20,8 @@ void chai::eval_file(const std::string& filepath) {
     m_chai.eval_file(filepath);
 }
 
+chaiscript::Boxed_Value chai::eval(const std::string& script) {
+    return m_chai.eval(script);
+}
+
 } // namespace nxs
