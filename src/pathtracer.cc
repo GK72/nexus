@@ -1,11 +1,16 @@
 #include "pathtracer.h"
-#include "camera.h"
+#include "types.h"
 
+#include <nova/random.h>
 #include <nova/vec.h>
 
+#include <concepts>
 #include <cmath>
 #include <numbers>
+#include <variant>
 #include <vector>
+
+#include <fmt/format.h>
 
 namespace nxs {
 
@@ -17,21 +22,22 @@ void scan(const image& img, const auto& func) {
     }
 }
 
-auto hit_sphere(const ray& r, const primitive& prim) {
-    const auto x = r.origin - prim.position;
-    const auto a = nova::dot(r.direction, r.direction);
-    const auto b = nova::dot(x, r.direction) * 2.0F;
-    const auto c = nova::dot(x, x) - prim.radius * prim.radius;
-    const auto discriminant = b * b - 4 * a * c;
-    return discriminant > 0;
-}
-
 auto ray_color(const ray& r, const std::vector<primitive>& primitives) {
     for (const auto& elem : primitives) {
-        if (hit_sphere(r, elem)) {
-            return elem.color;
+        const std::optional<hit_record> ret = std::visit([&r](auto& p) { return hit(p, r); }, elem);
+        if (ret.has_value()) {
+            return (
+                nova::Color{
+                    ret->normal.x(),
+                    ret->normal.y(),
+                    ret->normal.z(),
+                    1.0F
+                } + 1.0F
+            ) * 0.5F;
         }
     }
+
+    // Background
 
     // TODO: lerp
     const auto t = (nova::unit(r.direction).y() + 1.0F) * 0.5F;
@@ -39,23 +45,29 @@ auto ray_color(const ray& r, const std::vector<primitive>& primitives) {
          + nova::Color{ 0.5F, 0.7F, 1.0F, 1.0F } * t;
 }
 
-void pathtracer(image& img, const camera& cam, const std::vector<primitive>& primitives) {
-    scan(img, [&](int x, int y) {
-        const auto w = img.width();
-        const auto h = img.height();
+nova::Color pathtracer::sample(int n, int x, int y) {
+    const auto& w = m_image.width();
+    const auto& h = m_image.height();
 
-        const auto u = static_cast<float>(x) / (w - 1);
-        const auto v = static_cast<float>(y) / (h - 1);
+    nova::Color color {};
 
-        const auto direction = cam.bottom_left
-            + cam.horizontal * u
-            + cam.vertical * v
-            - cam.origin;
+    float ran_x = n > 1 ? nova::random().number() : 0.0F;
+    float ran_y = n > 1 ? nova::random().number() : 0.0F;
 
-        const auto r = ray{ cam.origin, direction };
-        const auto color = ray_color(r, primitives);
+    for (int i = 0; i < n; ++i) {
+        const auto u = (static_cast<float>(x) + ran_x) / (w - 1);
+        const auto v = (static_cast<float>(y) + ran_y) / (h - 1);
 
-        img.at(x, y) = nova::pack32LE(color);
+        color += ray_color(m_cam.raycast(u, v), m_primitives);
+    }
+
+    return color / static_cast<float>(n);
+}
+
+void pathtracer::update() {
+    scan(m_image, [this](int x, int y) {
+        const auto color = sample(m_config.sampling, x, y);
+        m_image.at(x, y) = nova::pack32LE(color);
     });
 }
 

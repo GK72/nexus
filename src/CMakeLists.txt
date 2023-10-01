@@ -1,5 +1,5 @@
-add_library(chai-bindings chai_bindings.cc)
-target_link_libraries(chai-bindings PUBLIC chaiscript)
+# add_library(chai-bindings chai_bindings.cc)
+# target_link_libraries(chai-bindings PUBLIC chaiscript)
 
 add_executable(nexus-gui
     gui.cc
@@ -7,7 +7,7 @@ add_executable(nexus-gui
 )
 
 target_link_libraries(nexus-gui PRIVATE
-    chai-bindings
+    # chai-bindings
     nexus
 
     nova
