@@ -51,6 +51,7 @@ setopt hist_verify            # show command with history expansion to user befo
 setopt share_history          # share command history data
 
 export XDG_CONFIG_HOME=~/nxs/env/
+export PYTHONPATH=${HOME}/nxs/pylib
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder

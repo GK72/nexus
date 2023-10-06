@@ -44,8 +44,13 @@ def run_command(command: str, shell=False) -> int:
     if command in ["", None]:
         raise Exception("Command cannot be empty or `None`")
 
-    result = subprocess.run(shlex.split(command), shell=shell)
-    return result.returncode
+    try:
+        process = subprocess.Popen(shlex.split(command), shell=shell)
+        process.wait()
+    except KeyboardInterrupt:
+        process.terminate()
+
+    return process.returncode
 
 
 def find_files(what: str, where: str) -> List[str]:
