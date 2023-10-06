@@ -5,6 +5,7 @@ import logging
 import time
 
 import os
+import multiprocessing
 import shlex
 import subprocess
 import shutil
@@ -139,14 +140,23 @@ def build(build_dir: str,
 def find_file(target: str, where: str) -> str:
     """ Find a file in a given path
 
-    Raises exception if the file cannot be found.
+    Raises exception if the file cannot be found or if there are multiple files
+    for the target
     """
 
-    # TODO: check for multiple finds
+    found_files = []
+
     for root, dir, files in os.walk(where):
         if target in files:
-            return os.path.join(root, target)
-    raise Exception(f"`{target}` cannot be found in `{where}`")
+            found_files.append(os.path.join(root, target))
+
+    if len(found_files) == 1:
+        return found_files[0]
+    if len(found_files) == 0:
+        raise Exception(f"`{target}` cannot be found in `{where}`")
+    if len(found_files) > 1:
+        msg = "\n".join(found_files)
+        raise Exception(f"Multiple files have been found for `{target}`:\n{msg}")
 
 
 def run(build_dir: str, target: str, args: List[str], gdb: bool):
@@ -218,12 +228,13 @@ def parse_arguments() -> argparse.Namespace:
 
     parser.add_argument("-b", "--build-type", default="Debug")
     parser.add_argument("-d", "--delete", action="store_true", help="Clean build")
-    parser.add_argument("-g", "--generator", default="'Unix Makefiles'", choices=["'Unix Makefiles'", "Ninja"])
-    parser.add_argument("-j", "--jobs", default=1)
+    parser.add_argument("-g", "--generator", default="Ninja", choices=["'Unix Makefiles'", "Ninja"])
+    parser.add_argument("-j", "--jobs", default=int(multiprocessing.cpu_count() / 2))
     parser.add_argument("-s", "--sanitizer", default="nosan", choices=["asan", "tsan"])
     parser.add_argument("-t", "--target", default="all")
     parser.add_argument("-r", "--run", action="store_true")
-    parser.add_argument(      "--exe-args", nargs="+", default="", help="Forwarding arguments to the target to be run")
+    parser.add_argument(      "--exe-args", nargs="+", default=[], help="Forwarding arguments to the target to be run")
+    parser.add_argument(      "--gtest-filter", help="A filter for test cases (disambiguator for '--gtest_filter' from script arguments")
     parser.add_argument(      "--gdb", action="store_true", help="Run in GDB")
     parser.add_argument(      "--no-configure", action="store_true", help="Skip CMake reconfiguring")
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -257,6 +268,8 @@ def main():
     build(build_dir, args.target, args.jobs)
 
     if args.run:
+        if args.gtest_filter:
+            args.exe_args.append("".join(["--gtest_filter=", args.gtest_filter]))
         run(build_dir, args.target, args.exe_args, args.gdb)
 
 
