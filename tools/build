@@ -6,12 +6,12 @@ import time
 
 import os
 import multiprocessing
-import shlex
-import subprocess
 import shutil
 
-from enum import Enum
 from typing import List
+
+import npy.utils
+
 
 DESCRIPTION="""
 Convenience build script for improved developer workflow.
@@ -35,66 +35,11 @@ Example with running tests in GDB
 """
 
 
-class AnsiColors(Enum):
-    DARK_GREY = "\x1b[30;1m"
-    RED       = "\x1b[31;20m"
-    BOLD_RED  = "\x1b[31;1m"
-    GREEN     = "\x1b[32;20m"
-    YELLOW    = "\x1b[33;20m"
-    BLUE      = "\x1b[34;20m"
-    PURPLE    = "\x1b[35;20m"
-    CYAN      = "\x1b[36;20m"
-    WHITE     = "\x1b[37;1m"
-    GREY      = "\x1b[38;20m"
-    DEFAULT   = "\x1b[0m"
-
-
-class ColorLogFormatter(logging.Formatter):
-    formats = {
-        logging.DEBUG:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.BLUE.value, AnsiColors.DEFAULT.value),
-        logging.INFO:     "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.GREEN.value, AnsiColors.DEFAULT.value),
-        logging.WARNING:  "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.YELLOW.value, AnsiColors.DEFAULT.value),
-        logging.ERROR:    "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.RED.value, AnsiColors.DEFAULT.value),
-        logging.CRITICAL: "%(asctime)s [%(name)s] {}%(levelname)s:{} %(message)s".format(AnsiColors.BOLD_RED.value, AnsiColors.DEFAULT.value)
-    }
-
-    def format(self, record):
-        log_fmt = self.formats.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
-
 log_handler = logging.StreamHandler()
-log_handler.setFormatter(ColorLogFormatter())
+log_handler.setFormatter(npy.utils.ColorLogFormatter())
 
 logger = logging.getLogger("Builder")
 logger.addHandler(log_handler)
-
-
-def create_symlink(src: str, dst: str):
-    """ Create symlink if it does not exist, else check if it points to a valid
-    path and unlink if it is a broken link """
-
-    if os.path.exists(dst):
-        return
-
-    if os.path.lexists(dst):
-        os.unlink(dst)
-    os.symlink(src, dst)
-
-
-def run_command(command: str, shell=False) -> int:
-    """ Run a command
-
-    Returns with the code returned by the process.
-    Raises exception if the `command` is not valid.
-    """
-
-    if command in ["", None]:
-        raise Exception("Command cannot be empty or `None`")
-
-    result = subprocess.run(shlex.split(command), shell=shell)
-    return result.returncode
 
 
 def configure(project: str,
@@ -122,7 +67,7 @@ def configure(project: str,
     if forward_args is not None:
         cmake_cmd += f" {' '.join(forward_args)}"
 
-    run_command(cmake_cmd)
+    npy.utils.run_command(cmake_cmd)
 
 
 def build(build_dir: str,
@@ -131,7 +76,7 @@ def build(build_dir: str,
     """ Build a configured CMake project """
 
     start = time.time()
-    retcode = run_command(f"cmake --build {build_dir} --target {target} -- -j{jobs}")
+    retcode = npy.utils.run_command(f"cmake --build {build_dir} --target {target} -- -j{jobs}")
     logger.debug("Build took {:.3f} seconds".format(time.time() - start))
     if retcode != 0:
         raise Exception("Build failed")
@@ -144,11 +89,7 @@ def find_file(target: str, where: str) -> str:
     for the target
     """
 
-    found_files = []
-
-    for root, dir, files in os.walk(where):
-        if target in files:
-            found_files.append(os.path.join(root, target))
+    found_files = npy.utils.find_files(target, where)
 
     if len(found_files) == 1:
         return found_files[0]
@@ -173,10 +114,10 @@ def run(build_dir: str, target: str, args: List[str], gdb: bool):
     logger.info(f"Running executable: {exe}")
 
     if not gdb:
-        retcode = run_command(exe)
+        retcode = npy.utils.run_command(exe)
         logger.info(f"Executable returned with {retcode}")
     else:
-        run_command(" ".join(["gdb", "--args", exe]))
+        npy.utils.run_command(" ".join(["gdb", "--args", exe]))
 
     return
 
@@ -203,7 +144,7 @@ def create_build_path(project: str, build_type: str, compiler: str, sanitizer: s
 
 
 def create_compile_cmd_symlink(src: str, dst: str):
-    create_symlink(
+    npy.utils.create_symlink(
         os.path.join(src, "compile_commands.json"),
         os.path.join(dst, "compile_commands.json")
     )
