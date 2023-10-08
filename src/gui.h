@@ -31,6 +31,7 @@ public:
 
     virtual ~gui() = default;
 
+    virtual void simulate() = 0;
     virtual void render_ui() = 0;
     virtual void render_gfx() = 0;
 
@@ -40,6 +41,7 @@ public:
         m_gui.run([this]{
             advance_clock(nova::now());
             render_ui();
+            simulate();
             render_gfx();
         });
     }

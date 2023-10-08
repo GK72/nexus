@@ -94,4 +94,33 @@ void pathtracer::update() {
     });
 }
 
+void pathtracer::stop() {
+    m_render_thread.request_stop();
+    rerun();
+}
+
+void pathtracer::rerun() {
+    std::unique_lock lk(m_sync.mtx);
+    m_is_dirty = true;
+    m_sync.cv.notify_all();
+}
+
+/**
+ * @brief   Render if there is work to do
+ *
+ * Work meaning there is a change in scene or camera and
+ * the thread is not stopped
+ *
+ * Note: The function is not actually static; it cannot be a member function
+ *       because the `stop_token` is passed as first argument
+ */
+void pathtracer::render_loop(std::stop_token token, pathtracer* self) {                             // NOLINT(performance-unnecessary-value-param): `stop_token` must be passed by value
+    while (not token.stop_requested()) {
+        std::unique_lock lk(self->m_sync.mtx);
+        self->m_sync.cv.wait(lk, [self]() { return self->m_is_dirty; });
+        self->update();
+        self->m_is_dirty = false;
+    }
+}
+
 } // namespace pt

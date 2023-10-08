@@ -3,12 +3,23 @@
 #include <nova/color.h>
 #include <nova/vec.h>
 
+#include <condition_variable>
 #include <cstdint>
+#include <mutex>
 #include <optional>
+#include <stop_token>
+#include <thread>
 #include <variant>
 #include <vector>
 
+#include <fmt/format.h>
+
 namespace pt {
+
+struct sync {
+    std::mutex mtx;
+    std::condition_variable cv;
+};
 
 class image {
 public:
@@ -142,23 +153,32 @@ public:
         int sampling = 1;
     };
 
-    pathtracer(image& img, const camera& cam, const std::vector<primitive>& primitives)
+    pathtracer(sync& sync_, image& img, const camera& cam, const std::vector<primitive>& primitives)
         : m_image(img)
         , m_cam(cam)
         , m_primitives(primitives)
+        , m_sync(sync_)
+        , m_render_thread(&pathtracer::render_loop, this)
     {}
 
+    auto& config() noexcept                 { return m_config; }
+    void rerun();
+    void stop();
     void update();
-    auto& config() { return m_config; }
 
 private:
     image& m_image;
     const camera& m_cam;
     const std::vector<primitive>& m_primitives;
+    sync& m_sync;
+    std::jthread m_render_thread;
 
+    bool m_is_dirty = true;
     struct config m_config;
 
     nova::Color sample(int n, int x, int y);
+
+    static void render_loop(std::stop_token token, pathtracer* self);
 };
 
 } // namespace pt

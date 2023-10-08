@@ -61,7 +61,7 @@ public:
     pt_app(nxs::app_config cfg)
         : gui(std::move(cfg))
         , m_image(WindowSize)
-        , m_pathtracer(m_image, m_state.cam, m_state.primitives)
+        , m_pathtracer(m_sync, m_image, m_state.cam, m_state.primitives)
         , m_image_id(load(m_image))
     {
         run();
@@ -70,11 +70,13 @@ public:
     ~pt_app() override = default;
 
 private:
+    app_state m_state {};
+    pt::sync m_sync;
+
     pt::image m_image;
     pt::pathtracer m_pathtracer;
 
     GLuint m_image_id;
-    app_state m_state;
 
     void render_ui() override {
         yui::window("Controls")
@@ -83,6 +85,8 @@ private:
             .input("Origin z", &m_state.cam.z())
             .slider("Focal length", &m_state.cam.focal_length(), -10.0F, 10.0F)
             .input("Sampling", &m_pathtracer.config().sampling)
+            .button("Rerun pathtracer", [this]() { m_pathtracer.rerun(); })
+            .button("Stop pathtracer", [this]() { m_pathtracer.stop(); })
         ;
 
         yui::window("Camera")
@@ -92,8 +96,10 @@ private:
             .text(fmt::format("Frame time (ms): {:.3f}", nova::to_us(clocks().delta) / 1000));
     }
 
+    /**
+     * @brief   Actual rendering is done in the Path Tracer
+     */
     void render_gfx() override {
-        m_pathtracer.update();
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
@@ -105,6 +111,10 @@ private:
             GL_UNSIGNED_BYTE,
             m_image.data()
         );
+    }
+
+    void simulate() override {
+        // NO-OP
     }
 
 };
