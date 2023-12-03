@@ -6,7 +6,7 @@ return require('packer').startup(function(use)
     use { 'nvim-lualine/lualine.nvim' }
     use { 'sainnhe/edge', config = function() vim.cmd('colorscheme edge') end }
 
-    use { 'nvim-telescope/telescope.nvim', tag = '0.1.0',
+    use { 'nvim-telescope/telescope.nvim', tag = '0.1.4',
         requires = { { 'nvim-lua/plenary.nvim' } }
     }
 
@@ -37,6 +37,8 @@ return require('packer').startup(function(use)
             { 'onsails/lspkind-nvim' }              -- Pictograms for completion
         }
     }
+
+    use { 'simrat39/rust-tools.nvim' }
 
     use { 'airblade/vim-gitgutter' }
     use { 'tpope/vim-fugitive' }
