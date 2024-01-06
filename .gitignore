@@ -1,10 +1,14 @@
-# Build and developer files
+# Build and developer files - C++
 build*/
 
 compile_commands.json
 tags
 gdb.txt
 imgui.ini
+
+# Build and developer files - Rust
+target*/
+Cargo.lock
 
 # Caches
 __pycache__/
