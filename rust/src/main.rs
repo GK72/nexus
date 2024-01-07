@@ -3,7 +3,11 @@ use server::start_server;
 pub mod server;
 
 fn handler(buffer: &[u8]) {
-    dbg!(buffer);
+    if buffer.len() == 0 {
+        return;
+    }
+
+    println!("{:?}", buffer);
 }
 
 fn main() {
