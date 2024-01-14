@@ -152,7 +152,7 @@ def create_compile_cmd_symlink(src: str, dst: str):
 
 def checks():
     """ Generic sanity check(s) """
-    if os.getenv("CC") == "" or os.getenv("CXX") == "":
+    if os.getenv("CC") is None or os.getenv("CXX") is None:
         raise Exception("Compiler environment variables are not defined (CC and/or CXX)!")
 
 
