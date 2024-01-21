@@ -1,8 +1,13 @@
-[package]
-name = "nexus-rs"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+members = [
+    "nrs",
+    "nrs_app",
+    "nrs_meta"
+]
 
-[dependencies]
+resolver = "2"
+
+[patch.crates-io]
+nrs = { path = "nrs" }
+nrs_meta = { path = "nrs_meta" }

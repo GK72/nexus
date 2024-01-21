@@ -1,6 +1,4 @@
-use server::start_server;
-
-pub mod server;
+use nrs::tcp_server;
 
 fn handler(buffer: &[u8]) {
     if buffer.len() == 0 {
@@ -20,5 +18,5 @@ fn main() {
         return args[1].clone();
     })(&args);
 
-    start_server(&address, handler);
+    tcp_server::start(&address, handler);
 }

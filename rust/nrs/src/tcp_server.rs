@@ -85,7 +85,7 @@ impl Connection {
     }
 }
 
-pub fn start_server<F>(address: &String, connection_handler: F)
+pub fn start<F>(address: &String, connection_handler: F)
 where
     F: Fn(&[u8]) + std::marker::Send + std::marker::Sync + 'static + Copy
 {
