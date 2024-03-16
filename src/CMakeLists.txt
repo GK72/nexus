@@ -17,3 +17,5 @@ add_executable(cx2 main.cpp2)
 cppfront_enable(TARGETS cx2)
 
 target_link_libraries(cx2 PRIVATE fmt)
+
+add_subdirectory(bench)
