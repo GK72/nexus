@@ -11,3 +11,7 @@ resolver = "2"
 [patch.crates-io]
 nrs = { path = "nrs" }
 nrs_meta = { path = "nrs_meta" }
+
+imgui = { path = "../deps/imgui-rs/imgui" }
+imgui-winit-support = { path = "../deps/imgui-rs/imgui-winit-support" }
+imgui-glium-renderer = { path = "../deps/imgui-rs/imgui-glium-renderer" }
