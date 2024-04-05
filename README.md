@@ -1,7 +1,7 @@
 # Nexus Library
 
-Personal project with all kinds of developer configuration, tools and a modern
-C++ library; a collection of knowledge.
+Personal project with all kinds of developer configuration, tools, experimental
+codes; a collection of knowledge.
 
 # Coding and styleguide
 
@@ -29,6 +29,7 @@ C++ syntax 2 is referred as `cx2` in this repo.
 ├── cmake
 ├── env                     Environment related files (Shell, NeoVim, Tmux, etc...)
 ├── include                 Public headers
+├── rust                    Rust project
 ├── src                     Implementation detail (static/shared libraries)
 ├── unit-tests
 └── tools                   Developer tools
