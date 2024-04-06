@@ -1,3 +1,7 @@
+//! Immediate GUI module using ImGui Rust bindings and OpenGL as a backend.
+//! 
+//! It is an MVP (Minimal Viable Product) for using it in a sandbox.
+
 use std::time::Instant;
 use glium::{Display, Surface};
 use glium::glutin::surface::WindowSurface;
@@ -9,16 +13,21 @@ use imgui_winit_support::winit::event_loop::{EventLoop, EventLoopWindowTarget};
 use imgui_winit_support::winit::window::{Window, WindowBuilder};
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 
+/// Implementation details for backend and renderer.
+struct GuiInternal {
+    window: Window,
+    imgui: Context,
+    platform: WinitPlatform,
+    display: Display<WindowSurface>,
+    renderer: Renderer
+}
+
 /// Main wrapper around backend and renderer.
 ///
-/// Based on: https://github.com/imgui-rs/imgui-rs/blob/main/imgui-examples/examples/support/mod.rs
+/// Based on: <https://github.com/imgui-rs/imgui-rs/blob/main/imgui-examples/examples/support/mod.rs>
 pub struct Gui {
-    pub event_loop: EventLoop<()>,
-    pub window: Window,
-    pub imgui: Context,
-    pub platform: WinitPlatform,
-    pub display: Display<WindowSurface>,
-    pub renderer: Renderer
+    event_loop: EventLoop<()>,
+    gui_internal: GuiInternal
 }
 
 impl Gui {
@@ -28,6 +37,7 @@ impl Gui {
     /// MVP.
     ///
     /// ## Panics
+    ///
     /// In case it is called multiple times.
     pub fn new(title: &str) -> Self {
         let event_loop = EventLoop::new()
@@ -50,101 +60,86 @@ impl Gui {
 
         Gui {
             event_loop,
-            window,
-            imgui,
-            platform,
-            display,
-            renderer
+            gui_internal: GuiInternal { window, imgui, platform, display, renderer }
         }
     }
 
     /// Runs the given function in an [`EventLoop`].
     ///
-    /// The function receives a keep alive flag and the UI.
+    /// The function which provides the content to draw receives a keep alive flag and the UI.
     ///
     /// MVP.
-    pub fn event_loop<F>(mut self, mut func: F)
+    ///
+    /// ## Panics
+    ///
+    /// The function may panic for various reasons from the underlying libraries.
+    /// Consult the documentation of error types for more information.
+    pub fn event_loop<F>(self, mut content: F)
     where F: FnMut(&mut bool, &mut Ui)
     {
+        let Gui { event_loop, mut gui_internal } = self;
         let mut last_update = Instant::now();
 
-        self.event_loop.run(move |event, window| match event {
+        event_loop.run(move |event, window| match event {
             Event::NewEvents(_) => {
                 let now = Instant::now();
-                self.imgui.io_mut().update_delta_time(now - last_update);
+                gui_internal.imgui.io_mut().update_delta_time(now - last_update);
                 last_update = now;
             }
             Event::AboutToWait => {
-                self.platform.prepare_frame(self.imgui.io_mut(), &self.window)
+                gui_internal.platform.prepare_frame(gui_internal.imgui.io_mut(), &gui_internal.window)
                     .expect("Failed to prepare frame!");
 
-                self.window.request_redraw();
+                gui_internal.window.request_redraw();
             }
             Event::WindowEvent {
                 event: WindowEvent::RedrawRequested,
                 ..
             } => {
-                let ui = self.imgui.frame();
-
-                let mut keep_alive = true;
-                func(&mut keep_alive, ui);
-                if !keep_alive {
-                    window.exit();
-                }
-
-                let mut frame = self.display.draw();
-                frame.clear_color_srgb(0.0, 0.0, 0.0, 0.0);
-                self.platform.prepare_render(ui, &self.window);
-
-                let draw_data = self.imgui.render();
-
-                self.renderer.render(&mut frame, draw_data).expect("Render fail");
-                frame.finish().expect("Swap failed");
-
-                // TODO(refact): find a way to factor out this block of code into a function.
-                //               partial move happens because self contains `event_loop`.
-
-                // self.redraw(&mut func, &window);
+                Gui::redraw(&mut gui_internal, &mut content, window);
             }
             Event::WindowEvent {
                 event: WindowEvent::Resized(new_size),
                 ..
             } => {
                 if new_size.width > 0 && new_size.height > 0 {
-                    self.display.resize((new_size.width, new_size.height));
+                    gui_internal.display.resize((new_size.width, new_size.height));
                 }
-                self.platform.handle_event(self.imgui.io_mut(), &self.window, &event);
+                gui_internal.platform.handle_event(gui_internal.imgui.io_mut(), &gui_internal.window, &event);
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
             } => window.exit(),
             event => {
-                self.platform.handle_event(self.imgui.io_mut(), &self.window, &event);
+                gui_internal.platform.handle_event(gui_internal.imgui.io_mut(), &gui_internal.window, &event);
             }
         }).expect("Event loop error");
     }
 
-    #[allow(dead_code)]
-    fn redraw<F>(&mut self, func: &mut F, window: &EventLoopWindowTarget<()>)
+    /// Prepare and redraw a frame based on `content`.
+    ///
+    /// ## Panics
+    ///
+    /// In case the rendering or swapping the buffers fails.
+    /// See [`glium::SwapBuffersError`] for more details.
+    fn redraw<F>(gui_impl: &mut GuiInternal, content: &mut F, window: &EventLoopWindowTarget<()>)
         where F: FnMut(&mut bool, &mut Ui)
     {
-        let ui = self.imgui.frame();
+        let ui = gui_impl.imgui.frame();
 
         let mut keep_alive = true;
-        func(&mut keep_alive, ui);
+        content(&mut keep_alive, ui);
         if !keep_alive {
             window.exit();
         }
 
-        let mut frame = self.display.draw();
+        let mut frame = gui_impl.display.draw();
         frame.clear_color_srgb(0.0, 0.0, 0.0, 0.0);
-        self.platform.prepare_render(ui, &self.window);
 
-        let draw_data = self.imgui.render();
-
-        self.renderer.render(&mut frame, draw_data).expect("Render fail");
-        frame.finish().expect("Swap failed");
-
+        gui_impl.platform.prepare_render(ui, &gui_impl.window);
+        let draw_data = gui_impl.imgui.render();
+        gui_impl.renderer.render(&mut frame, draw_data).expect("Failed to render!");
+        frame.finish().expect("Failed to swap buffers!");
     }
 }
