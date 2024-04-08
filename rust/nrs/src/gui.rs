@@ -3,7 +3,7 @@
 //! It is an MVP (Minimal Viable Product) for using it in a sandbox.
 
 use std::time::Instant;
-use glium::{Display, Surface};
+use glium::{Display, implement_vertex, program, Program, Surface, uniform};
 use glium::glutin::surface::WindowSurface;
 use imgui::{Context, Ui};
 use imgui_glium_renderer::Renderer;
@@ -19,7 +19,8 @@ struct GuiInternal {
     imgui: Context,
     platform: WinitPlatform,
     display: Display<WindowSurface>,
-    renderer: Renderer
+    renderer: Renderer,
+    program: Program        // TODO(refact): move out from library code
 }
 
 /// Main wrapper around backend and renderer.
@@ -58,9 +59,40 @@ impl Gui {
         let renderer = Renderer::init(&mut imgui, &display)
             .expect("Failed to initialize the renderer!");
 
+        // TODO(refact): move out from library code
+        let program = program!(&display,
+            100 => {
+                vertex: "
+                    #version 100
+
+                    uniform lowp mat4 matrix;
+
+                    attribute lowp vec2 position;
+                    attribute lowp vec3 color;
+
+                    varying lowp vec3 vColor;
+
+                    void main() {
+                        gl_Position = vec4(position, 0.0, 1.0) * matrix;
+                        vColor = color;
+                    }
+                ",
+
+                fragment: "
+                    #version 100
+                    varying lowp vec3 vColor;
+
+                    void main() {
+                        gl_FragColor = vec4(vColor, 1.0);
+                    }
+                ",
+            },
+        )
+        .unwrap();
+
         Gui {
             event_loop,
-            gui_internal: GuiInternal { window, imgui, platform, display, renderer }
+            gui_internal: GuiInternal { window, imgui, platform, display, renderer, program },
         }
     }
 
@@ -124,7 +156,7 @@ impl Gui {
     /// In case the rendering or swapping the buffers fails.
     /// See [`glium::SwapBuffersError`] for more details.
     fn redraw<F>(gui_impl: &mut GuiInternal, content: &mut F, window: &EventLoopWindowTarget<()>)
-        where F: FnMut(&mut bool, &mut Ui)
+    where F: FnMut(&mut bool, &mut Ui)
     {
         let ui = gui_impl.imgui.frame();
 
@@ -139,7 +171,60 @@ impl Gui {
 
         gui_impl.platform.prepare_render(ui, &gui_impl.window);
         let draw_data = gui_impl.imgui.render();
+
+        // TODO(refact): move out from library code
+        //               possibly pass the frame object to a/the callback
+        let ibuf = &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
+        // let ibuf = &glium::IndexBuffer::new(&gui_impl.display, glium::index::PrimitiveType::TrianglesList, &[0u16, 1, 2]).unwrap();
+
+        #[derive(Copy, Clone)]
+        struct Vertex {
+            position: [f32; 2],
+            color: [f32; 3],
+        }
+
+        implement_vertex!(Vertex, position, color);
+        let vertex_buffer = {
+            glium::VertexBuffer::new(
+                &gui_impl.display,
+                &[
+                    Vertex {
+                        position: [-0.5, -0.5],
+                        color: [0.0, 1.0, 0.0],
+                    },
+                    Vertex {
+                        position: [0.0, 0.5],
+                        color: [0.0, 0.0, 1.0],
+                    },
+                    Vertex {
+                        position: [0.5, -0.5],
+                        color: [1.0, 0.0, 0.0],
+                    },
+                ],
+            )
+                .unwrap()
+        };
+
+        let uniforms = uniform! {
+            matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0f32]
+            ]
+        };
+
+        frame.draw(
+            &vertex_buffer,
+            ibuf,
+            &gui_impl.program,
+            &uniforms,
+            &Default::default(),
+        ).unwrap();
+        // TODO-END(refact)
+
         gui_impl.renderer.render(&mut frame, draw_data).expect("Failed to render!");
+
         frame.finish().expect("Failed to swap buffers!");
     }
 }
