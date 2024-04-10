@@ -76,7 +76,7 @@ impl Gui {
     /// The function may panic for various reasons from the underlying libraries.
     /// Consult the documentation of error types for more information.
     pub fn event_loop<F>(self, mut content: F)
-    where F: FnMut(&mut bool, &mut Ui, &mut Frame, &Display<WindowSurface>)
+    where F: FnMut(&mut bool, &mut Ui, &mut Frame)
     {
         let Gui {
             display,
@@ -135,7 +135,7 @@ impl Gui {
         window: &EventLoopWindowTarget<()>,
         display: &Display<WindowSurface>
     )
-    where F: FnMut(&mut bool, &mut Ui, &mut Frame, &Display<WindowSurface>)
+    where F: FnMut(&mut bool, &mut Ui, &mut Frame)
     {
         let ui = gui_impl.imgui.frame();
 
@@ -143,9 +143,9 @@ impl Gui {
         frame.clear_color_srgb(0.0, 0.0, 0.0, 0.0);
         
         let mut keep_alive = true;
-        content(&mut keep_alive, ui, &mut frame, display);
+        content(&mut keep_alive, ui, &mut frame);
         if !keep_alive {
-            frame.finish();
+            frame.finish().expect("Failed to swap buffers!");
             window.exit();
             return;
         }
@@ -154,5 +154,125 @@ impl Gui {
         let draw_data = gui_impl.imgui.render();
         gui_impl.renderer.render(&mut frame, draw_data).expect("Failed to render!");
         frame.finish().expect("Failed to swap buffers!");
+    }
+}
+
+/// Traits used by vectors.
+/// 
+/// Use <https://docs.rs/num/latest/num/trait.Float.html> where a complete trait implementation is
+/// needed.
+pub trait Float: Copy {}
+
+impl Float for f32 {}
+
+/// A three-dimensional vector.
+pub struct Vec3<T: Float> {
+    data: (T, T, T)
+}
+
+impl<T: Float> Vec3<T> {
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { data: (x, y, z) }
+    }
+    pub fn x(& self) -> T { self.data.0 }
+    pub fn y(& self) -> T { self.data.1 }
+    pub fn z(& self) -> T { self.data.2 }
+    pub fn mut_x(&mut self) -> &mut T { &mut self.data.0 }
+    pub fn mut_y(&mut self) -> &mut T { &mut self.data.1 }
+    pub fn mut_z(&mut self) -> &mut T { &mut self.data.2 }
+}
+
+
+/// A 3D camera.
+/// 
+/// MVP.
+///
+/// ## Reference
+///
+/// <https://github.com/glium/glium/blob/master/examples/support/camera.rs>
+pub struct Camera {
+    aspect_ratio: f32,
+    position: Vec3<f32>,
+    direction: Vec3<f32>,
+    fov: f32,
+    far: f32,
+    near: f32,
+}
+
+impl Camera {
+    pub fn new(width: i32, height: i32) -> Self {
+        Self {
+            aspect_ratio: (width / height) as f32,
+            position: Vec3::new(0.1, 0.1, 1.0),
+            direction: Vec3::new(0.0, 0.0, -1.0),
+            fov: 1.8,
+            far: 1024.0,
+            near: 0.1,
+        }
+    }
+    
+    pub fn position(&mut self) -> &mut Vec3<f32> {
+        &mut self.position
+    }
+    
+    pub fn perspective(&self) -> [[f32; 4]; 4] {
+        let f = 1.0 / (self.fov / 2.0).tan();
+        
+        [
+            [f / self.aspect_ratio,    0.0,              0.0                  ,   0.0],
+            [         0.0         ,     f ,              0.0                  ,   0.0],
+            [         0.0         ,    0.0,  (self.far + self.near) / (self.far - self.near)      ,   1.0],
+            [         0.0         ,    0.0, -(2.0 * self.far * self.near) / (self.far - self.near),   0.0],
+        ]
+    }
+    
+    pub fn view(&self) -> [[f32; 4]; 4] {
+        let f = {
+            let f = &self.direction;
+            let len = f.x() * f.x() + f.y() * f.y() + f.z() * f.z();
+            let len = len.sqrt();
+            (f.x() / len, f.y() / len, f.z() / len)
+        };
+
+        let up = (0.0, 1.0, 0.0);
+
+        let s = (f.1 * up.2 - f.2 * up.1,
+                 f.2 * up.0 - f.0 * up.2,
+                 f.0 * up.1 - f.1 * up.0);
+
+        let s_norm = {
+            let len = s.0 * s.0 + s.1 * s.1 + s.2 * s.2;
+            let len = len.sqrt();
+            (s.0 / len, s.1 / len, s.2 / len)
+        };
+
+        let u = (s_norm.1 * f.2 - s_norm.2 * f.1,
+                 s_norm.2 * f.0 - s_norm.0 * f.2,
+                 s_norm.0 * f.1 - s_norm.1 * f.0);
+
+        let p = (-self.position.x() * s.0 - self.position.y() * s.1 - self.position.z() * s.2,
+                 -self.position.x() * u.0 - self.position.y() * u.1 - self.position.z() * u.2,
+                 -self.position.x() * f.0 - self.position.y() * f.1 - self.position.z() * f.2);
+
+        // note: remember that this is column-major, so the lines of code are actually columns
+        [
+            [s_norm.0, u.0, f.0, 0.0],
+            [s_norm.1, u.1, f.1, 0.0],
+            [s_norm.2, u.2, f.2, 0.0],
+            [p.0, p.1,  p.2, 1.0],
+        ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vec3() {
+        let vec = Vec3::new(0.0, 0.0, 0.0);
+        assert_eq!(vec.x(), 0.0);
+        assert_eq!(vec.y(), 0.0);
+        assert_eq!(vec.z(), 0.0);
     }
 }
