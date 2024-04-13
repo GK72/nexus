@@ -7,15 +7,17 @@ use glium::{
 };
 
 extern "C" {
+    /// Example for using C bindings and exposing for compilation testing.
+    #[allow(dead_code)]
     fn add(lhs: i32, rhs: i32) -> i32;
 }
 
 /// Load an OBJ file into a vertex buffer.
-/// 
+///
 /// MVP.
-/// 
+///
 /// ## Reference
-/// 
+///
 /// <https://github.com/glium/glium/blob/master/examples/support/mod.rs>
 pub fn load_wavefront(display: &Display<WindowSurface>, data: &[u8]) -> VertexBufferAny {
     #[derive(Copy, Clone)]
@@ -61,13 +63,11 @@ pub fn load_wavefront(display: &Display<WindowSurface>, data: &[u8]) -> VertexBu
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
-    fn c_binding() {
+    fn c_binding_compliation_test() {
         unsafe {
             assert_eq!(add(2, 3), 5);
         }
     }
-    
-    
 }
