@@ -6,6 +6,10 @@ use glium::{
     vertex::VertexBufferAny
 };
 
+extern "C" {
+    fn add(lhs: i32, rhs: i32) -> i32;
+}
+
 /// Load an OBJ file into a vertex buffer.
 /// 
 /// MVP.
@@ -52,4 +56,18 @@ pub fn load_wavefront(display: &Display<WindowSurface>, data: &[u8]) -> VertexBu
     }
 
     VertexBuffer::new(display, &vertex_data).unwrap().into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn c_binding() {
+        unsafe {
+            assert_eq!(add(2, 3), 5);
+        }
+    }
+    
+    
 }
