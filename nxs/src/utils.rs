@@ -9,6 +9,7 @@ use glium::{
 extern "C" {
     /// Example for using C bindings and exposing for compilation testing.
     #[allow(dead_code)]
+    #[cfg(not (target_os = "windows"))]
     fn add(lhs: i32, rhs: i32) -> i32;
 }
 
@@ -62,9 +63,11 @@ pub fn load_wavefront(display: &Display<WindowSurface>, data: &[u8]) -> VertexBu
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
+    #[cfg(not (target_os = "windows"))]
     fn c_binding_compliation_test() {
         unsafe {
             assert_eq!(add(2, 3), 5);

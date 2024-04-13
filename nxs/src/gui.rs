@@ -1,5 +1,5 @@
 //! Immediate GUI module using ImGui Rust bindings and OpenGL as a backend.
-//! 
+//!
 //! It is an MVP (Minimal Viable Product) for using it in a sandbox.
 
 use std::time::Instant;
@@ -83,7 +83,7 @@ impl Gui {
             event_loop,
             mut gui_internal
         } = self;
-        
+
         let mut last_update = Instant::now();
 
         event_loop.run(move |event, window| match event {
@@ -141,7 +141,7 @@ impl Gui {
 
         let mut frame = display.draw();
         frame.clear_color_srgb(0.0, 0.0, 0.0, 0.0);
-        
+
         let mut keep_alive = true;
         content(&mut keep_alive, ui, &mut frame);
         if !keep_alive {
@@ -158,7 +158,7 @@ impl Gui {
 }
 
 /// Traits used by vectors.
-/// 
+///
 /// Use <https://docs.rs/num/latest/num/trait.Float.html> where a complete trait implementation is
 /// needed.
 pub trait Float: Copy {}
@@ -184,7 +184,7 @@ impl<T: Float> Vec3<T> {
 
 
 /// A 3D camera.
-/// 
+///
 /// MVP.
 ///
 /// ## Reference
@@ -210,14 +210,14 @@ impl Camera {
             near: 0.1,
         }
     }
-    
+
     pub fn position(&mut self) -> &mut Vec3<f32> {
         &mut self.position
     }
-    
+
     pub fn perspective(&self) -> [[f32; 4]; 4] {
         let f = 1.0 / (self.fov / 2.0).tan();
-        
+
         [
             [f / self.aspect_ratio,    0.0,              0.0                  ,   0.0],
             [         0.0         ,     f ,              0.0                  ,   0.0],
@@ -225,7 +225,7 @@ impl Camera {
             [         0.0         ,    0.0, -(2.0 * self.far * self.near) / (self.far - self.near),   0.0],
         ]
     }
-    
+
     pub fn view(&self) -> [[f32; 4]; 4] {
         let f = {
             let f = &self.direction;
