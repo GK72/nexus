@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 
-nrs = "0.1.0"
+nxs = "0.1.0"
 glium = "0.34.0"

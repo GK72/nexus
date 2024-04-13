@@ -13,9 +13,9 @@ use glium::{
     vertex::VertexBufferAny
 };
 
-use nrs::utils;
-use nrs::gui;
-use nrs::gui::{Camera};
+use nxs::utils;
+use nxs::gui;
+use nxs::gui::{Camera};
 
 fn shader_3d(display: &Display<WindowSurface>) -> Program {
     program!(display,
