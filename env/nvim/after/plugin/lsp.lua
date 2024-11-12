@@ -1,9 +1,8 @@
 local lsp = require('lsp-zero')
+require("mason").setup()
 
 local lspkind = require'lspkind'
 lspkind.init()
-
-lsp.preset('recommended')
 
 -- Fix Undefined global 'vim'
 lsp.configure('sumneko_lua', {
@@ -19,14 +18,14 @@ lsp.configure('sumneko_lua', {
 local cmp = require('cmp')
 local cmp_select = { behavior = cmp.SelectBehavior.Select }
 
-local cmp_mappings = lsp.defaults.cmp_mappings({
+local cmp_mappings = {
     ['<C-d>'] = cmp.mapping.scroll_docs(-4),
     ['<C-f>'] = cmp.mapping.scroll_docs(4),
     ['<C-Space>'] = cmp.mapping.complete(),
     ['<C-e>'] = cmp.mapping.confirm({ select = true }),
     ['<C-p>'] = cmp.mapping.select_prev_item(cmp_select),
     ['<C-n>'] = cmp.mapping.select_next_item(cmp_select),
-})
+}
 
 cmp_mappings['<CR>'] = nil
 cmp_mappings['<Tab>'] = nil
@@ -69,7 +68,7 @@ rt.setup({
   },
 })
 
-lsp.setup_nvim_cmp({
+cmp.setup({
     mapping = cmp_mappings,
     sources = cmp_sources,
     formatting = cmp_formatting,
