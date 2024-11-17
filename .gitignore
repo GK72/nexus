@@ -24,4 +24,4 @@ conaninfo.txt
 graph_info.json
 
 # Misc
-packer_compiled.lua
+lazy-lock.json
