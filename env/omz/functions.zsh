@@ -42,6 +42,18 @@ function gl() {
         ${(z)ARGS}
 }
 
+# git push
+function gp() {
+    local branch="${1}"
+    local current_branch="$(git branch --show-current)"
+
+    if [[ ${current_branch} =~ main\|master && -z "${branch}" ]]; then
+        >&2 echo "Pushing main/master to branch needs to be explicit."
+    else
+        git push origin HEAD:"${branch:-${current_branch}}"
+    fi
+}
+
 function find-time-range() {
     PATH_FIND="$1"
     PATTERN="$2"
