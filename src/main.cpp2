@@ -1,5 +1,0 @@
-#include <fmt/format.h>
-
-main:() = {
-    fmt::println("Hello CXX2");
-}
