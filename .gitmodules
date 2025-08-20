@@ -1,18 +1,3 @@
-[submodule "deps/nova"]
-	path = deps/nova
-	url = git@github.com:GK72/nova-cpp.git
-[submodule "deps/chai"]
-	path = deps/chai
-	url = https://github.com/ChaiScript/ChaiScript.git
-[submodule "deps/yui"]
-	path = deps/yui
-	url = git@github.com:lafette21/yui-cpp
-[submodule "deps/imgui"]
-	path = deps/imgui
-	url = https://github.com/ocornut/imgui.git
-[submodule "deps/cx2cmake"]
-	path = deps/cx2cmake
-	url = https://github.com/modern-cmake/cppfront.git
-[submodule "deps/imgui-rs"]
-	path = deps/imgui-rs
-	url = https://github.com/imgui-rs/imgui-rs.git
+[submodule "deps/nova-cpp"]
+	path = deps/nova-cpp
+	url = https://github.com/GK72/nova-cpp
