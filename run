@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(realpath "${0%%/*}")"
+PROJECT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
+ARTIFACT_DIR="${PROJECT_DIR}/.tmp"
+BUILD_DIR_PREFIX="${ARTIFACT_DIR}/build"
+INSTALL_DIR="${ARTIFACT_DIR}/install"
+
+COLOR_DEF='\033[0m'
+COLOR_BLUE='\033[0;34m'
+
+f_clean=false
+build_type=Debug
+
+function parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -b|--build-type)    configure_build_type "$2";          shift;;
+            -c|--clean)         f_clean=true;;
+            -s|--stages)        configure_stages "$2";              shift;;
+            -h|--help)          usage;                              exit 0;;
+            *)                  log "Invalid option: $1"; usage;    exit 1;;
+        esac
+        shift
+    done
+}
+
+function log() {
+    >&2 echo -e "[$(date '+%F %T.%6N %:z')] [run @$$] $*"
+}
+
+function main() {
+    if [[ $f_clean == true ]]; then
+        log "Cleaning build directory: ${BUILD_DIR_PREFIX}"
+        log "Cleaning install directory: ${INSTALL_DIR}"
+        rm -rf "${BUILD_DIR_PREFIX}" "${INSTALL_DIR}"
+    fi
+
+    local build_dir="${BUILD_DIR_PREFIX}/${build_type}/baldr"
+
+    if [[ ! -e "${INSTALL_DIR}/lib/cmake/nova" ]]; then
+        log "Nova is not installed"
+
+        log "Configuring Nova"
+        cmake -S "${PROJECT_DIR}/deps/nova-cpp/libnova" -B "${build_dir}/libnova" \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_BUILD_TYPE="${build_type}" \
+            -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES="${HOME}/conan_provider.cmake"
+
+        log "Building Nova"
+        CMAKE_BUILD_PARALLEL_LEVEL=4 cmake --build "${build_dir}/libnova"
+
+        log "Installing Nova"
+        cmake --install "${build_dir}/libnova" --prefix "${INSTALL_DIR}"
+    fi
+
+    log "Building Baldr"
+    cmake -S "${PROJECT_DIR}/baldr-cpp" -B "${build_dir}" \
+        -DCMAKE_BUILD_TYPE="${build_type}" \
+        -DSANITIZERS=asan \
+        -DBUILD_TESTING=ON \
+        -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES="${HOME}/conan_provider.cmake" \
+        -DCMAKE_PREFIX_PATH="${INSTALL_DIR}"
+
+    cmake --build "${build_dir}"
+
+    log "Functional testing"
+    "${build_dir}/baldr/baldr" \
+        --image manjarolinux/base \
+        -- /bin/bash -c 'echo -e "hello\nhello again"; >&2 echo -e "erroar"'
+}
+
+parse_args "$@"
+main
