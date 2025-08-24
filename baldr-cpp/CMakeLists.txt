@@ -19,6 +19,7 @@ include(novaCompilerSettings)
 
 include(CTest)
 
+set(BALDR_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}")
 add_subdirectory(baldr)
 
 include(install.cmake)
