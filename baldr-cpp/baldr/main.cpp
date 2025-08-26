@@ -201,10 +201,16 @@ auto entrypoint([[maybe_unused]] const po::variables_map& args) -> int {
 
     if (args["command"].as<std::string>() == "run") {
         // TODO: First one is "run", removed that during arg parsing.
-        auto cmd = args["cmd"].as<std::vector<std::string>>();
-        cmd.erase(std::begin(cmd));
-        baldr::run(cmd);
-        return EXIT_SUCCESS;
+        auto argv = args["cmd"].as<std::vector<std::string>>();
+        argv.erase(std::begin(argv));
+
+        auto cmd = baldr::command(argv);
+        cmd.run();
+        cmd.poll();
+        // TODO(refact): Finish implementation.
+        // while (cmd.poll()) {
+        // }
+        return cmd.wait();
     }
 
     return EXIT_SUCCESS;

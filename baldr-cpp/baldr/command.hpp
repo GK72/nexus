@@ -14,51 +14,138 @@
 
 namespace baldr {
 
-inline auto run(const std::vector<std::string>& cmd) {
-    // auto pipes = std::array<int, 2>{ };
-    int pipes[2];
+class command {
+public:
+    enum class file_descriptor {
+        stdout,
+        stderr,
+        both
+    };
 
-    if (pipe(pipes) == -1) { throw nova::exception("Pipe failed"); };
-    pid_t pid = fork();
-    if (pid == -1) { throw nova::exception("Fork failed"); };
+    class pipe {
+    public:
 
-    if (pid == 0) {
-        if (dup2(pipes[1], STDOUT_FILENO) == -1) { throw nova::exception("Pipe dup failed"); };
-        if (dup2(pipes[1], STDERR_FILENO) == -1) { throw nova::exception("Pipe dup (err) failed"); };
-        close(pipes[0]);
-        close(pipes[1]);
-
-        std::vector<char*> argv;
-        for (auto& s : cmd) {
-            argv.push_back(const_cast<char*>(s.c_str()));
+        pipe() {
+            if (::pipe(m_inner.data()) == -1) {
+                throw nova::exception("Pipe creation failed");
+            };
         }
-        argv.push_back(nullptr);
 
-        execvp(argv[0], argv.data());
+        [[nodiscard]] auto read()  const -> int { return m_inner[0]; }
+        [[nodiscard]] auto write() const -> int { return m_inner[1]; }
+
+        /**
+         * @brief   Close the read end of the pipe.
+         */
+        void close_read() const {
+            ::close(read());
+        }
+
+        /**
+         * @brief   Close the write end of the pipe.
+         */
+        void close_write() const {
+            ::close(write());
+        }
+
+        /**
+         * @brief   Redirect `stdout` and/or `stderr` to the write end of the
+         *          pipe.
+         *
+         * Closes the original write file descriptor as it is redirected.
+         */
+        void redirect(file_descriptor fd) const {
+            switch (fd) {
+                case file_descriptor::stdout:
+                    redirect_impl(STDOUT_FILENO);
+                    break;
+                case file_descriptor::stderr:
+                    redirect_impl(STDERR_FILENO);
+                    break;
+                case file_descriptor::both:
+                    redirect_impl(STDOUT_FILENO);
+                    redirect_impl(STDERR_FILENO);
+                    break;
+            }
+
+            close_write();
+        }
+
+    private:
+        std::array<int, 2> m_inner {};
+
+        void redirect_impl(int fd) const {
+            if (dup2(write(), fd) == -1) {
+                throw nova::exception("Pipe duplication failed");
+            };
+        }
+
+    };
+
+    command(std::vector<std::string> args)
+        : m_args(std::move(args))
+        , m_pid(fork())
+    {
+        if (m_pid == -1) {
+            throw nova::exception("Failed to fork process");
+        };
     }
 
-    close(pipes[1]); // close write end
+    // TODO(refact)
+    auto run() {
+        if (m_pid == 0) {
+            m_pipe.redirect(file_descriptor::both);
 
-    std::string output;
-    std::array<char, 4096> buffer{};
-    ssize_t n;
+            std::vector<char*> argv;
+            for (auto& s : m_args) {
+                argv.push_back(const_cast<char*>(s.c_str()));
+            }
+            argv.push_back(nullptr);
 
-    while ((n = read(pipes[0], buffer.data(), buffer.size())) > 0) {
-        output.append(buffer.data(), static_cast<std::size_t>(n));
+            execvp(argv[0], argv.data());
+        }
+
+        close(m_pipe.write());
     }
 
-    close(pipes[0]);
+    // TODO(refact)
+    void poll() {
+        std::string output;
+        std::array<char, 4096> buffer{};
+        ssize_t n;
 
-    int status = 0;
-    waitpid(pid, &status, 0);
+        while ((n = read(m_pipe.read(), buffer.data(), buffer.size())) > 0) {
+            output.append(buffer.data(), static_cast<std::size_t>(n));
+        }
 
-    if (WIFEXITED(status)) {
-        fmt::println("Exit code: {}", WEXITSTATUS(status));
-    } else {
-        fmt::println("Not exited");
+        close(m_pipe.read());
+
+        fmt::println("{}", output);
     }
 
-    fmt::println("{}", output);
-}
+    /**
+     * @brief   Wait for the spawned process to finish.
+     *
+     * @returns with the exit code of the spawned process.
+     */
+    auto wait() -> int {
+        int status = 0;
+        // TODO(refact): Finish implementation.
+        // Reference: https://pubs.opengroup.org/onlinepubs/9699919799/functions/wait.html
+        waitpid(m_pid, &status, 0);
+
+        if (not WIFEXITED(status)) {
+            throw nova::exception("Spawned process failed to correctly exit");
+        }
+
+        return WEXITSTATUS(status);
+    }
+
+private:
+    std::vector<std::string> m_args;
+    pipe m_pipe;
+    pid_t m_pid;
+
+};
 
 } // namespace baldr
