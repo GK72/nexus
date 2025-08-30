@@ -82,58 +82,51 @@ public:
 
     };
 
-    command(std::vector<std::string> args)
-        : m_args(std::move(args))
-        , m_pid(fork())
+    command(const std::vector<std::string>& args)
+        : m_pid(fork())
     {
+        m_args.reserve(args.size() + 1);
+
+        for (const auto& arg : args) {
+            m_args.push_back(const_cast<char*>(arg.c_str()));                                       // NOLINT(cppcoreguidelines-pro-type-const-cast) | https://pubs.opengroup.org/onlinepubs/009604499/functions/exec.html (RATIONALE)
+        }
+
+        m_args.push_back(nullptr);
+
         if (m_pid == -1) {
             throw nova::exception("Failed to fork process");
         };
     }
 
-    // TODO(refact)
     auto run() {
         if (m_pid == 0) {
             m_pipe.redirect(file_descriptor::both);
-
-            std::vector<char*> argv;
-            for (auto& s : m_args) {
-                argv.push_back(const_cast<char*>(s.c_str()));
-            }
-            argv.push_back(nullptr);
-
-            execvp(argv[0], argv.data());
+            execvp(m_args[0], m_args.data());
         }
 
         close(m_pipe.write());
     }
 
-    // TODO(refact)
-    void poll() {
-        std::string output;
-        std::array<char, 4096> buffer{};
-        ssize_t n;
-
-        while ((n = read(m_pipe.read(), buffer.data(), buffer.size())) > 0) {
-            output.append(buffer.data(), static_cast<std::size_t>(n));
-        }
-
-        close(m_pipe.read());
-
-        fmt::println("{}", output);
+    auto poll() -> std::string {
+        ssize_t n = read(m_pipe.read(), m_buffer.data(), m_buffer.size());
+        return { m_buffer.data(), static_cast<std::size_t>(n) };
     }
 
     /**
      * @brief   Wait for the spawned process to finish.
      *
      * @returns with the exit code of the spawned process.
+     *
+     * @throws  if wait fails.
      */
     auto wait() -> int {
+        close(m_pipe.read());
+
         int status = 0;
-        // TODO(refact): Finish implementation.
-        // Reference: https://pubs.opengroup.org/onlinepubs/9699919799/functions/wait.html
         waitpid(m_pid, &status, 0);
 
+        // TODO: Finish implementation, check for other statuses.
+        // Reference: https://pubs.opengroup.org/onlinepubs/9699919799/functions/wait.html
         if (not WIFEXITED(status)) {
             throw nova::exception("Spawned process failed to correctly exit");
         }
@@ -142,9 +135,12 @@ public:
     }
 
 private:
-    std::vector<std::string> m_args;
+    std::vector<char*> m_args;
     pipe m_pipe;
     pid_t m_pid;
+
+    static constexpr auto BufferSize = 4096;
+    std::array<char, BufferSize> m_buffer{ };
 
 };
 

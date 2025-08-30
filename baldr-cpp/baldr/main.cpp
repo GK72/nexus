@@ -206,10 +206,10 @@ auto entrypoint([[maybe_unused]] const po::variables_map& args) -> int {
 
         auto cmd = baldr::command(argv);
         cmd.run();
-        cmd.poll();
-        // TODO(refact): Finish implementation.
-        // while (cmd.poll()) {
-        // }
+        std::string out;
+        while (out = cmd.poll(), not out.empty()) {
+            fmt::println("{}", out);
+        }
         return cmd.wait();
     }
 
