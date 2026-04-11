@@ -3,6 +3,8 @@ file(GLOB_RECURSE BTX_HEADER_FILES "*.hpp")
 add_library(btx
     btx.cpp
     descriptor.cpp
+    decoder.cpp
+    generator.cpp
 )
 
 target_sources(btx PUBLIC

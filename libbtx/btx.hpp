@@ -33,7 +33,6 @@ enum class conversion_mode {
  * @brief   Configuration settings for BTX conversion.
  */
 struct config {
-    bool include_comments = true; ///< Whether to include comments when converting from binary.
     bool format_output = true;    ///< Whether to format the output with spaces and newlines.
 };
 

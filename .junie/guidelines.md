@@ -107,6 +107,6 @@ ensure performance, safety, and maintainability.
   comments.
 - **In-code Documentation**: Use Doxygen-style comments for ALL functions, classes, and public APIs.
 - **CLI Tools**:
-    - **Main Structure**: Use `NOVA_MAIN` and `entrypoint` from `libnova/main.hpp` for all CLI tools.
+    - **Main Structure**: Use `NOVA_MAIN` and `entrypoint` from `libnova/main.hpp` for all CLI tools. Note that `libnova` is a system library and its headers are expected to be in the system include paths.
     - **Argument Parsing**: Use `boost::program_options` for command-line argument parsing.
     - **Logging**: Use `nova::log` for program output and error reporting. Use `trace` level for detailed execution logs (e.g., parsing steps, field values) and `info` for high-level progress messages.

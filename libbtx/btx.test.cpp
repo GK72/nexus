@@ -46,7 +46,7 @@ TEST(btx, Bits) {
 }
 
 TEST(btx, BitsAccumulation) {
-    std::stringstream input("\\b1010 \\b1011");
+    std::stringstream input("\\b1010____ \\b____1011");
     std::stringstream output;
     auto result = btx::to_binary(input, output);
     EXPECT_TRUE(result.has_value());
@@ -55,16 +55,18 @@ TEST(btx, BitsAccumulation) {
 }
 
 TEST(btx, BitsSeparators) {
-    std::stringstream input("\\b001_'____ \\b010_ \\b11");
+    std::stringstream input("\\b0001'0000 \\b0010'0000 \\b1100'0000");
     std::stringstream output;
     auto result = btx::to_binary(input, output);
     EXPECT_TRUE(result.has_value());
-    ASSERT_EQ(output.str().length(), 1);
-    EXPECT_EQ(static_cast<unsigned char>(output.str()[0]), 0x2B);
+    ASSERT_EQ(output.str().length(), 3);
+    EXPECT_EQ(static_cast<unsigned char>(output.str()[0]), 0x10);
+    EXPECT_EQ(static_cast<unsigned char>(output.str()[1]), 0x20);
+    EXPECT_EQ(static_cast<unsigned char>(output.str()[2]), 0xC0);
 }
 
 TEST(btx, BitsPadding) {
-    std::stringstream input("\\b101");
+    std::stringstream input("\\b101_____");
     std::stringstream output;
     auto result = btx::to_binary(input, output);
     EXPECT_TRUE(result.has_value());
@@ -73,17 +75,16 @@ TEST(btx, BitsPadding) {
 }
 
 TEST(btx, BitsAndHexInterleaved) {
-    std::stringstream input("\\b1111 \\xAA \\b0000");
+    std::stringstream input("\\b11110000 \\xAA \\b00001111");
     std::stringstream output;
     auto result = btx::to_binary(input, output);
     EXPECT_TRUE(result.has_value());
     
     std::string str = output.str();
-    ASSERT_EQ(str.length(), 2);
-    // 1111 1010 -> 0xFA
-    // 1010 0000 -> 0xA0
-    EXPECT_EQ(static_cast<unsigned char>(str[0]), 0xFA);
-    EXPECT_EQ(static_cast<unsigned char>(str[1]), 0xA0);
+    ASSERT_EQ(str.length(), 3);
+    EXPECT_EQ(static_cast<unsigned char>(str[0]), 0xF0);
+    EXPECT_EQ(static_cast<unsigned char>(str[1]), 0xAA);
+    EXPECT_EQ(static_cast<unsigned char>(str[2]), 0x0F);
 }
 
 TEST(btx, InvalidHex) {

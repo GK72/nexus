@@ -5,6 +5,7 @@
  */
 
 #include <libbtx/descriptor.hpp>
+#include <libbtx/generator.hpp>
 #include <libnova/log.hpp>
 #include <libnova/main.hpp>
 #include <boost/program_options.hpp>
@@ -87,13 +88,13 @@ auto entrypoint(auto args) -> int {
         return EXIT_FAILURE;
     }
 
-    auto desc_res = btx::descriptor::load(options->descriptor_path);
+    auto desc_res = btx::load_descriptor_from_file(options->descriptor_path);
     if (not desc_res) {
         nova::log::error("Failed to load descriptor: {}", desc_res.error().message);
         return EXIT_FAILURE;
     }
 
-    auto gen_res = desc_res->generate_random();
+    auto gen_res = btx::generator::generate_random(*desc_res);
     if (not gen_res) {
         nova::log::error("Generation error: {}", gen_res.error().message);
         return EXIT_FAILURE;

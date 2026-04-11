@@ -4,7 +4,6 @@
 #include <libnova/error.hpp>
 #include <libnova/data.hpp>
 
-#include <ostream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -34,11 +33,10 @@ struct message_data {
 };
 
 /**
- * @class descriptor
- * @brief Handles loading and parsing of binary data based on a YAML descriptor.
+ * @struct descriptor
+ * @brief Schema definition for a message.
  */
-class descriptor {
-public:
+struct descriptor {
     /**
      * @brief Represents the length of a field.
      * Can be a fixed number of units (std::size_t) or a reference to another field's value (std::string).
@@ -84,46 +82,25 @@ public:
         std::vector<field> fields;
     };
 
-    /**
-     * @brief Load a descriptor from a YAML file.
-     * @param yaml_path Path to the descriptor.yaml.
-     * @return btx::descriptor instance or error.
-     */
-    static nova::expected<descriptor, nova::error> load(const std::string& yaml_path);
+    std::string name;
+    std::string version;
+    std::uint32_t id;
+    message_schema message;
 
-    /**
-     * @brief Parse binary data according to the descriptor.
-     * @param data Binary data view.
-     * @return Parsed message_data or error.
-     */
-    nova::expected<message_data, nova::error> parse(nova::data_view data) const;
-
-    /**
-     * @brief Generate binary data from message values.
-     * @param data Message values (YAML).
-     * @return Binary data or error.
-     */
-    nova::expected<std::vector<std::byte>, nova::error> generate(const std::string& yaml_values) const;
-
-    /**
-     * @brief Generate random binary data based on the descriptor.
-     * @return Binary data or error.
-     */
-    nova::expected<std::vector<std::byte>, nova::error> generate_random() const;
-
-    /**
-     * @brief Convert binary data to annotated BTX text using the descriptor.
-     * @param data Binary data view.
-     * @param out Output stream for BTX text.
-     * @return Success or error.
-     */
-    nova::expected<int, nova::error> to_btx(nova::data_view data, std::ostream& out) const;
-
-private:
-    std::string m_name;
-    std::string m_version;
-    std::uint32_t m_id;
-    message_schema m_message;
 };
+
+/**
+ * @brief Load a descriptor from a YAML string.
+ * @param yaml_content YAML content.
+ * @return btx::descriptor instance or error.
+ */
+auto load_descriptor(std::string_view yaml_content) -> nova::expected<descriptor, nova::error>;
+
+/**
+ * @brief Load a descriptor from a YAML file.
+ * @param yaml_path Path to the descriptor.yaml.
+ * @return btx::descriptor instance or error.
+ */
+auto load_descriptor_from_file(const std::string& yaml_path) -> nova::expected<descriptor, nova::error>;
 
 } // namespace btx
