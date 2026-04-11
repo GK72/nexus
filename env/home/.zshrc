@@ -1,5 +1,5 @@
 # If you come from bash you might have to change your $PATH.
-export PATH=$HOME/.local/bin:$PATH
+export PATH=$HOME/.local/bin:$HOME/.cargo/bin:$PATH
 
 export TERM="xterm-256color"
 export EXA_ICON_SPACING=2
@@ -119,5 +119,5 @@ bindkey "\e[3~"   delete-char
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-source ~/repos/nexus.git/master/env/load.zsh
+source ~/nxs/env/load.zsh
 source ~/.cenv  # custom env
