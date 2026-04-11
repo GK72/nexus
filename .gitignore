@@ -25,3 +25,9 @@ graph_info.json
 
 # Misc
 lazy-lock.json
+
+.idea/
+.junie/memory/
+
+.tmp/
+env/go

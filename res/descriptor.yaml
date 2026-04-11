@@ -1,0 +1,43 @@
+name: Sample descriptor / schema
+version: 1.0.0
+id: 0x1234
+message:
+  name: player
+  fields:
+    - name: message_length
+      description: "Length of the whole message (excluding the length field itself)"
+      type: uint
+      encoding: raw
+      length: 1
+      length_type: byte
+    - name: version
+      type: uint
+      encoding: raw
+      length: 4
+      length_type: bit
+    - name: id
+      type: uint
+      encoding: raw
+      length: 12
+      length_type: bit
+    - name: is_alive
+      type: bool
+      encoding: raw
+      length: 1
+      length_type: bit
+    - name: health
+      description: "Health between 0 and 100"
+      type: uint
+      encoding: raw
+      length: 7
+      length_type: bit
+    - name: name_length
+      type: uint
+      encoding: raw
+      length: 1
+      length_type: byte
+    - name: name
+      type: string
+      encoding: utf8
+      length: name_length
+      length_type: byte

@@ -1,0 +1,6 @@
+\x09                                    // length: 9 (sum of following fields)
+\b0001'0011                             // v:1, id:0x3
+\b1110'1000                             // id:0xe8
+\b1101'0000                             // alive:1, health:80 (0x50)
+\x05                                    // length: 5
+\x4e\x65\x78\x75\x73                    // "Nexus"
