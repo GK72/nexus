@@ -1,7 +1,10 @@
 /**
- * Part of Nexus project.
+ * Part of BTX Toolset.
  *
  * BTX CLI Tool.
+ *
+ * @author  Gábor Krisztián Girhiny and Junie
+ * @date    2026-04-11
  */
 
 #include <libbtx/btx.hpp>
@@ -22,220 +25,187 @@
 #include <iostream>
 #include <optional>
 #include <ranges>
-#include <sstream>
 #include <string>
 #include <vector>
 
 namespace po = boost::program_options;
 
 /**
- * @brief CLI options for the BTX tool.
+ * @brief   Substitute for `nova::expected<void, ...>`.
  */
-struct btx_options {
-    std::string input_path;
-    std::string output_path;
-    std::string descriptor_path;
-    bool        from_binary{false};
+struct empty {};
+
+/**
+ * @brief   Type of command for the BTX tool.
+ */
+enum class command_type {
+    encode,
+    decode
 };
 
 /**
- * @brief Parse command line arguments.
- * @param args Command line arguments.
- * @return Parsed options or std::nullopt if help was requested or an error occurred.
+ * @brief   CLI options for the BTX tool.
  */
-[[nodiscard]] auto parse_args(auto args) -> std::optional<btx_options> {
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help,h", "produce help message")
-        ("input,i", po::value<std::string>()->required(), "input file")
-        ("output,o", po::value<std::string>(), "output file")
-        ("descriptor,d", po::value<std::string>(), "descriptor file (YAML)")
-        ("from-binary,f", po::bool_switch(), "convert from binary to BTX");
+struct btx_options {
+    command_type command { command_type::encode };
+    std::string input_path {};
+    std::string output_path {};
+    std::string descriptor_path {};
+    bool help { false };
+};
 
-    po::positional_options_description p;
+/**
+ * @brief   Add common options to the description.
+ *
+ * @param   desc    Options description to add to.
+ * @param   p       Positional options to add to.
+ */
+void add_common_options(po::options_description& desc, po::positional_options_description& p) {
+    desc.add_options()
+        ("help,h", "Produce help message")
+        ("input,i", po::value<std::string>()->required(), "Input file")
+        ("output,o", po::value<std::string>(), "Output file")
+    ;
     p.add("input", 1);
     p.add("output", 1);
+}
+
+/**
+ * @brief   Parse options for the encode command.
+ *
+ * @param   args    Command line arguments (excluding the subcommand itself).
+ *
+ * @return  Parsed options or `std::nullopt` on error or help.
+ */
+[[nodiscard]] auto parse_encode_args(const std::vector<std::string>& args) -> std::optional<btx_options> {
+    po::options_description desc("Options for encode");
+    po::positional_options_description p;
+    add_common_options(desc, p);
 
     po::variables_map vm;
     try {
-        std::vector<std::string> args_vec;
-        for (const auto& arg : args | std::views::drop(1)) {
-            args_vec.emplace_back(arg);
-        }
-
-        po::store(po::command_line_parser(args_vec).options(desc).positional(p).run(), vm);
-
-        if (vm.count("help")) {
-            std::cout << "Usage: btx-tool [options] <input_file> [output_file]\n";
+        po::store(po::command_line_parser(args).options(desc).positional(p).run(), vm);
+        if (vm.contains("help")) {
+            std::cout << "Usage: btx-tool encode [options] <input_file> [output_file]\n";
             std::cout << desc << "\n";
-            return std::nullopt;
+            return btx_options { .help = true };
         }
-
         po::notify(vm);
     } catch (const std::exception& e) {
-        nova::log::error("Error parsing arguments: {}", e.what());
+        nova::log::error("Error parsing arguments for encode: {}", e.what());
         return std::nullopt;
     }
 
-    return btx_options{
-        .input_path      = vm["input"].as<std::string>(),
-        .output_path     = vm.count("output") ? vm["output"].as<std::string>() : "",
-        .descriptor_path = vm.count("descriptor") ? vm["descriptor"].as<std::string>() : "",
-        .from_binary     = vm["from-binary"].as<bool>()
+    return btx_options {
+        .command     = command_type::encode,
+        .input_path  = vm["input"].as<std::string>(),
+        .output_path = vm.contains("output") ? vm["output"].as<std::string>() : ""
     };
 }
 
 /**
- * @brief   Read input data and convert to binary if necessary.
+ * @brief   Parse options for the decode command.
+ *
+ * @param   args    Command line arguments (excluding the subcommand itself).
+ *
+ * @return  Parsed options or `std::nullopt` on error or help.
+ */
+[[nodiscard]] auto parse_decode_args(const std::vector<std::string>& args) -> std::optional<btx_options> {
+    po::options_description desc("Options for decode");
+    po::positional_options_description p;
+
+    add_common_options(desc, p);
+
+    desc.add_options()
+        ("descriptor,d", po::value<std::string>(), "Descriptor file (YAML)")
+    ;
+
+    po::variables_map vm;
+    try {
+        po::store(po::command_line_parser(args).options(desc).positional(p).run(), vm);
+        if (vm.contains("help")) {
+            std::cout << "Usage: btx-tool decode [options] <input_file> [output_file]\n";
+            std::cout << desc << "\n";
+            return btx_options { .help = true };
+        }
+        po::notify(vm);
+    } catch (const std::exception& e) {
+        nova::log::error("Error parsing arguments for decode: {}", e.what());
+        return std::nullopt;
+    }
+
+    return btx_options {
+        .command         = command_type::decode,
+        .input_path      = vm["input"].as<std::string>(),
+        .output_path     = vm.contains("output") ? vm["output"].as<std::string>() : "",
+        .descriptor_path = vm.contains("descriptor") ? vm["descriptor"].as<std::string>() : ""
+    };
+}
+
+/**
+ * @brief   Parse command line arguments.
+ *
+ * @param   args    Command line arguments.
+ *
+ * @return  Parsed options or `std::nullopt` if help was requested or an error occurred.
+ */
+[[nodiscard]] auto parse_args(auto args) -> std::optional<btx_options> {
+    std::vector<std::string> args_vec;
+    for (const auto& arg : args | std::views::drop(1)) {
+        args_vec.emplace_back(arg);
+    }
+
+    if (args_vec.empty()) {
+        std::cout << "Usage: btx-tool <command> [options]\n";
+        std::cout << "Commands:\n";
+        std::cout << "  encode    Convert from BTX to binary\n";
+        std::cout << "  decode    Convert from binary to BTX\n";
+        return std::nullopt;
+    }
+
+    const std::string command = args_vec[0];
+    if (command == "help" or command == "-h" or command == "--help") {
+        std::cout << "Usage: btx-tool <command> [options]\n";
+        std::cout << "Commands:\n";
+        std::cout << "  encode    Convert from BTX to binary\n";
+        std::cout << "  decode    Convert from binary to BTX\n";
+        return btx_options { .help = true };
+    }
+
+    std::vector<std::string> sub_args(args_vec.begin() + 1, args_vec.end());
+
+    if (command == "encode") {
+        return parse_encode_args(sub_args);
+    }
+
+    if (command == "decode") {
+        return parse_decode_args(sub_args);
+    }
+
+    nova::log::error("Unknown command: {}", command);
+    return std::nullopt;
+}
+
+/**
+ * @brief   Write output data to file or stdout.
  *
  * @param   options CLI options.
+ * @param   data    Data to output.
  *
- * @return  Vector of binary data or error.
+ * @return  Data that was written or error.
  */
-[[nodiscard]] auto read_input(const btx_options& options) -> nova::expected<nova::bytes, nova::error> {
-    const auto bin_res = nova::read_bin(options.input_path);
-    if (not bin_res) {
-        return nova::unexpected(bin_res.error());
-    }
-
-    if (options.from_binary) {
-        return bin_res;
-    }
-
-    std::string       text(reinterpret_cast<const char*>(bin_res->data()), bin_res->size());
-    std::stringstream in(text);
-    std::stringstream out;
-    if (const auto result = btx::to_binary(in, out); not result) {
-        return nova::unexpected(result.error());
-    }
-
-    const std::string s = out.str();
-    nova::bytes binary_data;
-    binary_data.reserve(s.size());
-
-    for (const char c : s) {
-        binary_data.push_back(static_cast<std::byte>(c));
-    }
-
-    return binary_data;
-}
-
-/**
- * @brief   Handle output of binary data or BTX.
- *
- * @param   options     CLI options.
- * @param   binary_data Binary data to output.
- * @param   desc        Optional descriptor for annotated output.
- *
- * @return Vector of binary data or error.
- */
-[[nodiscard]] auto write_output(
-        const btx_options& options,
-        const std::vector<std::byte>& binary_data,
-        const std::optional<btx::descriptor>& desc = std::nullopt
-) -> nova::expected<std::vector<std::byte>, nova::error> {
-    if (options.from_binary) {
-        std::ostringstream ss;
-        if (desc) {
-            if (const auto result = btx::format(*desc, nova::data_view(binary_data), ss); not result) {
-                return nova::unexpected(result.error());
-            }
-        } else {
-            if (const auto result = btx::from_binary(nova::data_view(binary_data), ss); not result) {
-                return nova::unexpected(result.error());
-            }
-        }
-
-        const std::string      s = ss.str();
-        std::vector<std::byte> result;
-        result.reserve(s.size());
-        for (const char c : s) {
-            result.push_back(static_cast<std::byte>(c));
-        }
-        return result;
-    }
-
-    return binary_data;
-}
-
-/**
- * @brief   Parse and display binary data using a descriptor.
- *
- * @param   options CLI options.
- *
- * @return  Vector of binary data or error.
- */
-auto parse_with_descriptor(const btx_options& options) -> nova::expected<std::vector<std::byte>, nova::error> {
-    const auto input_res = read_input(options);
-    if (not input_res) {
-        return nova::unexpected(input_res.error());
-    }
-
-    const auto& binary_data = *input_res;
-    const auto  desc_res    = btx::load_descriptor_from_file(options.descriptor_path);
-    if (not desc_res) {
-        return nova::unexpected(desc_res.error());
-    }
-
-    const auto parse_res = btx::decode(*desc_res, nova::data_view(binary_data));
-    if (not parse_res) {
-        return nova::unexpected(parse_res.error());
-    }
-
-    nova::log::trace("Parsed message: {}", parse_res->name);
-    for (const auto& field : parse_res->fields) {
-        std::visit([&field](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, std::uint64_t>) {
-                nova::log::trace("  {}: {} (0x{:x})", field.name, arg, arg);
-            } else {
-                nova::log::trace("  {}: {}", field.name, arg);
-            }
-        }, field.value);
-    }
-
-    return write_output(options, binary_data, *desc_res);
-}
-
-/**
- * @brief   Main entry point for the BTX tool.
- */
-auto entrypoint(auto args) -> int {
-    nova::log::init("btx-tool");
-
-    const auto options = parse_args(args);
-    if (not options) {
-        return EXIT_FAILURE;
-    }
-
-    auto result_data = [&]() -> nova::expected<std::vector<std::byte>, nova::error> {
-        if (not options->descriptor_path.empty()) {
-            return parse_with_descriptor(*options);
-        }
-
-        const auto input_res = read_input(*options);
-        if (not input_res) {
-            return nova::unexpected(input_res.error());
-        }
-
-        return write_output(*options, *input_res);
-    }();
-
-    if (not result_data) {
-        nova::log::error("{}", result_data.error().message);
-        return EXIT_FAILURE;
-    }
-
+[[nodiscard]] auto write_output(nova::data_view data, const btx_options& options)
+        -> nova::expected<empty, nova::error>
+{
     std::ofstream file_out;
-    if (not options->output_path.empty()) {
-        const auto mode = options->from_binary
+    if (not options.output_path.empty()) {
+        const auto mode = options.command == command_type::decode
             ? std::ios::out
             : (std::ios::out | std::ios::binary);
 
-        file_out.open(options->output_path, mode);
+        file_out.open(options.output_path, mode);
         if (not file_out) {
-            nova::log::error("Could not open output file: {}", options->output_path);
-            return EXIT_FAILURE;
+            return nova::unexpected(nova::error("Could not open output file: " + options.output_path));
         }
     }
 
@@ -243,14 +213,98 @@ auto entrypoint(auto args) -> int {
         ? file_out
         : std::cout;
 
-    out.write(reinterpret_cast<const char*>(result_data->data()), static_cast<std::streamsize>(result_data->size()));
+    out.write(data.char_ptr(), static_cast<std::streamsize>(data.size()));
 
-    if (not options->output_path.empty()) {
-        if (options->from_binary) {
-            nova::log::info("BTX written to: {}", options->output_path);
+    if (not options.output_path.empty()) {
+        if (options.command == command_type::decode) {
+            nova::log::info("BTX written to: {}", options.output_path);
         } else {
-            nova::log::info("Binary data written to: {}", options->output_path);
+            nova::log::info("Binary data written to: {}", options.output_path);
         }
+    }
+
+    return empty{ };
+}
+
+/**
+ * @brief   Trace logging for the decoded fields.
+ */
+auto trace_fields(const btx::message_data& msg) {
+    nova::log::trace("Parsed message: {}", msg.name);
+    for (const auto& field : msg.fields) {
+        std::visit(
+            [&field](auto&& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::uint64_t>) {
+                    nova::log::trace("  {}: {} (0x{:x})", field.name, arg, arg);
+                } else {
+                    nova::log::trace("  {}: {}", field.name, arg);
+                }
+            }, field.value
+        );
+    }
+}
+
+/**
+ * @brief   Decoding binary data using a descriptor and annotate it.
+ *
+ * @param   options CLI options.
+ * @param   data    Binary data to decode.
+ *
+ * @return  Annotated BTX data or error.
+ */
+auto annotated_decode(const btx_options& options, const nova::bytes& data)
+        -> nova::expected<nova::bytes, nova::error>
+{
+    const auto descriptor = btx::load_descriptor_from_file(options.descriptor_path);
+    if (not descriptor) {
+        return nova::unexpected(descriptor.error());
+    }
+
+    const auto decoded = btx::decode(*descriptor, nova::data_view(data));
+    if (not decoded) {
+        return nova::unexpected(decoded.error());
+    }
+
+    trace_fields(*decoded);
+
+    return btx::format(*descriptor, nova::data_view(data));
+}
+
+/**
+ * @brief   Main entry point for the BTX tool.
+ */
+auto entrypoint(auto args) -> int {
+    nova::log::init("btx");
+
+    const auto options = parse_args(args);
+    if (not options) {
+        return EXIT_FAILURE;
+    }
+
+    if (options->help) {
+        return EXIT_SUCCESS;
+    }
+
+    const auto result = nova::read_bin(options->input_path)
+        .and_then([&options](const nova::bytes& data) -> nova::expected<nova::bytes, nova::error> {
+            if (options->command == command_type::encode) {
+                return btx::to_binary(nova::data_view(data).as_string());
+            }
+
+            if (not options->descriptor_path.empty()) {
+                return annotated_decode(*options, data);
+            }
+
+            return btx::from_binary(nova::data_view(data));
+        })
+        .and_then([&options](const nova::bytes& data) {
+            return write_output(nova::data_view(data), *options);
+        });
+
+    if (not result) {
+        nova::log::error("{}", result.error().message);
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;

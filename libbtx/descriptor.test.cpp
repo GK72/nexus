@@ -2,7 +2,6 @@
 #include <libbtx/descriptor.hpp>
 #include <libbtx/decoder.hpp>
 #include <libbtx/btx.hpp>
-#include <sstream>
 #include <filesystem>
 #include <fstream>
 
@@ -17,13 +16,10 @@ TEST(DescriptorTest, LoadAndParseSample) {
 \x05                                    // name_length:5
 \x4e \x65 \x78 \x75 \x73               // name:"Nexus"
 )";
-    std::stringstream in(btx_content);
-    std::stringstream out;
-    auto conv_res = btx::to_binary(in, out);
+    auto conv_res = btx::to_binary(btx_content);
     ASSERT_TRUE(conv_res.has_value());
 
-    std::string binary_data = out.str();
-    nova::data_view view(binary_data);
+    nova::data_view view(*conv_res);
 
     // 2. Load descriptor
     const std::string desc_path = "res/descriptor.yaml";

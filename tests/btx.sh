@@ -43,7 +43,7 @@ run_test_to_bin() {
 
     echo -n "Running test: ${name} (to_binary)... "
     printf "%s" "$input" > "${input_file}"
-    if ! "${BTX_TOOL}" "${input_file}" "${output_file}" > "${OUTPUT_DIR}/${name}.out" 2> "${OUTPUT_DIR}/${name}.err"; then
+    if ! "${BTX_TOOL}" encode "${input_file}" "${output_file}" > "${OUTPUT_DIR}/${name}.out" 2> "${OUTPUT_DIR}/${name}.err"; then
         record_fail "${name}" "btx-tool failed with exit code $?"
         return
     fi
@@ -66,7 +66,7 @@ run_test_from_bin() {
 
     echo -n "Running test: ${name} (from_binary)... "
     echo "${bin_hex}" | xxd -r -p > "${input_file}"
-    if ! "${BTX_TOOL}" "${input_file}" "${output_file}" -f > "${OUTPUT_DIR}/${name}.out" 2> "${OUTPUT_DIR}/${name}.err"; then
+    if ! "${BTX_TOOL}" decode "${input_file}" "${output_file}" > "${OUTPUT_DIR}/${name}.out" 2> "${OUTPUT_DIR}/${name}.err"; then
         record_fail "${name}" "btx-tool failed with exit code $?"
         return
     fi
@@ -89,7 +89,7 @@ run_negative_test() {
 
     echo -n "Running negative test: ${name}... "
     printf "%s" "$input" > "${input_file}"
-    if "${BTX_TOOL}" "${input_file}" "${output_file}" > "${OUTPUT_DIR}/${name}.out" 2> "${OUTPUT_DIR}/${name}.err"; then
+    if "${BTX_TOOL}" encode "${input_file}" "${output_file}" > "${OUTPUT_DIR}/${name}.out" 2> "${OUTPUT_DIR}/${name}.err"; then
         record_fail "${name}" "expected failure, but it succeeded"
     else
         if grep -q "${error_regex}" "${OUTPUT_DIR}/${name}.err"; then

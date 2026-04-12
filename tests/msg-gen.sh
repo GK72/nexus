@@ -25,7 +25,7 @@ echo "Generated file size: $(stat -c%s "$OUTPUT_FILE") bytes"
 
 # Run btx-tool to parse it
 echo "Parsing with btx-tool..."
-./build/debug/btx/btx-tool --descriptor "$DESC_FILE" --from-binary --input "$OUTPUT_FILE" > "$PARSED_FILE"
+./build/debug/btx/btx-tool decode --descriptor "$DESC_FILE" --input "$OUTPUT_FILE" > "$PARSED_FILE"
 
 echo "Parsed output:"
 cat "$PARSED_FILE"

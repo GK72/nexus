@@ -20,7 +20,7 @@ if [ ! -f "${BTX_TOOL}" ]; then
     baldr -p "${PROJECT_ROOT}" -b Debug -t btx-tool --no-configure
 fi
 
-if ! "${BTX_TOOL}" "${INPUT_FILE}" "${OUTPUT_FILE}"; then
+if ! "${BTX_TOOL}" encode "${INPUT_FILE}" "${OUTPUT_FILE}"; then
     echo "btx-tool failed!"
     exit 1
 fi

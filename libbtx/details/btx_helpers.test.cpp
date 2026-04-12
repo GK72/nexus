@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include <sstream>
+#include <string_view>
 
 namespace btx::details::test {
 
@@ -17,87 +17,83 @@ TEST(btx_helpers, HexToInt) {
 }
 
 TEST(btx_helpers, BitAccumulator) {
-    bit_accumulator acc;
-    std::stringstream ss;
+    nova::bytes bytes;
+    bit_accumulator acc(bytes);
 
     // Add 4 bits, nothing should be flushed yet
-    acc.add_bit(1, ss);
-    acc.add_bit(0, ss);
-    acc.add_bit(1, ss);
-    acc.add_bit(0, ss);
-    EXPECT_EQ(ss.str().length(), 0);
+    acc.add_bit(1);
+    acc.add_bit(0);
+    acc.add_bit(1);
+    acc.add_bit(0);
+    EXPECT_EQ(bytes.size(), 0);
 
     // Add 4 more bits, should flush 0xAA (10101010)
-    acc.add_bit(1, ss);
-    acc.add_bit(0, ss);
-    acc.add_bit(1, ss);
-    acc.add_bit(0, ss);
-    ASSERT_EQ(ss.str().length(), 1);
-    EXPECT_EQ(static_cast<unsigned char>(ss.str()[0]), 0xAA);
+    acc.add_bit(1);
+    acc.add_bit(0);
+    acc.add_bit(1);
+    acc.add_bit(0);
+    ASSERT_EQ(bytes.size(), 1);
+    EXPECT_EQ(static_cast<unsigned char>(bytes[0]), 0xAA);
 
     // Flush remaining (none)
-    acc.flush(ss);
-    EXPECT_EQ(ss.str().length(), 1);
+    acc.flush();
+    EXPECT_EQ(bytes.size(), 1);
 
     // Add 3 bits and flush, should pad with zeros: 11000000 (0xC0)
-    acc.add_bit(1, ss);
-    acc.add_bit(1, ss);
-    acc.add_bit(0, ss);
-    acc.flush(ss);
-    ASSERT_EQ(ss.str().length(), 2);
-    EXPECT_EQ(static_cast<unsigned char>(ss.str()[1]), 0xC0);
+    acc.add_bit(1);
+    acc.add_bit(1);
+    acc.add_bit(0);
+    acc.flush();
+    ASSERT_EQ(bytes.size(), 2);
+    EXPECT_EQ(static_cast<unsigned char>(bytes[1]), 0xC0);
 }
 
 TEST(btx_helpers, ParseHexToken) {
-    bit_accumulator acc;
-    std::stringstream input("41");
-    std::stringstream output;
+    nova::bytes bytes;
+    bit_accumulator acc(bytes);
+    std::string_view input("41");
 
-    auto res = acc.add_hex_from_stream(input, output);
+    auto res = acc.add_hex(input);
     EXPECT_TRUE(res.has_value());
 
-    acc.flush(output);
-    EXPECT_EQ(output.str(), "A");
+    acc.flush();
+    ASSERT_EQ(bytes.size(), 1);
+    EXPECT_EQ(static_cast<unsigned char>(bytes[0]), 'A');
 }
 
 TEST(btx_helpers, ParseHexToken_Error) {
-    bit_accumulator acc;
-    std::stringstream input_err("G1");
-    std::stringstream output_err;
+    nova::bytes bytes;
+    bit_accumulator acc(bytes);
+    std::string_view input_err("G1");
 
-    auto res_err = acc.add_hex_from_stream(input_err, output_err);
+    auto res_err = acc.add_hex(input_err);
     EXPECT_FALSE(res_err.has_value());
 }
 
 TEST(btx_helpers, ParseBitToken) {
-    bit_accumulator acc;
-    std::stringstream input("10101010\\x");
-    std::stringstream output;
+    nova::bytes bytes;
+    bit_accumulator acc(bytes);
+    std::string_view input("10101010\\x");
 
-    auto res = acc.add_bits_from_stream(input, output);
+    auto res = acc.add_bits(input);
     EXPECT_TRUE(res.has_value());
-    ASSERT_EQ(output.str().length(), 1);
-    EXPECT_EQ(static_cast<unsigned char>(output.str()[0]), 0xAA);
+    ASSERT_EQ(bytes.size(), 1);
+    EXPECT_EQ(static_cast<unsigned char>(bytes[0]), 0xAA);
 
-    // peek should be at '\'
-    EXPECT_EQ(input.peek(), '\\');
+    // it should be at '\'
+    EXPECT_EQ(input[0], '\\');
 }
 
 TEST(btx_helpers, SkipComment) {
-    std::stringstream input("// This is a comment\nNext line");
-    auto ch = input.get();
-    EXPECT_EQ(ch, '/');
+    std::string_view input("// This is a comment\nNext line");
     auto res = skip_comment(input);
     EXPECT_TRUE(res.has_value());
 
-    std::string line;
-    std::getline(input, line);
-    EXPECT_EQ(line, "Next line");
+    EXPECT_EQ(input, "Next line");
 }
 
 TEST(btx_helpers, InvalidComment) {
-    std::stringstream input(" This is not a comment\nNext line");
-    // ch would be '/' consumed by caller
+    std::string_view input(" This is not a comment\nNext line");
     auto res = skip_comment(input);
     EXPECT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Invalid comment: expected '//'");

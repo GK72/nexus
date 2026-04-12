@@ -8,15 +8,15 @@ The BTX tool allows converting between binary and BTX text format.
 
 ### Convert BTX text to binary:
 ```bash
-./build/debug/btx/btx-tool input.btx -o output.bin
+./build/debug/btx/btx-tool encode input.btx -o output.bin
 ```
 
 ### Convert binary to BTX text:
 ```bash
-./build/debug/btx/btx-tool -f input.bin -o output.btx
+./build/debug/btx/btx-tool decode input.bin -o output.btx
 ```
 
 ### Convert binary to annotated BTX text using a descriptor:
 ```bash
-./build/debug/btx/btx-tool -f input.bin -d res/descriptor.yaml -o output.btx
+./build/debug/btx/btx-tool decode input.bin -d res/descriptor.yaml -o output.btx
 ```

@@ -74,15 +74,15 @@ function run_text_test() {
 
 # 1. to_binary stdout
 echo "\x48\x65\x6c\x6c\x6f" > "$TMP_DIR/hello.btx"
-run_test "to_binary_stdout" "$BTX_TOOL $TMP_DIR/hello.btx" "48656c6c6f"
+run_test "to_binary_stdout" "$BTX_TOOL encode $TMP_DIR/hello.btx" "48656c6c6f"
 
 # 2. from_binary stdout
 echo -n "Hello" > "$TMP_DIR/hello.bin"
-run_text_test "from_binary_stdout" "$BTX_TOOL $TMP_DIR/hello.bin -f" "\\x48\\x65\\x6C\\x6C\\x6F"
+run_text_test "from_binary_stdout" "$BTX_TOOL decode $TMP_DIR/hello.bin" "\\x48\\x65\\x6C\\x6C\\x6F"
 
 # 3. descriptor to_binary stdout
-# Use existing sample.btx
-run_test "descriptor_to_binary_stdout" "$BTX_TOOL $PROJECT_ROOT/res/sample.btx -d $PROJECT_ROOT/res/descriptor.yaml" "0913e8d0054e65787573"
+# Use existing sample.btx - Note: descriptor no longer allowed for encode
+run_test "descriptor_to_binary_stdout" "$BTX_TOOL encode $PROJECT_ROOT/res/sample.btx" "0913e8d0054e65787573"
 
 # 4. descriptor from_binary (annotated) stdout
 # We need a 19-byte file for sample.btx
@@ -111,7 +111,7 @@ EOF
 
 # Ah, I misremembered.
 # Let's check res/descriptor.yaml content.
-run_text_test "descriptor_from_binary_stdout" "$BTX_TOOL $TMP_DIR/sample.bin -f -d $PROJECT_ROOT/res/descriptor.yaml" "$EXPECTED_ANNOTATED"
+run_text_test "descriptor_from_binary_stdout" "$BTX_TOOL decode $TMP_DIR/sample.bin -d $PROJECT_ROOT/res/descriptor.yaml" "$EXPECTED_ANNOTATED"
 
 # Summary
 echo

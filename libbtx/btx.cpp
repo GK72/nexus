@@ -11,58 +11,63 @@
 
 namespace btx {
 
-auto to_binary(std::istream& in, std::ostream& out) -> nova::expected<int, nova::error> {
-    details::bit_accumulator accumulator;
+auto to_binary(std::string_view in) -> nova::expected<nova::bytes, nova::error> {
+    nova::bytes              result;
+    details::bit_accumulator accumulator(result);
 
-    for (char ch = '\0'; in.get(ch); ) {
+    while (not in.empty()) {
+        char ch = in[0];
         if (ch == '/') {
             if (const auto res = details::skip_comment(in); not res) {
-                return { nova::unexpect, res.error() };
+                return {nova::unexpect, res.error()};
             }
         } else if (std::isspace(static_cast<unsigned char>(ch)) or ch == '\'' or ch == '_') {
-            // Ignore whitespace and separators
+            in.remove_prefix(1);
         } else if (ch == '\\') {
-            const char type = static_cast<char>(in.peek());
+            if (in.size() < 2) {
+                return {nova::unexpect, nova::error("Unexpected end of input after '\\'")};
+            }
+            const char type = in[1];
+            in.remove_prefix(2);
             if (type == 'x') {
-                in.get();
-                if (const auto res = accumulator.add_hex_from_stream(in, out); not res) {
-                    return { nova::unexpect, res.error() };
+                if (const auto res = accumulator.add_hex(in); not res) {
+                    return {nova::unexpect, res.error()};
                 }
             } else if (type == 'b') {
-                in.get();
-                if (const auto res = accumulator.add_bits_from_stream(in, out); not res) {
-                    return { nova::unexpect, res.error() };
+                if (const auto res = accumulator.add_bits(in); not res) {
+                    return {nova::unexpect, res.error()};
                 }
             } else {
-                return { nova::unexpect, nova::error(fmt::format("Unexpected character '\\' followed by '{}'", type)) };
+                return {nova::unexpect, nova::error(fmt::format("Unexpected character '\\' followed by '{}'", type))};
             }
         } else {
-            return { nova::unexpect, nova::error(fmt::format("Unexpected character: '{}'", ch)) };
+            return {nova::unexpect, nova::error(fmt::format("Unexpected character: '{}'", ch))};
         }
     }
 
-    accumulator.flush(out);
-    return 0;
+    accumulator.flush();
+    return result;
 }
 
-auto from_binary(nova::data_view in, std::ostream& out, const config& config) -> nova::expected<int, nova::error> {
+auto from_binary(nova::data_view in, const config& config) -> nova::expected<nova::bytes, nova::error> {
     if (in.empty()) {
-        return 0;
+        return nova::bytes{ };
     }
 
     constexpr std::size_t BytesPerLine = 8;
+    std::string           result;
 
     for (std::size_t i = 0; i < in.size(); ++i) {
         const auto byte = in.as_number<std::uint8_t>(i);
-        out << fmt::format("\\x{:02X}", byte);
+        result += fmt::format("\\x{:02X}", byte);
 
         if (config.format_output) {
             if ((i + 1) % BytesPerLine == 0) {
-                out << "\n";
+                result += "\n";
             }
         }
     }
-    return 0;
+    return nova::data_view(result).to_vec();
 }
 
 } // namespace btx

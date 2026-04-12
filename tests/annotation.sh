@@ -14,9 +14,9 @@ mkdir -p "$TMP_DIR"
 
 echo "Using temporary directory: $TMP_DIR"
 
-# 1. BTX -> Binary with Descriptor
-echo "Testing: BTX -> Binary with Descriptor"
-$BTX_TOOL "$RES_DIR/sample.btx" -d "$RES_DIR/descriptor.yaml" -o "$TMP_DIR/sample.bin"
+# 1. BTX -> Binary
+echo "Testing: BTX -> Binary"
+$BTX_TOOL encode "$RES_DIR/sample.btx" -o "$TMP_DIR/sample.bin"
 if [ $? -ne 0 ]; then
     echo "FAILED: BTX -> Binary conversion failed"
     exit 1
@@ -35,7 +35,7 @@ echo "PASSED: BTX -> Binary conversion"
 
 # 2. Binary -> Annotated BTX with Descriptor
 echo "Testing: Binary -> Annotated BTX with Descriptor"
-$BTX_TOOL "$TMP_DIR/sample.bin" -f -d "$RES_DIR/descriptor.yaml" -o "$TMP_DIR/sample_annotated.btx"
+$BTX_TOOL decode "$TMP_DIR/sample.bin" -d "$RES_DIR/descriptor.yaml" -o "$TMP_DIR/sample_annotated.btx"
 if [ $? -ne 0 ]; then
     echo "FAILED: Binary -> Annotated BTX conversion failed"
     exit 1

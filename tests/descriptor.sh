@@ -35,8 +35,13 @@ run_test_parse() {
     echo -n "Test [${name}]: "
     
     local output_log="${TEST_DIR}/${name}.log"
+    local bin_file="${TEST_DIR}/${name}.bin"
     
-    "${BTX_TOOL}" "${btx_file}" -d "${desc_file}" > "${output_log}" 2>&1
+    # First encode to binary
+    "${BTX_TOOL}" encode "${btx_file}" "${bin_file}" > /dev/null 2>&1
+    
+    # Then decode with descriptor
+    "${BTX_TOOL}" decode "${bin_file}" -d "${desc_file}" > "${output_log}" 2>&1
     local exit_code=$?
 
     if [ ${exit_code} -ne 0 ]; then

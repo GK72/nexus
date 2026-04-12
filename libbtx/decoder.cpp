@@ -68,9 +68,9 @@ auto decode_field(const descriptor::field& field_item, nova::data_view data, std
 }
 
 /**
- * @brief Formats a single field to the output stream and updates the bit position and symbol table.
+ * @brief Formats a single field to the output string and updates the bit position and symbol table.
  */
-auto format_field(const descriptor::field& field_item, nova::data_view data, std::size_t& bit_pos, std::map<std::string, uint64_t>& symbol_table, std::ostream& out) -> nova::expected<int, nova::error> {
+auto format_field(const descriptor::field& field_item, nova::data_view data, std::size_t& bit_pos, std::map<std::string, uint64_t>& symbol_table, std::string& out) -> nova::expected<int, nova::error> {
     const auto length_bits_res = get_field_length_bits(field_item, symbol_table);
     if (not length_bits_res) {
         return nova::unexpected(length_bits_res.error());
@@ -89,19 +89,19 @@ auto format_field(const descriptor::field& field_item, nova::data_view data, std
                 length_bits = 1;
             }
 
-            std::ostringstream btx_ss;
+            std::string btx_str;
             if (length_bits % BitsPerByte == 0 && bit_pos % BitsPerByte == 0) {
                 for (std::size_t i = 0; i < length_bits / BitsPerByte; ++i) {
-                    btx_ss << fmt::format("\\x{:02X}", static_cast<uint32_t>(data.span()[bit_pos / BitsPerByte + i]));
+                    btx_str += fmt::format("\\x{:02X}", static_cast<uint32_t>(data.span()[bit_pos / BitsPerByte + i]));
                 }
             } else {
-                btx_ss << "\\b";
+                btx_str += "\\b";
                 for (std::size_t i = 0; i < length_bits; ++i) {
                     bool bit = data.as_number_bit_packed<uint64_t>(bit_pos + i, 1) != 0;
-                    btx_ss << (bit ? '1' : '0');
+                    btx_str += (bit ? '1' : '0');
                 }
             }
-            out << std::left << std::setw(40) << btx_ss.str() << " // " << field_item.name << ": " << val << " (0x" << std::hex << val << std::dec << ")\n";
+            out += fmt::format("{:<40} // {}: {} (0x{:x})\n", btx_str, field_item.name, val, val);
             bit_pos += length_bits;
         } else if (field_item.type == descriptor::field_type::string) {
             if (bit_pos % BitsPerByte != 0) {
@@ -109,16 +109,16 @@ auto format_field(const descriptor::field& field_item, nova::data_view data, std
             }
             std::string val(data.as_string(bit_pos / BitsPerByte, length_bits / BitsPerByte));
             for (std::size_t i = 0; i < length_bits / BitsPerByte; ++i) {
-                out << fmt::format("\\x{:02X}", static_cast<uint32_t>(data.span()[bit_pos / BitsPerByte + i]));
+                out += fmt::format("\\x{:02X}", static_cast<uint32_t>(data.span()[bit_pos / BitsPerByte + i]));
                 if ((i + 1) % BitsPerByte == 0 || (i + 1) == length_bits / BitsPerByte) {
                     if ((i + 1) == length_bits / BitsPerByte) {
                         std::size_t current_line_bytes = (i % BitsPerByte) + 1;
                         if (current_line_bytes <= 8) {
-                            out << std::string((10 - current_line_bytes) * 4, ' ');
+                            out += std::string((10 - current_line_bytes) * 4, ' ');
                         }
-                        out << " // " << field_item.name << ": \"" << val << "\"";
+                        out += fmt::format(" // {}: \"{}\"", field_item.name, val);
                     }
-                    out << "\n";
+                    out += "\n";
                 }
             }
             bit_pos += length_bits;
@@ -150,20 +150,21 @@ auto decode(const descriptor& desc, nova::data_view data) -> nova::expected<mess
     return result;
 }
 
-auto format(const descriptor& desc, nova::data_view data, std::ostream& out) -> nova::expected<int, nova::error> {
+auto format(const descriptor& desc, nova::data_view data) -> nova::expected<nova::bytes, nova::error> {
     std::size_t bit_pos = 0;
     std::map<std::string, uint64_t> symbol_table;
+    std::string result;
 
-    out << "// " << desc.message.name << "\n";
+    result += fmt::format("// {}\n", desc.message.name);
 
     for (const auto& field_item : desc.message.fields) {
-        auto res = format_field(field_item, data, bit_pos, symbol_table, out);
+        auto res = format_field(field_item, data, bit_pos, symbol_table, result);
         if (not res) {
             return nova::unexpected(res.error());
         }
     }
 
-    return 0;
+    return nova::data_view(result).to_vec();
 }
 
 } // namespace btx

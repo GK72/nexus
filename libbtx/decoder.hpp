@@ -20,9 +20,8 @@ auto decode(const descriptor& desc, nova::data_view data) -> nova::expected<mess
  * @brief Decode binary data to annotated BTX text using the descriptor.
  * @param desc Descriptor schema.
  * @param data Binary data view.
- * @param out Output stream for BTX text.
- * @return Success or error.
+ * @return Parsed BTX text or error.
  */
-auto format(const descriptor& desc, nova::data_view data, std::ostream& out) -> nova::expected<int, nova::error>;
+auto format(const descriptor& desc, nova::data_view data) -> nova::expected<nova::bytes, nova::error>;
 
 } // namespace btx

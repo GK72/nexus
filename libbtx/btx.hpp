@@ -17,7 +17,7 @@
 #include <libnova/error.hpp>
 #include <libnova/expected.hpp>
 
-#include <iostream>
+#include <string_view>
 
 namespace btx {
 
@@ -37,24 +37,22 @@ struct config {
 };
 
 /**
- * @brief   Converts BTX text from an input stream to binary in an output stream.
+ * @brief   Converts BTX text to binary.
  *
- * @param in    Input stream containing BTX text.
- * @param out   Output stream where binary data will be written.
+ * @param in    Input string view containing BTX text.
  *
- * @return  Returns 0 on success, or a nova::error on failure.
+ * @return  Returns the binary data on success, or a nova::error on failure.
  */
-nova::expected<int, nova::error> to_binary(std::istream& in, std::ostream& out);
+nova::expected<nova::bytes, nova::error> to_binary(std::string_view in);
 
 /**
- * @brief   Converts binary data from a data_view to BTX text in an output stream.
+ * @brief   Converts binary data from a data_view to BTX text.
  *
  * @param in        Non-owning view of the binary data.
- * @param out       Output stream where BTX text will be written.
  * @param config    Optional configuration for the conversion.
  *
- * @return  Returns 0 on success, or a nova::error on failure.
+ * @return  Returns the BTX text on success, or a nova::error on failure.
  */
-nova::expected<int, nova::error> from_binary(nova::data_view in, std::ostream& out, const config& config = {});
+nova::expected<nova::bytes, nova::error> from_binary(nova::data_view in, const config& config = {});
 
 } // namespace btx
