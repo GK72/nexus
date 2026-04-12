@@ -25,7 +25,8 @@ def main():
         _fields_ = [
             ("data", ctypes.POINTER(ctypes.c_uint8)),
             ("size", ctypes.c_size_t),
-            ("error", ctypes.c_char_p)
+            ("error", ctypes.c_char_p),
+            ("internal", ctypes.c_void_p)
         ]
 
     # Set up function signatures

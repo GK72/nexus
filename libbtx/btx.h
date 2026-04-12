@@ -21,9 +21,10 @@ extern "C" {
  * @brief   Structure containing the result of a BTX operation.
  */
 typedef struct {
-    uint8_t* data;      /**< Pointer to the resulting data (allocated on the heap). */
-    size_t size;        /**< Size of the resulting data. */
-    char* error;        /**< Pointer to an error message, or NULL if the operation was successful. */
+    const uint8_t* data;      /**< Pointer to the resulting data (internal handle reference). */
+    size_t size;              /**< Size of the resulting data. */
+    const char* error;        /**< Pointer to an error message (internal handle reference). */
+    void* internal;           /**< Opaque handle for internal management. */
 } btx_result_t;
 
 /**

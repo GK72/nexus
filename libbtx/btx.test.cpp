@@ -90,7 +90,7 @@ TEST(btx, FromBinary) {
     cfg.format_output = false;
     auto result = btx::from_binary(view, cfg);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, "\x48\x65\x6C\x6C\x6F"_data.to_vec());
+    EXPECT_EQ(nova::data_view(*result).as_string(), "\\x48\\x65\\x6C\\x6C\\x6F");
 }
 
 TEST(btx, FromBinaryFormatted) {

@@ -5,8 +5,11 @@
 #include <libnova/error.hpp>
 #include <libnova/expected.hpp>
 
-#include <cstring>
-#include <cstdlib>
+namespace {
+struct btx_handle {
+    nova::expected<nova::bytes, nova::error> result;
+};
+}
 
 extern "C" {
 
@@ -14,19 +17,15 @@ extern "C" {
  * @brief Encodes BTX text into binary.
  */
 auto btx_encode(const char* input) -> btx_result_t {
-    auto res = btx::to_binary(input);
-    btx_result_t result = {nullptr, 0, nullptr};
+    auto handle = new btx_handle{btx::to_binary(input)};
+    btx_result_t result = {nullptr, 0, nullptr, handle};
+
+    const auto& res = handle->result;
     if (res) {
+        result.data = reinterpret_cast<const uint8_t*>(res->data());
         result.size = res->size();
-        result.data = static_cast<uint8_t*>(std::malloc(result.size));
-        if (result.data) {
-            std::memcpy(result.data, res->data(), result.size);
-        }
     } else {
-        result.error = static_cast<char*>(std::malloc(res.error().message.length() + 1));
-        if (result.error) {
-            std::strcpy(result.error, res.error().message.c_str());
-        }
+        result.error = res.error().message.c_str();
     }
     return result;
 }
@@ -35,21 +34,15 @@ auto btx_encode(const char* input) -> btx_result_t {
  * @brief Decodes binary into BTX text.
  */
 auto btx_decode(const uint8_t* data, size_t size) -> btx_result_t {
-    auto res = btx::from_binary(nova::data_view{reinterpret_cast<const std::byte*>(data), size});
-    btx_result_t result = {nullptr, 0, nullptr};
+    auto handle = new btx_handle{btx::from_binary(nova::data_view{reinterpret_cast<const std::byte*>(data), size})};
+    btx_result_t result = {nullptr, 0, nullptr, handle};
+
+    const auto& res = handle->result;
     if (res) {
-        // We allocate size + 1 to optionally null-terminate, though 'size' remains correct.
+        result.data = reinterpret_cast<const uint8_t*>(res->data());
         result.size = res->size();
-        result.data = static_cast<uint8_t*>(std::malloc(result.size + 1));
-        if (result.data) {
-            std::memcpy(result.data, res->data(), result.size);
-            result.data[result.size] = '\0';
-        }
     } else {
-        result.error = static_cast<char*>(std::malloc(res.error().message.length() + 1));
-        if (result.error) {
-            std::strcpy(result.error, res.error().message.c_str());
-        }
+        result.error = res.error().message.c_str();
     }
     return result;
 }
@@ -58,11 +51,8 @@ auto btx_decode(const uint8_t* data, size_t size) -> btx_result_t {
  * @brief Frees the result.
  */
 auto btx_free_result(btx_result_t result) -> void {
-    if (result.data) {
-        std::free(result.data);
-    }
-    if (result.error) {
-        std::free(result.error);
+    if (result.internal) {
+        delete static_cast<btx_handle*>(result.internal);
     }
 }
 
