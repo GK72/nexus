@@ -1,45 +1,73 @@
-#include <libbtx/generator.hpp>
+/**
+ * Part of BTX Toolset.
+ *
+ * Message generator.
+ *
+ * @author  Gábor Krisztián Girhiny and Junie
+ * @date    2026-04-11
+ */
+
+#include <liblexy/generator.hpp>
+
 #include <libnova/random.hpp>
+
 #include <yaml-cpp/yaml.h>
+
 #include <map>
 #include <set>
 
-namespace btx::generator {
+namespace lexy {
 
 namespace {
 
 constexpr std::size_t BitsPerByte = 8;
 
 /**
- * @brief Helper class to write bit-packed data.
+ * @brief   Helper class to write bit-packed data.
  */
 class bit_writer {
 public:
-    void write_uint(uint64_t val, std::size_t bits) {
+    /**
+     * @brief   Write an unsigned integer with a specific bit length.
+     *
+     * @param   val     Value to write.
+     * @param   bits    Number of bits to use.
+     */
+    void write_uint(std::uint64_t val, std::size_t bits) {
         if (bits == 0) {
             return;
         }
         // MSB first for bit-packed fields
         for (std::size_t i = 0; i < bits; ++i) {
-            bool bit = (val >> (bits - i - 1)) & 1;
+            const bool bit = (val >> (bits - i - 1)) & 1;
             write_bit(bit);
         }
     }
 
+    /**
+     * @brief   Write a single bit.
+     *
+     * @param   bit     Bit value.
+     */
     void write_bit(bool bit) {
         const std::size_t byte_pos = m_bit_pos / BitsPerByte;
         const std::size_t bit_in_byte = m_bit_pos % BitsPerByte;
 
         if (byte_pos >= m_data.size()) {
-            m_data.push_back(std::byte{0});
+            m_data.push_back(std::byte { 0 });
         }
 
         if (bit) {
-            m_data[byte_pos] |= std::byte{static_cast<std::uint8_t>(1 << (BitsPerByte - 1 - bit_in_byte))};
+            m_data[byte_pos] |= std::byte { static_cast<std::uint8_t>(1 << (BitsPerByte - 1 - bit_in_byte)) };
         }
         m_bit_pos++;
     }
 
+    /**
+     * @brief   Write raw bytes. Must be byte-aligned.
+     *
+     * @param   bytes   Bytes to write.
+     */
     void write_bytes(std::string_view bytes) {
         if (m_bit_pos % BitsPerByte != 0) {
             throw std::runtime_error("Unaligned byte write");
@@ -50,7 +78,12 @@ public:
         }
     }
 
-    const std::vector<std::byte>& data() const { return m_data; }
+    /**
+     * @brief   Get the resulting binary data.
+     *
+     * @return  Vector of bytes.
+     */
+    [[nodiscard]] auto data() const -> const std::vector<std::byte>& { return m_data; }
 
 private:
     std::vector<std::byte> m_data;
@@ -59,11 +92,11 @@ private:
 
 } // namespace
 
-auto from_yaml(const descriptor& desc, const std::string& yaml_values) -> nova::expected<std::vector<std::byte>, nova::error> {
+[[nodiscard]] auto from_yaml(const descriptor& desc, const std::string& yaml_values) -> nova::expected<std::vector<std::byte>, nova::error> {
     try {
         YAML::Node values = YAML::Load(yaml_values);
         bit_writer writer;
-        std::map<std::string, uint64_t> symbol_table;
+        std::map<std::string, std::uint64_t> symbol_table;
 
         for (const auto& field_item : desc.message.fields) {
             std::size_t length_val = 0;
@@ -78,18 +111,18 @@ auto from_yaml(const descriptor& desc, const std::string& yaml_values) -> nova::
                 }
             }
 
-            std::size_t length_bits = (field_item.len_type == descriptor::length_type::byte) ? length_val * BitsPerByte : length_val;
+            const std::size_t length_bits = (field_item.len_type == descriptor::length_type::byte) ? length_val * BitsPerByte : length_val;
 
-            if (!values[field_item.name]) {
+            if (not values[field_item.name]) {
                 return nova::unexpected(nova::error("Missing value for field: " + field_item.name));
             }
 
             if (field_item.type == descriptor::field_type::unsigned_integer) {
-                uint64_t val = values[field_item.name].as<uint64_t>();
+                const std::uint64_t val = values[field_item.name].as<std::uint64_t>();
                 writer.write_uint(val, length_bits);
                 symbol_table[field_item.name] = val;
             } else if (field_item.type == descriptor::field_type::boolean) {
-                bool val = values[field_item.name].as<bool>();
+                const bool val = values[field_item.name].as<bool>();
                 writer.write_bit(val);
                 symbol_table[field_item.name] = val ? 1 : 0;
             } else if (field_item.type == descriptor::field_type::string) {
@@ -109,10 +142,10 @@ auto from_yaml(const descriptor& desc, const std::string& yaml_values) -> nova::
     }
 }
 
-auto generate_random(const descriptor& desc) -> nova::expected<std::vector<std::byte>, nova::error> {
+[[nodiscard]] auto generate_random(const descriptor& desc) -> nova::expected<std::vector<std::byte>, nova::error> {
     try {
         bit_writer writer;
-        std::map<std::string, uint64_t> symbol_table;
+        std::map<std::string, std::uint64_t> symbol_table;
 
         // Find fields used as lengths
         std::set<std::string> length_fields;
@@ -138,21 +171,21 @@ auto generate_random(const descriptor& desc) -> nova::expected<std::vector<std::
             const std::size_t length_bits = (field_item.len_type == descriptor::length_type::byte) ? length_val * BitsPerByte : length_val;
 
             if (field_item.type == descriptor::field_type::unsigned_integer) {
-                uint64_t val = 0;
+                std::uint64_t val = 0;
                 if (length_fields.contains(field_item.name)) {
                     // This field is used as a length, keep it reasonable (1-16)
-                    val = nova::random().number(nova::range<uint64_t>{1, 16});
+                    val = nova::random().number(nova::range<std::uint64_t> { 1, 16 });
                 } else {
                     if (length_bits >= 64) {
-                        val = nova::random().number(nova::range<uint64_t>{0, 0xFFFFFFFFFFFFFFFFULL});
+                        val = nova::random().number(nova::range<std::uint64_t> { 0, 0xFFFFFFFFFFFFFFFFULL });
                     } else {
-                        val = nova::random().number(nova::range<uint64_t>{0, (1ULL << length_bits) - 1});
+                        val = nova::random().number(nova::range<std::uint64_t> { 0, (1ULL << length_bits) - 1 });
                     }
                 }
                 writer.write_uint(val, length_bits);
                 symbol_table[field_item.name] = val;
             } else if (field_item.type == descriptor::field_type::boolean) {
-                const bool val = nova::random().number(nova::range<int>{0, 1}) != 0;
+                const bool val = nova::random().number(nova::range<int> { 0, 1 }) != 0;
                 writer.write_bit(val);
                 symbol_table[field_item.name] = val ? 1 : 0;
             } else if (field_item.type == descriptor::field_type::string) {
@@ -167,4 +200,4 @@ auto generate_random(const descriptor& desc) -> nova::expected<std::vector<std::
     }
 }
 
-} // namespace btx::generator
+} // namespace lexy

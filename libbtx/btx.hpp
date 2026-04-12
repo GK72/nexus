@@ -1,7 +1,10 @@
 /**
- * Part of Nexus project.
+ * Part of BTX Toolset.
  *
  * Binary Text processing.
+ *
+ * @author  Gábor Krisztián Girhiny and Junie
+ * @date    2026-04-11
  *
  * To convert BTX to a raw binary file:
  * 1. Remove all comments (everything from `//` to the end of the line).

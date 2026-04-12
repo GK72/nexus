@@ -1,20 +1,18 @@
-# Guidelines
+---
+name: cpp
+description: Writing C++ code
+---
 
-This document outlines the coding standards and best practices for development
-in the Nexus project. We focus on Modern C++ (C++20/C++23) to ensure
-performance, safety, and maintainability.
+# C++ Coding Guidelines
 
-Readme in the root of the repository contains information how to use the
-repository.
+Use this skill when writing C++ code.
 
-## Language Standard
+## Key Principles
 
-- **Target Standard**: We target **C++20** for Clang and **C++23** for other
-  compilers.
-- **Extensions**: Do not use compiler-specific extensions
-  (`CMAKE_CXX_EXTENSIONS` is `OFF`).
-- **New Features**: Leverage modern features like Concepts, Coroutines, Ranges
-  (C++20), and `std::expected` (C++23).
+- Use Nova library for generic utilities. It is a personal extension of the
+  standard library. `~/.local/include/libnova/`
+- Nova provides a CMake library. Use that for compiler settings.
+- Leverage modern features like Concepts, Coroutines, Ranges (C++20).
 
 ## Safety and Resource Management
 
@@ -52,6 +50,9 @@ repository.
   cannot be handled locally.
 - **Error Codes**: For expected errors in performance-critical or low-level
   code, prefer `std::expected` (C++23) or `std::optional`.
+- **Side Effects**: For functions with side effects that can fail but do not
+  return a value, use `nova::expected<empty, nova::error>`, where `empty` is a
+  minimal struct used as a placeholder.
 
 ## Coding Style
 
@@ -62,7 +63,20 @@ repository.
     - `CamelCase` for constants.
 - **Trailing Return Types**: Prefer trailing return types for functions (`auto
   f() -> T`).
+- **Doxygen Documentation**:
+    - Use `@brief` for a concise description.
+    - Align the descriptions of `@param` and `@return` tags for better
+      readability.
+    - Prefer `@brief` on a new line for classes and structs.
+- **Nodiscard**: Use `[[nodiscard]]` for all functions that return a value,
+  especially when that value represents a result or error state (e.g.,
+  `std::optional`, `nova::expected`).
 - **Logical Operators**: Use `not`, `and`, `or` instead of `!`, `&&`, `||`.
+- **Braces**: Use braces on the same line as the statement (e.g., `if (cond) {`).
+  For long function signatures, the opening brace may be placed on a new line
+  after the trailing return type.
+- **File Headers**: Include a Doxygen-style header at the top of each file with
+  the project name, file purpose, `@author`, and `@date`.
 - **Namespaces and Aliases**:
     - Avoid `using` statements (e.g., `using nova::expected;`) in headers.
     - Prefer fully qualified names for external library types (e.g.,
@@ -96,6 +110,17 @@ repository.
   testable functions.
 - **Constants and Magic Numbers**: Replace magic numbers with named constants.
 
+## Building and Running
+
+The project uses `baldr` (a CMake wrapper) for building and running targets.
+Always use `baldr` instead of calling `cmake` or `make`/`ninja` directly.
+
+- **Basic build**: `baldr -p . -b Debug -j 8`
+- **Build and run a specific target**: `baldr -p . -b Debug -j 8 -t <target> -r`
+- **Forwarding arguments**: Arguments can be forwarded to the executable after
+  `--`, e.g., `baldr -p . -t btx-tool -r -- encode input.btx output.bin`.
+- **Clean build**: Use `-d` or `--delete` to perform a clean build.
+
 ## Tooling and Quality Assurance
 
 - **Sanitizers**: Regularly run with AddressSanitizer (ASan) and
@@ -114,17 +139,8 @@ repository.
   previous runs. Do NOT clean up these artifacts automatically; the user will
   handle cleanup manually.
 
-## Commits and Documentation
+## Misc
 
-- **Conventional Commits**: Follow the [Conventional
-  Commits](https://www.conventionalcommits.org/) specification for all commit
-  messages.
-- **Comments**: Write clear, concise comments. Focus on *why* something is
-  done, rather than *how* (the code should be self-documenting as much as
-  possible). Avoid inline code comments; prefer descriptive Doxygen-style
-  comments.
-- **In-code Documentation**: Use Doxygen-style comments for ALL functions,
-  classes, and public APIs.
 - **CLI Tools**:
     - **Main Structure**: Use `NOVA_MAIN` and `entrypoint` from
       `libnova/main.hpp` for all CLI tools. Note that `libnova` is a system

@@ -1,20 +1,27 @@
 /**
- * Part of Nexus project.
+ * Part of BTX Toolset.
  *
  * Random Message Generator CLI Tool.
+ *
+ * @author  Gábor Krisztián Girhiny and Junie
+ * @date    2026-04-11
  */
 
-#include <libbtx/descriptor.hpp>
-#include <libbtx/generator.hpp>
+#include <liblexy/descriptor.hpp>
+#include <liblexy/generator.hpp>
+
 #include <libnova/log.hpp>
 #include <libnova/main.hpp>
+
 #include <boost/program_options.hpp>
+
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
-#include <ranges>
-#include <optional>
 
 namespace po = boost::program_options;
 
@@ -88,13 +95,13 @@ auto entrypoint(auto args) -> int {
         return EXIT_FAILURE;
     }
 
-    auto desc_res = btx::load_descriptor_from_file(options->descriptor_path);
+    auto desc_res = lexy::load_descriptor(std::filesystem::path{ options->descriptor_path });
     if (not desc_res) {
         nova::log::error("Failed to load descriptor: {}", desc_res.error().message);
         return EXIT_FAILURE;
     }
 
-    auto gen_res = btx::generator::generate_random(*desc_res);
+    auto gen_res = lexy::generate_random(*desc_res);
     if (not gen_res) {
         nova::log::error("Generation error: {}", gen_res.error().message);
         return EXIT_FAILURE;

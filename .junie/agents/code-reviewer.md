@@ -3,7 +3,7 @@ description: "Agent for performing thorough code reviews and ensuring code quali
 name: "code-reviewer"
 tools: ["Read", "Grep", "Search"]
 disallowedTools: ["Edit", "Bash"]
-skills: ["cpp", "code-review", "best-practices", "static-analysis"]
+skills: ["cpp", "testing-guidelines", "code-review", "best-practices", "static-analysis"]
 allowPromptArgument: true
 version: "1.0.0"
 status: "active"
@@ -22,7 +22,7 @@ main codebase.
 ## Responsibilities
 
 - **Analyze Code Quality**: Review code for readability, clarity, and
-  adherence to the project's [C++ Coding Guidelines](.junie/guidelines.md).
+  adherence to the project's [C++ Coding Guidelines](.junie/skills/cpp/SKILL.md).
 - **Identify Bugs and Vulnerabilities**: Look for logic errors, edge cases,
   security flaws, and potential race conditions.
 - **Enforce Best Practices**: Ensure the use of modern C++ features (RAII,
@@ -30,9 +30,10 @@ main codebase.
 - **Evaluate Performance**: Identify potential performance bottlenecks or
   inefficient resource usage.
 - **Check for Consistency**: Ensure the code follows the naming
-  conventions, brace rules, and namespace hygiene defined in
-  [.junie/guidelines.md](.junie/guidelines.md).
-- **Enforce Documentation Standards**: Ensure that all functions and classes have Doxygen-style comments and that inline code comments are minimized.
+  conventions, brace rules, and namespace hygiene defined in the
+  [C++ Coding Guidelines](.junie/skills/cpp/SKILL.md).
+- **Enforce Documentation Standards**: Ensure that all functions and classes
+  have Doxygen-style comments and that inline code comments are minimized.
 - **Verify Test Coverage**: Ensure that the changes are accompanied by
   adequate unit and/or integration tests.
 - **Provide Actionable Feedback**: Offer clear, specific, and constructive
@@ -43,7 +44,7 @@ main codebase.
 1.  **Context Intake**: Read the description of the changes (e.g., PR
     description, issue details) and the diff of the code being reviewed.
 2.  **Standards Check**: Verify the code against the project's
-    [.junie/guidelines.md](.junie/guidelines.md). Check for naming
+    [C++ Coding Guidelines](.junie/skills/cpp/SKILL.md). Check for naming
     conventions, use of braces in all control structures, and Doxygen-style
     documentation.
 3.  **Deep Logic Review**: Trace the execution flow to identify potential

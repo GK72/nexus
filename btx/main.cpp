@@ -8,9 +8,9 @@
  */
 
 #include <libbtx/btx.hpp>
-#include <libbtx/descriptor.hpp>
-#include <libbtx/decoder.hpp>
-#include <libbtx/generator.hpp>
+#include <liblexy/descriptor.hpp>
+#include <liblexy/decoder.hpp>
+#include <liblexy/generator.hpp>
 
 #include <libnova/io.hpp>
 #include <libnova/log.hpp>
@@ -18,9 +18,9 @@
 
 #include <boost/program_options.hpp>
 
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -229,7 +229,7 @@ void add_common_options(po::options_description& desc, po::positional_options_de
 /**
  * @brief   Trace logging for the decoded fields.
  */
-auto trace_fields(const btx::message_data& msg) {
+auto trace_fields(const lexy::message_data& msg) {
     nova::log::trace("Parsed message: {}", msg.name);
     for (const auto& field : msg.fields) {
         std::visit(
@@ -256,19 +256,19 @@ auto trace_fields(const btx::message_data& msg) {
 auto annotated_decode(const btx_options& options, const nova::bytes& data)
         -> nova::expected<nova::bytes, nova::error>
 {
-    const auto descriptor = btx::load_descriptor_from_file(options.descriptor_path);
+    const auto descriptor = lexy::load_descriptor(std::filesystem::path{ options.descriptor_path });
     if (not descriptor) {
         return nova::unexpected(descriptor.error());
     }
 
-    const auto decoded = btx::decode(*descriptor, nova::data_view(data));
+    const auto decoded = lexy::decode(*descriptor, nova::data_view(data));
     if (not decoded) {
         return nova::unexpected(decoded.error());
     }
 
     trace_fields(*decoded);
 
-    return btx::format(*descriptor, nova::data_view(data));
+    return lexy::format(*descriptor, nova::data_view(data));
 }
 
 /**

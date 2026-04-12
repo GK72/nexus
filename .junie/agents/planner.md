@@ -3,7 +3,7 @@ description: "Agent which breaks down requirements into manageable tasks"
 name: "planner"
 tools: ["Read", "Grep", "Search"]
 disallowedTools: ["Edit", "Bash"]
-skills: ["planning", "task-breakdown", "analysis"]
+skills: ["cpp", "testing-guidelines", "planning", "task-breakdown", "analysis"]
 allowPromptArgument: true
 version: "1.1.0"
 status: "active"
@@ -47,7 +47,8 @@ and resources.
 3.  **High-Level Breakdown**: Outline the major phases of the work (e.g.,
     Investigation, Preparation, Implementation, Verification).
     Ensure the breakdown follows the project's
-    [.junie/guidelines.md](.junie/guidelines.md) and technical standards (naming, structure, error handling, build tools, etc.).
+    [C++ Coding Guidelines](.junie/skills/cpp/SKILL.md) and technical standards
+    (naming, structure, error handling, build tools, etc.).
 4.  **Granular Task Creation**: For each phase, create specific, actionable
     tasks. Each task should ideally be self-contained and verifiable.
 5.  **Task Estimation**: For each granular task, provide:

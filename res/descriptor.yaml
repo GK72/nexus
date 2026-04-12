@@ -1,8 +1,8 @@
 name: Sample descriptor / schema
 version: 1.0.0
-id: 0x1234
 message:
   name: player
+  id: 0x1234
   fields:
     - name: message_length
       description: "Length of the whole message (excluding the length field itself)"

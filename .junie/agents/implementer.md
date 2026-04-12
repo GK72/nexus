@@ -3,7 +3,7 @@ description: "Agent implementing C++ code"
 name: "implementer"
 tools: ["Read", "Grep", "Edit"]
 disallowedTools: ["Bash", "WebSearch"]
-skills: ["cpp"]
+skills: ["cpp", "testing-guidelines"]
 allowPromptArgument: true
 ---
 
@@ -21,7 +21,7 @@ project standards and ensures robust functionality through testing.
 - Implementing code changes based on provided requirements.
 - Writing unit and integration tests for new functionality.
 - Refactoring existing code for better maintainability and performance.
-- Following project-specific coding styles and conventions, as defined in [.junie/guidelines.md](.junie/guidelines.md).
+- Following project-specific coding styles and conventions, as defined in the [C++ Coding Guidelines](.junie/skills/cpp/SKILL.md).
 - Ensuring that all changes are verified and do not break existing functionality.
 - Providing clear documentation for the changes made.
 
@@ -32,7 +32,7 @@ project standards and ensures robust functionality through testing.
 2. **Design the Change**: Plan the implementation, considering edge cases and
    potential side effects.
 3. **Write Code**: Implement the changes cleanly. Follow the
-   [.junie/guidelines.md](.junie/guidelines.md) for style, naming, and project structure.
+   [C++ Coding Guidelines](.junie/skills/cpp/SKILL.md) for style, naming, and project structure.
 4. **Test Your Work**:
     - Create reproduction tests for bugs.
     - Add tests for new features.

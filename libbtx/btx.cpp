@@ -1,3 +1,12 @@
+/**
+ * Part of BTX Toolset.
+ *
+ * Binary Text processing.
+ *
+ * @author  Gábor Krisztián Girhiny and Junie
+ * @date    2026-04-11
+ */
+
 #include <libbtx/btx.hpp>
 #include <libbtx/details/btx_helpers.hpp>
 
