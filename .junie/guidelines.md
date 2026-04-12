@@ -108,10 +108,11 @@ repository.
 - **Automated Verification**: When performing complex validations or testing,
   create reproduction scripts in the `./tests` directory.
 - **Artifact Management**: All test artifacts and temporary files must be
-  stored in `./.tmp/test-outputs`. Avoid littering the repository with
-  generated files. Group artifacts in unique subdirectories (e.g., by
-  timestamp) to avoid overwriting previous runs. Do NOT clean up these
-  artifacts automatically; the user will handle cleanup manually.
+  stored in `./.tmp/test-outputs`. Installation artifacts must be stored in
+  `./.tmp/install`. Avoid littering the repository with generated files. Group
+  artifacts in unique subdirectories (e.g., by timestamp) to avoid overwriting
+  previous runs. Do NOT clean up these artifacts automatically; the user will
+  handle cleanup manually.
 
 ## Commits and Documentation
 

@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 #include <libbtx/btx.hpp>
 
+#include <libnova/data.hpp>
+
+using namespace nova::literals;
+
 TEST(btx, BasicHex) {
     auto result = btx::to_binary("\\x48\\x65\\x6c\\x6c\\x6f");
     ASSERT_TRUE(result.has_value());
@@ -86,7 +90,7 @@ TEST(btx, FromBinary) {
     cfg.format_output = false;
     auto result = btx::from_binary(view, cfg);
     ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(*result, "\\x48\\x65\\x6C\\x6C\\x6F");
+    EXPECT_EQ(*result, "\x48\x65\x6C\x6C\x6F"_data.to_vec());
 }
 
 TEST(btx, FromBinaryFormatted) {
@@ -102,5 +106,5 @@ TEST(btx, FromBinaryFormatted) {
     expected += "\n";
     for (int i = 0; i < 2; ++i) expected += "\\x41";
 
-    EXPECT_EQ(*result, expected);
+    EXPECT_EQ(*result, nova::data_view(expected).to_vec());
 }

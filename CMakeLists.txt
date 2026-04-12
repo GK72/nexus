@@ -9,6 +9,7 @@ project("nexus" VERSION ${NEXUS_VERSION} LANGUAGES CXX)
 message(STATUS "Nexus version ${NEXUS_VERSION}")
 
 find_package(nova REQUIRED)
+include(GNUInstallDirs)
 include(dependencies.cmake)
 
 include(novaCompilerWarnings)

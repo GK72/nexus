@@ -1,4 +1,4 @@
-file(GLOB_RECURSE BTX_HEADER_FILES "*.hpp")
+file(GLOB_RECURSE BTX_HEADER_FILES "*.hpp" "*.h")
 
 add_library(btx
     btx.cpp
@@ -6,6 +6,12 @@ add_library(btx
     decoder.cpp
     generator.cpp
 )
+
+add_library(btx_c SHARED
+    btx_cbindings.cpp
+)
+
+target_link_libraries(btx_c PRIVATE btx)
 
 target_sources(btx PUBLIC
     FILE_SET HEADERS
@@ -31,3 +37,9 @@ if(BUILD_TESTING)
 
     add_test_target(btx)
 endif()
+
+install(TARGETS btx btx_c
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
