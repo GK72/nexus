@@ -127,4 +127,35 @@ struct descriptor {
  */
 [[nodiscard]] auto load_descriptor(const std::filesystem::path& yaml_path) -> nova::expected<descriptor, nova::error>;
 
+/**
+ * @brief   Load a descriptor from an LXY content string.
+ *
+ * @param   lxy_content    LXY content.
+ *
+ * @return  Descriptor instance or error.
+ */
+[[nodiscard]] auto load_descriptor_lxy(std::string_view lxy_content)
+        -> nova::expected<descriptor, nova::error>;
+
+[[nodiscard]] inline auto load_descriptor_lxy(const char* lxy_content)
+        -> nova::expected<descriptor, nova::error>
+{
+    return load_descriptor_lxy(std::string_view(lxy_content));
+}
+
+[[nodiscard]] inline auto load_descriptor_lxy(const std::string& lxy_content)
+        -> nova::expected<descriptor, nova::error>
+{
+    return load_descriptor_lxy(std::string_view(lxy_content));
+}
+
+/**
+ * @brief   Load a descriptor from an LXY file.
+ *
+ * @param   lxy_path       Path to the descriptor.lxy.
+ *
+ * @return  Descriptor instance or error.
+ */
+[[nodiscard]] auto load_descriptor_lxy(const std::filesystem::path& lxy_path) -> nova::expected<descriptor, nova::error>;
+
 } // namespace lexy

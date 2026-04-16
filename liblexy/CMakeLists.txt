@@ -2,6 +2,7 @@ file(GLOB_RECURSE LEXY_HEADER_FILES "*.hpp")
 
 add_library(lexy
     descriptor.cpp
+    lxy_parser.cpp
     decoder.cpp
     generator.cpp
 )
