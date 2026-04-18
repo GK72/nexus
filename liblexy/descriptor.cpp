@@ -22,33 +22,39 @@ namespace {
  *
  * @param   node    YAML node.
  *
+ * Parses the following nodes out of field:
+ * - `type`
+ * - `length`
+ * - `length_type`
+ *
  * @return  Field definition or error.
  */
 [[nodiscard]] auto parse_field(const YAML::Node& node)
         -> nova::expected<descriptor::field, nova::error>
 {
-    descriptor::field f;
-    f.name = node["name"].as<std::string>();
+    descriptor::field field;
+    field.name = node["name"].as<std::string>();
 
     if (not node["type"]) {
         return nova::unexpected(nova::error("Missing mandatory field: type"));
     }
+
     const std::string type_str = node["type"].as<std::string>();
     if (type_str == "uint") {
-        f.type = descriptor::field_type::unsigned_integer;
+        field.type = descriptor::field_type::unsigned_integer;
     } else if (type_str == "bool") {
-        f.type = descriptor::field_type::boolean;
+        field.type = descriptor::field_type::boolean;
     } else if (type_str == "string") {
-        f.type = descriptor::field_type::string;
+        field.type = descriptor::field_type::string;
     } else {
         return nova::unexpected(nova::error("Unknown field type: " + type_str));
     }
 
     const std::string len_type_str = node["length_type"].as<std::string>("byte");
     if (len_type_str == "bit") {
-        f.len_type = descriptor::length_type::bit;
+        field.len_type = descriptor::length_type::bit;
     } else if (len_type_str == "byte") {
-        f.len_type = descriptor::length_type::byte;
+        field.len_type = descriptor::length_type::byte;
     } else {
         return nova::unexpected(nova::error("Unknown length type: " + len_type_str));
     }
@@ -56,59 +62,68 @@ namespace {
     auto len_node = node["length"];
     if (len_node.IsScalar()) {
         try {
-            f.length = len_node.as<std::size_t>();
+            field.length = len_node.as<std::size_t>();
         } catch (...) {
-            f.length = len_node.as<std::string>();
+            field.length = len_node.as<std::string>();
         }
     }
 
-    return f;
+    return field;
 }
 
 /**
  * @brief   Parse the descriptor from a YAML node.
  *
  * @param   config  YAML configuration.
+*
+ * Parses the following nodes out of the descriptor:
+ * - `name`
+ * - `message.id`
+ * - `message.fields`
  *
  * @return  Descriptor instance or error.
+*
+ * @throws  Unhandled errors.
  */
-[[nodiscard]] auto parse_descriptor(const YAML::Node& config) -> nova::expected<descriptor, nova::error> {
-    try {
-        descriptor desc;
-        if (not config["name"]) {
-            return nova::unexpected(nova::error("Missing mandatory field: name"));
-        }
-        desc.name = config["name"].as<std::string>();
-        desc.version = config["version"].as<std::string>("");
-
-        auto msg_node = config["message"];
-        if (not msg_node) {
-            return nova::unexpected(nova::error("Missing mandatory field: message"));
-        }
-        if (not msg_node["id"]) {
-            return nova::unexpected(nova::error("Missing mandatory field: message:id"));
-        }
-
-        if (msg_node["id"].as<std::string>().starts_with("0x")) {
-            desc.message.id = static_cast<std::uint32_t>(std::stoul(msg_node["id"].as<std::string>(), nullptr, 16));
-        } else {
-            desc.message.id = msg_node["id"].as<std::uint32_t>();
-        }
-
-        desc.message.name = msg_node["name"].as<std::string>();
-
-        for (auto field_node : msg_node["fields"]) {
-            auto f_res = parse_field(field_node);
-            if (not f_res) {
-                return nova::unexpected(f_res.error());
-            }
-            desc.message.fields.push_back(*f_res);
-        }
-
-        return desc;
-    } catch (const std::exception& e) {
-        return nova::unexpected(nova::error(e.what()));
+[[nodiscard]] auto parse_descriptor(const YAML::Node& config)
+        -> nova::expected<descriptor, nova::error>
+{
+    descriptor desc;
+    if (not config["name"]) {
+        return nova::unexpected(nova::error("Missing mandatory field: name"));
     }
+
+    desc.name = config["name"].as<std::string>();
+    desc.version = config["version"].as<std::string>("");
+
+    auto msg_node = config["message"];
+    if (not msg_node) {
+        return nova::unexpected(nova::error("Missing mandatory field: message"));
+    }
+
+    if (not msg_node["id"]) {
+        return nova::unexpected(nova::error("Missing mandatory field: message:id"));
+    }
+
+    if (msg_node["id"].as<std::string>().starts_with("0x")) {
+        desc.message.id = static_cast<std::uint32_t>(std::stoul(msg_node["id"].as<std::string>(), nullptr, 16));
+    } else {
+        desc.message.id = msg_node["id"].as<std::uint32_t>();
+    }
+
+    desc.message.name = msg_node["name"].as<std::string>();
+
+    for (auto field_node : msg_node["fields"]) {
+        auto field = parse_field(field_node);
+
+        if (not field) {
+            return nova::unexpected(field.error());
+        }
+
+        desc.message.fields.push_back(*field);
+    }
+
+    return desc;
 }
 
 } // namespace

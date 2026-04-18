@@ -1,10 +1,11 @@
 #include <liblexy/descriptor.hpp>
+
+#include <libnova/expected.hpp>
 #include <libnova/io.hpp>
-#include <string_view>
-#include <fstream>
-#include <sstream>
-#include <vector>
+
 #include <cctype>
+#include <string_view>
+#include <vector>
 
 namespace lexy {
 
@@ -33,80 +34,99 @@ struct token {
 
 class lexer {
 public:
-    explicit lexer(std::string_view content) : content_(content) {}
+    explicit lexer(std::string_view content)
+        : m_content(content)
+    {}
 
     auto next() -> token {
         skip_whitespace();
-        if (cursor_ >= content_.size()) {
-            return {token_type::eof, ""};
+
+        if (m_cursor >= m_content.size()) {
+            return { token_type::eof, "" };
         }
 
-        char c = content_[cursor_];
+        char c = m_content[m_cursor];
         if (std::isalpha(c) || c == '_') {
             return consume_identifier();
         }
+
         if (std::isdigit(c)) {
             return consume_number();
         }
+
         if (c == '@') {
             return consume_reference();
         }
 
-        cursor_++;
+        m_cursor++;
         switch (c) {
-            case '{': return {token_type::lbrace, "{"};
-            case '}': return {token_type::rbrace, "}"};
-            case ':': return {token_type::colon, ":"};
-            case ';': return {token_type::semicolon, ";"};
-            default: return {token_type::unknown, content_.substr(cursor_ - 1, 1)};
+            case '{': return { token_type::lbrace, "{" };
+            case '}': return { token_type::rbrace, "}" };
+            case ':': return { token_type::colon, ":" };
+            case ';': return { token_type::semicolon, ";" };
+            default:  return { token_type::unknown, m_content.substr(m_cursor - 1, 1) };
         }
     }
 
 private:
+    std::string_view m_content;
+    std::size_t m_cursor = 0;
+
     void skip_whitespace() {
-        while (cursor_ < content_.size() && std::isspace(content_[cursor_])) {
-            cursor_++;
+        while (m_cursor < m_content.size() && std::isspace(m_content[m_cursor])) {
+            m_cursor++;
         }
     }
 
     auto consume_identifier() -> token {
-        size_t start = cursor_;
-        while (cursor_ < content_.size() && (std::isalnum(content_[cursor_]) || content_[cursor_] == '_')) {
-            cursor_++;
+        std::size_t start = m_cursor;
+
+        while (m_cursor < m_content.size() && (std::isalnum(m_content[m_cursor]) || m_content[m_cursor] == '_')) {
+            m_cursor++;
         }
-        std::string_view val = content_.substr(start, cursor_ - start);
-        if (val == "message") return {token_type::kw_message, val};
-        if (val == "int") return {token_type::kw_int, val};
-        if (val == "str") return {token_type::kw_str, val};
-        if (val == "bool") return {token_type::kw_bool, val};
-        return {token_type::identifier, val};
+
+        std::string_view value = m_content.substr(start, m_cursor - start);
+
+        if (value == "message") { return { token_type::kw_message, value }; }
+        if (value == "int")     { return { token_type::kw_int, value }; }
+        if (value == "str")     { return { token_type::kw_str, value }; }
+        if (value == "bool")    { return { token_type::kw_bool, value }; }
+
+        return { token_type::identifier, value };
     }
 
     auto consume_number() -> token {
-        size_t start = cursor_;
-        while (cursor_ < content_.size() && std::isdigit(content_[cursor_])) {
-            cursor_++;
+        std::size_t start = m_cursor;
+
+        while (m_cursor < m_content.size() && std::isdigit(m_content[m_cursor])) {
+            m_cursor++;
         }
-        return {token_type::number, content_.substr(start, cursor_ - start)};
+
+        return { token_type::number, m_content.substr(start, m_cursor - start) };
     }
 
+    /**
+     * @brief   Skip one character indicating reference.
+     */
     auto consume_reference() -> token {
-        cursor_++; // skip '@'
-        size_t start = cursor_;
-        while (cursor_ < content_.size() && (std::isalnum(content_[cursor_]) || content_[cursor_] == '_')) {
-            cursor_++;
+        m_cursor++; // skip '@'
+        std::size_t start = m_cursor;
+
+        while (m_cursor < m_content.size() && (std::isalnum(m_content[m_cursor]) || m_content[m_cursor] == '_')) {
+            m_cursor++;
         }
-        return {token_type::ref_identifier, content_.substr(start, cursor_ - start)};
+
+        return { token_type::ref_identifier, m_content.substr(start, m_cursor - start) };
     }
 
-    std::string_view content_;
-    size_t cursor_ = 0;
 };
 
 class parser {
 public:
-    explicit parser(std::string_view content) : lexer_(content) {
-        current_ = lexer_.next();
+    explicit parser(std::string_view content)
+        : m_lexer(content)
+    {
+        m_current = m_lexer.next();
     }
 
     auto parse() -> nova::expected<descriptor, nova::error> {
@@ -115,29 +135,32 @@ public:
         desc.version = "1.0.0";
         desc.message.id = 0;
 
-        if (current_.type != token_type::kw_message) {
+        if (m_current.type != token_type::kw_message) {
             return nova::unexpected(nova::error("Expected 'message' keyword"));
         }
         consume();
 
-        if (current_.type != token_type::identifier) {
+        if (m_current.type != token_type::identifier) {
             return nova::unexpected(nova::error("Expected message name"));
         }
-        desc.message.name = std::string(current_.value);
+        desc.message.name = std::string(m_current.value);
         consume();
 
-        if (current_.type != token_type::lbrace) {
+        if (m_current.type != token_type::lbrace) {
             return nova::unexpected(nova::error("Expected '{'"));
         }
         consume();
 
-        while (current_.type != token_type::rbrace && current_.type != token_type::eof) {
-            auto field_res = parse_field();
-            if (!field_res) return nova::unexpected(field_res.error());
-            desc.message.fields.push_back(*field_res);
+        while (m_current.type != token_type::rbrace && m_current.type != token_type::eof) {
+            auto field = parse_field();
+            if (not field) {
+                return nova::unexpected(field.error());
+            }
+
+            desc.message.fields.push_back(*field);
         }
 
-        if (current_.type != token_type::rbrace) {
+        if (m_current.type != token_type::rbrace) {
             return nova::unexpected(nova::error("Expected '}'"));
         }
         consume();
@@ -150,82 +173,83 @@ public:
     }
 
 private:
-    auto parse_field() -> nova::expected<descriptor::field, nova::error> {
-        descriptor::field f;
+    lexer m_lexer;
+    token m_current;
 
-        if (current_.type == token_type::kw_int) {
-            f.type = descriptor::field_type::unsigned_integer;
-            f.len_type = descriptor::length_type::bit;
-        } else if (current_.type == token_type::kw_str) {
-            f.type = descriptor::field_type::string;
-            f.len_type = descriptor::length_type::byte;
-        } else if (current_.type == token_type::kw_bool) {
-            f.type = descriptor::field_type::boolean;
-            f.len_type = descriptor::length_type::bit;
+    auto parse_field() -> nova::expected<descriptor::field, nova::error> {
+        descriptor::field field;
+
+        if (m_current.type == token_type::kw_int) {
+            field.type = descriptor::field_type::unsigned_integer;
+            field.len_type = descriptor::length_type::bit;
+        } else if (m_current.type == token_type::kw_str) {
+            field.type = descriptor::field_type::string;
+            field.len_type = descriptor::length_type::byte;
+        } else if (m_current.type == token_type::kw_bool) {
+            field.type = descriptor::field_type::boolean;
+            field.len_type = descriptor::length_type::bit;
         } else {
             return nova::unexpected(nova::error("Expected field type (int, str, bool)"));
         }
         consume();
 
-        if (current_.type != token_type::identifier) {
+        if (m_current.type != token_type::identifier) {
             return nova::unexpected(nova::error("Expected field name"));
         }
-        f.name = std::string(current_.value);
+        field.name = std::string(m_current.value);
         consume();
 
-        if (current_.type != token_type::colon) {
+        if (m_current.type != token_type::colon) {
             return nova::unexpected(nova::error("Expected ':'"));
         }
         consume();
 
-        if (current_.type == token_type::number) {
+        if (m_current.type == token_type::number) {
             try {
-                f.length = std::stoul(std::string(current_.value));
+                field.length = std::stoul(std::string(m_current.value));
             } catch (...) {
-                return nova::unexpected(nova::error("Invalid length value: " + std::string(current_.value)));
+                return nova::unexpected(nova::error("Invalid length value: " + std::string(m_current.value)));
             }
-        } else if (current_.type == token_type::ref_identifier) {
-            f.length = std::string(current_.value);
+        } else if (m_current.type == token_type::ref_identifier) {
+            field.length = std::string(m_current.value);
         } else {
             return nova::unexpected(nova::error("Expected length (number or @reference)"));
         }
         consume();
 
-        if (current_.type != token_type::semicolon) {
+        if (m_current.type != token_type::semicolon) {
             return nova::unexpected(nova::error("Expected ';'"));
         }
         consume();
 
-        return f;
+        return field;
     }
 
     void consume() {
-        current_ = lexer_.next();
+        m_current = m_lexer.next();
     }
 
-    lexer lexer_;
-    token current_;
 };
 
 } // namespace
 
-[[nodiscard]] auto load_descriptor_lxy(std::string_view lxy_content)
+[[nodiscard]] auto load_descriptor_lxy(std::string_view content)
         -> nova::expected<descriptor, nova::error>
 {
-    parser p(lxy_content);
+    auto p = parser{ content };
     return p.parse();
 }
 
-[[nodiscard]] auto load_descriptor_lxy(const std::filesystem::path& lxy_path)
+[[nodiscard]] auto load_descriptor_lxy(const std::filesystem::path& path)
         -> nova::expected<descriptor, nova::error>
 {
-    std::ifstream ifs(lxy_path);
-    if (!ifs) {
-        return nova::unexpected(nova::error("Could not open file: " + lxy_path.string()));
+    auto content = nova::read_file(path);
+
+    if (not content) {
+        return nova::unexpected{ content.error() };
     }
-    std::stringstream ss;
-    ss << ifs.rdbuf();
-    return load_descriptor_lxy(ss.str());
+
+    return load_descriptor_lxy(*content);
 }
 
 } // namespace lexy

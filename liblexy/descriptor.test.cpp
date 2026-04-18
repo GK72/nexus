@@ -21,7 +21,7 @@ message:
       length: 1
 )yaml";
 
-TEST(DescriptorTest, TC_001_Positive_FullDescriptorLoading) {
+TEST(descriptor, TC_001_Positive_FullDescriptorLoading) {
     const auto res = lexy::load_descriptor(InputTC_001);
     ASSERT_TRUE(res.has_value());
 
@@ -50,7 +50,7 @@ message:
   fields: []
 )yaml";
 
-TEST(DescriptorTest, TC_002_Positive_HexAndDecimalId) {
+TEST(descriptor, TC_002_Positive_HexAndDecimalId) {
     const auto res_hex = lexy::load_descriptor(InputTC_002_Hex);
     const auto res_dec = lexy::load_descriptor(InputTC_002_Dec);
 
@@ -71,7 +71,7 @@ message:
       length: 1
 )yaml";
 
-TEST(DescriptorTest, TC_003_Negative_MissingType) {
+TEST(descriptor, TC_003_Negative_MissingType) {
     const auto res = lexy::load_descriptor(InputTC_003);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Missing mandatory field: type");
@@ -86,7 +86,7 @@ message:
 )yaml";
 
 
-TEST(DescriptorTest, TC_004_Negative_MissingId) {
+TEST(descriptor, TC_004_Negative_MissingId) {
     const auto res = lexy::load_descriptor(InputTC_004);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Missing mandatory field: message:id");
@@ -103,7 +103,7 @@ message:
       type: float
 )yaml";
 
-TEST(DescriptorTest, TC_005_Negative_UnknownFieldType) {
+TEST(descriptor, TC_005_Negative_UnknownFieldType) {
     const auto res = lexy::load_descriptor(InputTC_005);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Unknown field type: float");
@@ -122,7 +122,7 @@ message:
       length_type: kilobyte
 )yaml";
 
-TEST(DescriptorTest, TC_006_Negative_UnknownLengthType) {
+TEST(descriptor, TC_006_Negative_UnknownLengthType) {
     const auto res = lexy::load_descriptor(InputTC_006);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Unknown length type: kilobyte");
@@ -134,7 +134,7 @@ name: test
 [invalid: yaml
 )yaml";
 
-TEST(DescriptorTest, TC_007_Negative_InvalidYaml) {
+TEST(descriptor, TC_007_Negative_InvalidYaml) {
     const auto res = lexy::load_descriptor(InputTC_007);
     ASSERT_FALSE(res.has_value());
     // yaml-cpp error message contains "bad file" or similar
@@ -146,7 +146,7 @@ constexpr auto InputTC_008 = R"yaml(
 id: 1
 )yaml";
 
-TEST(DescriptorTest, TC_008_Negative_MissingName) {
+TEST(descriptor, TC_008_Negative_MissingName) {
     const auto res = lexy::load_descriptor(InputTC_008);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Missing mandatory field: name");
@@ -165,7 +165,7 @@ message:
       length_type: byte
 )yaml";
 
-TEST(DescriptorTest, TC_009_Negative_InvalidReference) {
+TEST(descriptor, TC_009_Negative_InvalidReference) {
     // TODO(tech-debt): This depends on decoding capability.
     // TODO(feature): Implement sanity check in `descriptor`.
     const auto desc_res = lexy::load_descriptor(InputTC_009);
@@ -182,7 +182,7 @@ name: test
 id: 1
 )yaml";
 
-TEST(DescriptorTest, TC_010_Negative_MissingMessage) {
+TEST(descriptor, TC_010_Negative_MissingMessage) {
     const auto res = lexy::load_descriptor(InputTC_010);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().message, "Missing mandatory field: message");

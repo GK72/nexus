@@ -161,7 +161,9 @@ constexpr std::size_t BitsPerByte = 8;
 
 } // namespace
 
-[[nodiscard]] auto decode(const descriptor& desc, nova::data_view data) -> nova::expected<message_data, nova::error> {
+[[nodiscard]] auto decode(const descriptor& desc, nova::data_view data)
+        -> nova::expected<message_data, nova::error>
+{
     message_data result;
     result.name = desc.message.name;
 
