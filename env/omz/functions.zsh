@@ -2,6 +2,15 @@ function colormap() {
     for i in {0..255}; do print -Pn "%K{$i} %k%F{$i}${(l:3::0:)i}%f " ${${(M)$((i%8)):#7}:+$'\n'}; done
 }
 
+function c2() {
+    local sourceFile="${1}"
+    shift
+    local cxx_flags="$@"
+
+    cppfront "${sourceFile}"
+    g++ -I$HOME/.local/include -std=${CXXSTD:=c++20} ${cxx_flags} "${sourceFile%.cpp2}.cpp"
+}
+
 # Change git worktree
 function cw() {
     local SELECTION=$(git worktree list | field 1 | fzf --height=20% --layout=reverse)
