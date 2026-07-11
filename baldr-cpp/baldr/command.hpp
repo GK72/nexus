@@ -3,6 +3,7 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <map>
 
 #include <libnova/error.hpp>
 #include <fmt/format.h>
@@ -24,7 +25,6 @@ public:
 
     class pipe {
     public:
-
         pipe() {
             if (::pipe(m_inner.data()) == -1) {
                 throw nova::exception("Pipe creation failed");
@@ -34,26 +34,14 @@ public:
         [[nodiscard]] auto read()  const -> int { return m_inner[0]; }
         [[nodiscard]] auto write() const -> int { return m_inner[1]; }
 
-        /**
-         * @brief   Close the read end of the pipe.
-         */
         void close_read() const {
             ::close(read());
         }
 
-        /**
-         * @brief   Close the write end of the pipe.
-         */
         void close_write() const {
             ::close(write());
         }
 
-        /**
-         * @brief   Redirect `stdout` and/or `stderr` to the write end of the
-         *          pipe.
-         *
-         * Closes the original write file descriptor as it is redirected.
-         */
         void redirect(file_descriptor fd) const {
             switch (fd) {
                 case file_descriptor::stdout:
@@ -67,7 +55,6 @@ public:
                     redirect_impl(STDERR_FILENO);
                     break;
             }
-
             close_write();
         }
 
@@ -79,69 +66,77 @@ public:
                 throw nova::exception("Pipe duplication failed");
             };
         }
-
     };
 
-    command(const std::vector<std::string>& args)
-        : m_pid(fork())
+    command(const std::vector<std::string>& args, 
+            const std::map<std::string, std::string>& env = {},
+            bool interactive = false)
+        : m_args_vec(args), m_env_map(env), m_interactive(interactive)
     {
-        m_args.reserve(args.size() + 1);
-
-        for (const auto& arg : args) {
-            m_args.push_back(const_cast<char*>(arg.c_str()));                                       // NOLINT(cppcoreguidelines-pro-type-const-cast) | https://pubs.opengroup.org/onlinepubs/009604499/functions/exec.html (RATIONALE)
+        m_args.reserve(m_args_vec.size() + 1);
+        for (const auto& arg : m_args_vec) {
+            m_args.push_back(const_cast<char*>(arg.c_str()));
         }
-
         m_args.push_back(nullptr);
-
-        if (m_pid == -1) {
-            throw nova::exception("Failed to fork process");
-        };
     }
 
     auto run() {
-        if (m_pid == 0) {
-            m_pipe.redirect(file_descriptor::both);
-            execvp(m_args[0], m_args.data());
+        m_pid = fork();
+        if (m_pid == -1) {
+            throw nova::exception("Failed to fork process");
         }
 
-        close(m_pipe.write());
+        if (m_pid == 0) {
+            if (!m_interactive) {
+                m_pipe.redirect(file_descriptor::both);
+            }
+
+            for (const auto& [key, value] : m_env_map) {
+                setenv(key.c_str(), value.c_str(), 1);
+            }
+
+            execvp(m_args[0], m_args.data());
+            perror("execvp");
+            _exit(EXIT_FAILURE);
+        }
+
+        if (!m_interactive) {
+            ::close(m_pipe.write());
+        }
     }
 
     auto poll() -> std::string {
-        ssize_t n = read(m_pipe.read(), m_buffer.data(), m_buffer.size());
+        if (m_interactive) return {};
+        ssize_t n = ::read(m_pipe.read(), m_buffer.data(), m_buffer.size());
+        if (n <= 0) return {};
         return { m_buffer.data(), static_cast<std::size_t>(n) };
     }
 
-    /**
-     * @brief   Wait for the spawned process to finish.
-     *
-     * @returns with the exit code of the spawned process.
-     *
-     * @throws  if wait fails.
-     */
     auto wait() -> int {
-        close(m_pipe.read());
+        if (!m_interactive) {
+            ::close(m_pipe.read());
+        }
 
         int status = 0;
         waitpid(m_pid, &status, 0);
 
-        // TODO: Finish implementation, check for other statuses.
-        // Reference: https://pubs.opengroup.org/onlinepubs/9699919799/functions/wait.html
         if (not WIFEXITED(status)) {
-            throw nova::exception("Spawned process failed to correctly exit");
+            return EXIT_FAILURE;
         }
 
         return WEXITSTATUS(status);
     }
 
 private:
+    std::vector<std::string> m_args_vec;
     std::vector<char*> m_args;
+    std::map<std::string, std::string> m_env_map;
     pipe m_pipe;
-    pid_t m_pid;
+    pid_t m_pid = -1;
+    bool m_interactive = false;
 
     static constexpr auto BufferSize = 4096;
     std::array<char, BufferSize> m_buffer{ };
-
 };
 
 } // namespace baldr

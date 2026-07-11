@@ -1,0 +1,48 @@
+= Baldr Developer Guide
+:toc:
+:toc-title: Table of Contents
+:icons: font
+
+This guide provides technical details for developers working on or with the Baldr
+builder tool.
+
+== Architecture
+
+Baldr is composed of several key modules:
+
+* *Configuration (`baldr::Config`)*: Handles YAML parsing and hierarchical
+  merging of settings from multiple locations.
+* *Builder (`baldr::Builder`)*: Orchestrates high-level operations like CMake
+  configuration, building, and debugger launching.
+* *Process Management (`baldr::command`)*: A wrapper around `fork` and `execvp`
+  that manages process lifecycles and I/O redirection using pipes.
+* *Progress Tracking (`baldr::progress`)*: A TUI utility that uses ANSI escape
+  sequences to provide real-time feedback in the terminal without cluttering
+  history.
+* *Utils (`baldr::utils`)*: Provides helper functions for executable discovery,
+  path manipulation, and symlink management.
+* *CLI Layer*: Uses `boost::program_options` for robust command-line argument
+  parsing and subcommand handling.
+
+== Building
+
+Baldr is built using CMake and uses Conan for dependency management.
+
+[source,bash]
+----
+# Install dependencies
+conan install . --output-folder=build --build=missing
+
+# Configure and build
+./run
+----
+
+Building requires a C++20 compatible compiler and Conan 2.x.
+
+== Task Plan
+
+The port from Rust to C++ is complete. Future tasks include:
+
+1. **Docker Stability**: Moving the Docker integration from experimental to stable.
+2. **Configuration Schema**: Adding validation for YAML configuration files.
+3. **Remote Caching**: Exploring remote build artifact caching.

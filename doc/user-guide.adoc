@@ -1,0 +1,155 @@
+= Baldr User Guide
+:toc:
+:toc-title: Table of Contents
+:icons: font
+
+Baldr is a C++ based builder utility. It provides a CLI interface to execute
+commands locally or within Docker containers, featuring integrated progress
+tracking and terminal UI feedback.
+
+== Overview
+
+Baldr serves as a wrapper for build-related tasks, offering:
+
+* C++ project builder.
+* Local command execution with output polling.
+* Docker container integration (experimental).
+* ANSI-based progress reporting for TUI environments.
+
+== Usage
+
+[source,bash]
+----
+baldr [global-options] <command> [sub-options]
+----
+
+=== Global Options
+
+* `-p`, `--project`: Path to the project root (default: `.`). Used for locating configuration files and as the source root for builds.
+
+== Configuration
+
+Baldr uses YAML for configuration, supporting hierarchical settings that are merged together.
+
+=== Configuration Files
+
+Baldr looks for configuration files in the following locations (later entries override earlier ones):
+
+1. `~/.config/baldr/config.yaml`
+2. `~/.baldr.yaml`
+3. `./.baldr.yaml` (Project-local)
+
+=== Available Settings
+
+[source,yaml]
+----
+build_type: "Debug"   # Default build type (Debug, Release, etc.)
+target: "all"        # Default build target
+jobs: 4              # Number of parallel build jobs
+cmake_args:          # Additional arguments for CMake
+  - "-DENABLE_TESTING=ON"
+cc: "clang"          # Optional: C compiler path
+cxx: "clang++"       # Optional: C++ compiler path
+----
+
+== Commands
+
+=== configure
+Generates the CMake project using the configured settings.
+
+[source,bash]
+----
+baldr configure [-b <build_dir>]
+----
+
+*Options*:
+
+* `-b`, `--build-dir`: Directory for build artifacts (default: `build`).
+
+=== build
+Builds the project targets.
+
+[source,bash]
+----
+baldr build [-b <build_dir>] [-t <target>]
+----
+
+*Options*:
+
+* `-b`, `--build-dir`: Directory for build artifacts (default: `build`).
+* `-t`, `--target`: Specific target to build (defaults to `target` from config).
+
+=== run
+Executes a command locally and captures its output.
+
+[source,bash]
+----
+baldr run <command> [args...]
+----
+
+If `<command>` is not a path, Baldr will attempt to find a matching executable in the `build` directory.
+
+*Behavior*:
+
+1. Forks a new process.
+2. Redirects both `stdout` and `stderr` to a pipe.
+3. Polls the pipe for output and prints it to the terminal via the progress UI.
+4. Waits for the process to exit and returns the exit code.
+
+=== debug
+Spawns a debugger for a project executable.
+
+[source,bash]
+----
+baldr debug [-b <build_dir>] <executable> [args...]
+----
+
+It automatically discovers the path to `<executable>` in the build directory.
+
+=== clean
+Removes build artifacts by deleting the build directory.
+
+[source,bash]
+----
+baldr clean [-b <build_dir>]
+----
+
+=== doc
+Generates project documentation using `tools/doc.sh`.
+
+[source,bash]
+----
+baldr doc
+----
+
+=== docker (Experimental)
+Runs a command inside a Docker container using the Docker Remote API.
+
+[source,bash]
+----
+baldr docker --image <image_name> [--socket <socket_path>] <command> [args...]
+----
+
+*Options*:
+
+* `-i`, `--image`: Name of the Docker image to use (required).
+* `--socket`: Path to the Docker Unix socket (default: `/var/run/docker.sock`).
+
+*Note*: The Docker integration is currently in an experimental phase. It
+communicates with the Docker daemon via Unix sockets to pull images, create
+containers, and stream logs.
+
+=== test
+A utility command to demonstrate and test the Baldr progress tracking system.
+
+[source,bash]
+----
+baldr test [--lines <number>]
+----
+
+*Options*:
+
+* `-l`, `--lines`: Number of progress lines to display (default: 1).
+
+This command simulates a workload and displays dynamic ANSI-based progress
+messages in the terminal.

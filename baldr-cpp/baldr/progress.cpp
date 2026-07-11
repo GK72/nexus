@@ -1,11 +1,7 @@
 #include <baldr/progress.hpp>
 
-#include <chrono>
 #include <fstream>
-#include <functional>
-#include <iostream>
 #include <string>
-#include <thread>
 
 namespace baldr {
 
@@ -27,23 +23,24 @@ void progress::msg(const std::string& msg) {
 
     m_buffer.push_back(msg);
 
+    // Erasing everything below the cursor (rather than clearing one row per
+    // buffered message) is a cheap, defensive redraw-correctness measure,
+    // e.g. in case `m_max_lines` shrinks between frames.
+    tty::erase_to_end();
+
+    std::size_t max_width = tty::terminal_width() > 0 ? tty::terminal_width() - 1 : 0;
     for (auto& line: m_buffer) {
-        ansi::clear_line();
         // TODO: Indent.
-        fmt::println("{}", line);
-        tui_debug("{}", line);
+        std::string capped = tty::cap_visible_width(line, max_width);
+        fmt::println("{}", capped);
+        tui_debug("{}", capped);
     }
 
-    ansi::cursor_up(m_buffer.size());
+    tty::cursor_up(m_buffer.size());
 }
 
 void progress::success(const std::string& msg) {
-    for (std::size_t i = 0; i < m_buffer.size(); ++i) {
-        ansi::clear_line();
-        ansi::cursor_down();
-    }
-
-    ansi::cursor_up(std::min(m_max_lines, m_buffer.size()));
+    tty::erase_to_end();
 
     if (not msg.empty()) {
         // TODO: Timestamps, spdlog.
@@ -52,8 +49,9 @@ void progress::success(const std::string& msg) {
 }
 
 void progress::failure(const std::string& msg) {
+    tty::erase_to_end();
+
     for (auto& line: m_buffer) {
-        ansi::clear_line();
         // TODO: Indent.
         fmt::println("\033[0;31m{}", line);
     }

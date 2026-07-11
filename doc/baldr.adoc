@@ -1,0 +1,10 @@
+= Baldr: The Master Book
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+
+include::user-guide.adoc[leveloffset=+1]
+
+include::developer-guide.adoc[leveloffset=+1]
