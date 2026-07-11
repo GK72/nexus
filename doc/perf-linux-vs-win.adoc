@@ -1,0 +1,32 @@
+= Linux Benchmark
+
+== Hardware and Software
+
+Cyberpunk 2077 running via Steam Proton on Linux.
+
+* NVIDIA GB203 [GeForce RTX 5080] driver: nvidia v: 580.105.08
+* AMD Ryzen 7 9800X3D 8-Core Processor
+
+== Report
+
+|===
+
+| Platform |        Resolution         | Frame Gen | Avg. FPS | Min FPS | Max FPS | Diff
+
+| Linux    | 4k DLSS Performance       |     4x    |    133   |   120   |   146   | -29%
+| Linux    | 4k DLSS Quality           |     4x    |     93   |    82   |   105   | -30%
+| Linux    | 4k DLSS Performance       |     No    |     44   |    39   |    50   | -27%
+| Linux    | 4k DLSS Quality           |     No    |     28   |    25   |    32   | -28%
+| Linux    | 4k DLSS Quality (raster)  |     No    |     69   |    60   |    85   | -19%
+| Linux    | 4k Native (raster)        |     No    |     38   |    33   |    49   | -17%
+| Linux    | 720p Native (raster)      |     No    |    194   |   153   |   245   | -4.4%
+
+| Win11    | 4k DLSS Performance       |     4x    |    188   |   173   |   206   | 41%
+| Win11    | 4k DLSS Quality           |     4x    |    133   |   121   |   149   | 43%
+| Win11    | 4k DLSS Performance       |     No    |     60   |    54   |    68   | 36%
+| Win11    | 4k DLSS Quality           |     No    |     39   |    35   |    45   | 39%
+| Win11    | 4k DLSS Quality (raster)  |     No    |     85   |    75   |   106   | 23%
+| Win11    | 4k Native (raster)        |     No    |     46   |    39   |    60   | 21%
+| Win11    | 720p Native (raster)      |     No    |    203   |   150   |   246   | 4.6%
+
+|===

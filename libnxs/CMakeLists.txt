@@ -1,0 +1,33 @@
+file(GLOB_RECURSE NXS_HEADER_FILES "*.hpp")
+
+add_library(nxs INTERFACE)
+
+target_sources(nxs INTERFACE
+    FILE_SET HEADERS
+    BASE_DIRS "${NEXUS_PROJECT_ROOT}"
+    FILES "${NXS_HEADER_FILES}"
+)
+
+target_include_directories(nxs INTERFACE
+    $<BUILD_INTERFACE:${NEXUS_PROJECT_ROOT}>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(nxs INTERFACE
+    nova::nova
+)
+
+include(test.cmake)
+
+if(BUILD_TESTING)
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
+
+    add_test_target(nxs)
+endif()
+
+install(TARGETS nxs
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)

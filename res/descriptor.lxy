@@ -1,0 +1,9 @@
+message player {
+    int message_length : 8;
+    int version : 4;
+    int id : 12;
+    int is_alive : 1;
+    int health : 7;
+    int name_length : 8;
+    str name : @name_length;
+}

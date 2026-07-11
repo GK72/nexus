@@ -1,0 +1,10 @@
+{
+  "skill-locations": ["./skills"],
+  "skill-default-locations": true,
+  "command-locations": ["./commands"],
+  "command-default-locations": true,
+  "agent-locations": ["./agents"],
+  "agent-default-location": true,
+  "auto-update": true,
+  "guidelines-location": "./guidelines.md"
+}

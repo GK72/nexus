@@ -1,0 +1,4 @@
+set(CMAKE_CXX_STANDARD 26)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -freflection")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcontracts")

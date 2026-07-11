@@ -1,22 +1,33 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.24)
 
-if (CMAKE_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+if(CMAKE_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     message(FATAL_ERROR "Building in-source is not supported! Create a build dir and remove ${CMAKE_SOURCE_DIR}/CMakeCache.txt")
 endif()
 
-project("Nexus" VERSION 0.2.0)
+set(NEXUS_VERSION "0.2.0")
+project("nexus" VERSION ${NEXUS_VERSION} LANGUAGES CXX)
+message(STATUS "Nexus version ${NEXUS_VERSION}")
 
-find_package(cppfront REQUIRED)
+find_package(nova REQUIRED)
+include(GNUInstallDirs)
+include(dependencies.cmake)
 
-add_library(project_warnings INTERFACE)
-include(cmake/compiler-warnings.cmake)
-set_project_warnings(project_warnings)
+include(novaCompilerWarnings)
+include(novaCompilerSettings)
 
-include(cmake/settings.cmake)
+include(settings.cmake)
 
-add_subdirectory(deps)
-add_subdirectory(include)
-add_subdirectory(src)
+include(CTest)
 
-enable_testing()
-add_subdirectory(unit-tests)
+set(NEXUS_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}")
+
+add_subdirectory(libbtx)
+add_subdirectory(liblexy)
+add_subdirectory(libnxs)
+
+add_subdirectory(btx)
+add_subdirectory(msg-gen)
+
+if(BUILD_TESTING)
+    # Root tests if any
+endif()
