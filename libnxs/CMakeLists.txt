@@ -1,20 +1,23 @@
 file(GLOB_RECURSE NXS_HEADER_FILES "*.hpp")
 
-add_library(nxs INTERFACE)
+add_library(nxs
+    tty.cpp
+)
 
-target_sources(nxs INTERFACE
+target_sources(nxs PUBLIC
     FILE_SET HEADERS
     BASE_DIRS "${NEXUS_PROJECT_ROOT}"
     FILES "${NXS_HEADER_FILES}"
 )
 
-target_include_directories(nxs INTERFACE
+target_include_directories(nxs PUBLIC
     $<BUILD_INTERFACE:${NEXUS_PROJECT_ROOT}>
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(nxs INTERFACE
+target_link_libraries(nxs PUBLIC
     nova::nova
+    fmt::fmt
 )
 
 include(test.cmake)
