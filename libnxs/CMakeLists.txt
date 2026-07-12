@@ -2,6 +2,7 @@ file(GLOB_RECURSE NXS_HEADER_FILES "*.hpp")
 
 add_library(nxs
     tty.cpp
+    rlog.cpp
 )
 
 target_sources(nxs PUBLIC
@@ -17,7 +18,8 @@ target_include_directories(nxs PUBLIC
 
 target_link_libraries(nxs PUBLIC
     nova::nova
-    fmt::fmt
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
 )
 
 include(test.cmake)
@@ -28,6 +30,9 @@ if(BUILD_TESTING)
 
     add_test_target(nxs)
 endif()
+
+add_executable(example-rlog rlog.ex.cpp)
+target_link_libraries(example-rlog PRIVATE nxs)
 
 install(TARGETS nxs
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
