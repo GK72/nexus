@@ -95,11 +95,13 @@ public:
     command(
             const std::vector<std::string>& args,
             const std::map<std::string, std::string>& env = {},
+            std::string working_directory = {},
             bool interactive = false
     )
         : m_args_vec(args)
         , m_env_map(env)
         , m_interactive(interactive)
+        , m_working_directory(std::move(working_directory))
     {
         m_args.reserve(m_args_vec.size() + 1);
         for (const auto& arg : m_args_vec) {
@@ -125,6 +127,11 @@ public:
 
             for (const auto& [key, value] : m_env_map) {
                 setenv(key.c_str(), value.c_str(), 1);
+            }
+
+            if (not m_working_directory.empty() and chdir(m_working_directory.c_str()) == -1) {
+                perror("chdir");
+                _exit(EXIT_FAILURE);
             }
 
             execvp(m_args[0], m_args.data());
@@ -190,6 +197,7 @@ private:
     pipe m_pipe;
     pid_t m_pid = -1;
     bool m_interactive = false;
+    std::string m_working_directory;
 
     static constexpr auto BufferSize = 4096;
     std::array<char, BufferSize> m_buffer{ };

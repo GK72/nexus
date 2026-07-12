@@ -51,13 +51,19 @@ void print_help(std::ostream& out) {
     out << "Options:\n";
     out << "  -h, --help           Produce help message\n";
     out << "  -v, --version        Print version and exit\n";
+    out << "  -p, --project <dir>  Project directory (default: current directory)\n";
+    out << "\n";
+    out << "  -t, --target <name>  Executable name to run (required for 'run')\n";
+    out << "      --build          For 'run': build the project first\n";
     out << "\n";
     out << "Commands:\n";
     out << "  build      Configure (if needed) and build the project\n";
+    out << "  run        Run the built target given via -t/--target\n";
 }
 
 enum class command_type {
     build,
+    run,
 };
 
 /**
@@ -69,6 +75,9 @@ enum class command_type {
  */
 struct options {
     command_type command;
+    std::string project_dir;
+    std::optional<std::string> target;
+    bool build_before_run = false;
 };
 
 /**
@@ -84,7 +93,10 @@ struct options {
     desc.add_options()
         ("help,h", "Produce help message")
         ("version,v", "Print version and exit")
-        ("command", po::value<std::string>(), "Command to run: 'build'")
+        ("project,p", po::value<std::string>()->default_value("."), "Project directory (default: current directory)")
+        ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
+        ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
+        ("command", po::value<std::string>(), "Command to run: 'build', 'run'")
     ;
 
     po::positional_options_description positional;
@@ -106,14 +118,25 @@ struct options {
     }
 
     options result;
+    result.project_dir = vm["project"].as<std::string>();
+    result.build_before_run = vm["build"].as<bool>();
+
+    if (vm.contains("target")) {
+        result.target = vm["target"].as<std::string>();
+    }
 
     if (not vm.contains("command")) {
         print_help(std::cerr);
-        return std::nullopt;
+        throw nova::exception("No command given");
     }
 
     if (auto cmd = vm["command"].as<std::string>(); cmd == "build") {
         result.command = command_type::build;
+    } else if (cmd == "run") {
+        result.command = command_type::run;
+        if (not result.target) {
+            throw nova::exception("'run' requires -t/--target <name>");
+        }
     } else {
         throw nova::exception("Unknown command: {}", cmd);
     }
@@ -148,11 +171,19 @@ auto entrypoint(auto args) -> int {
     }
 
     switch (options->command) {
-        case command_type::build:
-            baldr::builder builder;
-            builder.configure();
+        case command_type::build: {
+            auto builder = baldr::builder{ options->project_dir };
             builder.build();
             break;
+        }
+        case command_type::run: {
+            auto builder = baldr::builder{ options->project_dir };
+            if (options->build_before_run) {
+                builder.build();
+            }
+            builder.run(*options->target);
+            break;
+        }
     }
 
     return EXIT_SUCCESS;
