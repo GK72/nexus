@@ -9,6 +9,7 @@
  */
 
 #include <baldr/builder.hpp>
+#include <baldr/docker.hpp>
 
 #include <libnxs/rlog.hpp>
 
@@ -56,14 +57,18 @@ void print_help(std::ostream& out) {
     out << "  -t, --target <name>  Executable name to run (required for 'run')\n";
     out << "      --build          For 'run': build the project first\n";
     out << "\n";
+    out << "  -i, --image <name>   Docker image to use (required for 'docker')\n";
+    out << "\n";
     out << "Commands:\n";
     out << "  build      Configure (if needed) and build the project\n";
     out << "  run        Run the built target given via -t/--target\n";
+    out << "  docker     Run a command inside a container: baldr docker -i <image> <cmd...>\n";
 }
 
 enum class command_type {
     build,
     run,
+    docker,
 };
 
 /**
@@ -78,6 +83,8 @@ struct options {
     std::string project_dir;
     std::optional<std::string> target;
     bool build_before_run = false;
+    std::optional<std::string> image;
+    std::vector<std::string> docker_args;
 };
 
 /**
@@ -96,11 +103,14 @@ struct options {
         ("project,p", po::value<std::string>()->default_value("."), "Project directory (default: current directory)")
         ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
-        ("command", po::value<std::string>(), "Command to run: 'build', 'run'")
+        ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
+        ("command", po::value<std::string>(), "Command to run: 'build', 'run', 'docker'")
+        ("args", po::value<std::vector<std::string>>()->multitoken(), "For 'docker': the container command")
     ;
 
     po::positional_options_description positional;
     positional.add("command", 1);
+    positional.add("args", -1);
 
     po::variables_map vm;
     po::store(po::command_line_parser(args).options(desc).positional(positional).run(), vm);
@@ -125,6 +135,14 @@ struct options {
         result.target = vm["target"].as<std::string>();
     }
 
+    if (vm.contains("image")) {
+        result.image = vm["image"].as<std::string>();
+    }
+
+    if (vm.contains("args")) {
+        result.docker_args = vm["args"].as<std::vector<std::string>>();
+    }
+
     if (not vm.contains("command")) {
         print_help(std::cerr);
         throw nova::exception("No command given");
@@ -136,6 +154,14 @@ struct options {
         result.command = command_type::run;
         if (not result.target) {
             throw nova::exception("'run' requires -t/--target <name>");
+        }
+    } else if (cmd == "docker") {
+        result.command = command_type::docker;
+        if (not result.image) {
+            throw nova::exception("'docker' requires -i/--image <name>");
+        }
+        if (result.docker_args.empty()) {
+            throw nova::exception("'docker' requires a command to run inside the container");
         }
     } else {
         throw nova::exception("Unknown command: {}", cmd);
@@ -184,6 +210,9 @@ auto entrypoint(auto args) -> int {
                 }
                 builder.run(*options->target);
                 break;
+            }
+            case command_type::docker: {
+                return baldr::docker_run(*options->image, options->docker_args);
             }
         }
     } catch (const nova::exception& ex) {
