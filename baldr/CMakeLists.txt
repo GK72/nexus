@@ -1,5 +1,5 @@
-add_executable(baldr main.cpp builder.cpp)
-target_link_libraries(baldr PRIVATE nxs Boost::program_options)
+add_executable(baldr main.cpp builder.cpp docker.cpp)
+target_link_libraries(baldr PRIVATE nxs Boost::program_options Boost::headers nlohmann_json::nlohmann_json)
 
 nexus_git_hash(BALDR_GIT_HASH)
 

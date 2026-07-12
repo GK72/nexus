@@ -47,6 +47,29 @@ auto resolve_mode() -> mode {
 }
 
 /**
+ * @brief   Resolve the configured window size from the `RLOG_WINDOW_SIZE`
+ *          environment variable, if set to a valid positive integer.
+ */
+auto resolve_window_size() -> std::optional<std::size_t> {
+    const char* env = std::getenv(WindowSizeEnvVariableName);
+    if (env == nullptr) {
+        return std::nullopt;
+    }
+
+    try {
+        const int value = std::stoi(env);
+        if (value <= 0) {
+            nova::log::warn("Invalid {} value '{}', ignoring", WindowSizeEnvVariableName, env);
+            return std::nullopt;
+        }
+        return static_cast<std::size_t>(value);
+    } catch (const std::exception&) {
+        nova::log::warn("Invalid {} value '{}', ignoring", WindowSizeEnvVariableName, env);
+        return std::nullopt;
+    }
+}
+
+/**
  * @brief   Resolve `logger_name` to a logger (`spdlog::default_logger()` when
  *          empty), then return the first `scrollog_sink` attached to it, or
  *          `nullptr` if there is none.
@@ -132,7 +155,13 @@ void init(const std::string& name, std::optional<mode> m) {
 
     mode resolved = m.value_or(resolve_mode());
     if (resolved == mode::progress) {
-        spdlog::set_default_logger(spdlog::create<scrollog_sink>(name, name));
+        auto logger = spdlog::create<scrollog_sink>(name, name);
+        if (auto sink = std::dynamic_pointer_cast<scrollog_sink>(logger->sinks().front())) {
+            if (auto window_size = resolve_window_size()) {
+                sink->scroll_window().visible_lines(*window_size);
+            }
+        }
+        spdlog::set_default_logger(logger);
     } else {
         spdlog::set_default_logger(spdlog::create<spdlog::sinks::ansicolor_stderr_sink_mt>(name));
     }

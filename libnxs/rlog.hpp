@@ -32,6 +32,7 @@
 namespace nxs::rlog {
 
 static constexpr auto LogModeEnvVariableName = "SPDLOG_MODE";
+static constexpr auto WindowSizeEnvVariableName = "RLOG_WINDOW_SIZE";
 
 enum class mode {
     standard, ///< Plain, appendable log lines.
@@ -117,6 +118,14 @@ public:
      */
     void failure(const std::string& msg = "");
 
+    /**
+     * @brief   Access the underlying rolling window, e.g. to configure
+     *          `visible_lines()`/`max_buffer()`.
+     */
+    window& scroll_window() {
+        return m_window;
+    }
+
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override;
     void flush_() override;
@@ -134,6 +143,11 @@ private:
  * When `m` is not given, the effective mode is resolved with the following
  * precedence: `SPDLOG_MODE` environment variable > `isatty(stderr)`
  * auto-detection > `mode::standard` default.
+ *
+ * In `mode::progress`, the number of visible lines rendered by the rolling
+ * window can be configured via the `RLOG_WINDOW_SIZE` environment variable
+ * (a positive integer); invalid or missing values fall back to the
+ * `window` default.
  *
  * @param   m       The logging mode to initialize with, or `std::nullopt` to
  *                  auto-resolve it.
