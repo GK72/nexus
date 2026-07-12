@@ -9,3 +9,6 @@ target_compile_definitions(baldr PRIVATE
 )
 
 install(TARGETS baldr RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_executable(example-command command.ex.cpp)
+target_link_libraries(example-command PRIVATE nxs)
