@@ -83,6 +83,27 @@ see which of these stopped it):
 aia --model /path/to/model.gguf --prompt "Explain X in detail" --n-predict 2048
 ```
 
+## Long-lived memory (retrieval-augmented recall)
+
+Attach `--memory` to a JSON path to give `aia` a simple retrieval-augmented
+memory that persists *across* sessions (independent of `--session`, which only
+covers a single conversation's transcript):
+
+```bash
+aia --model /path/to/model.gguf --memory ./my-memory.json --prompt "My cat is named Whiskers"
+# ... later, possibly in a different session:
+aia --model /path/to/model.gguf --memory ./my-memory.json --prompt "What's my cat's name?"
+```
+
+Each turn's exchange (user message + response) is embedded with a dedicated
+`llama.cpp` embeddings context (mean-pooled, cosine similarity) and appended to
+the memory file. Before each new turn, the user's message is embedded the same
+way and the `--memory-top-k` (default 3) most similar past exchanges above a
+similarity threshold are recalled and injected as a system message ahead of
+that turn, so the model can use them for context -- without ever growing the
+chat history by more than what's actually relevant. Unlike `--session`, the
+memory file is meant to accumulate across many separate conversations.
+
 ## Downloading a model
 
 Use `download-model.sh` to fetch a GGUF model from Hugging Face into `aia/models/`:
@@ -101,5 +122,4 @@ repo-wide Conan dependency) is used to serialize `--session` files.
 
 ## Roadmap
 
-- A retrieval-augmented generation (RAG) layer over past discussions.
 - Periodic LoRA/QLoRA fine-tuning on collected conversation data.

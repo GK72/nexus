@@ -5,7 +5,10 @@
  * multi-turn chat session with top-k/top-p/temperature sampling. Conversation
  * history is retained for the whole session and the KV cache is reused
  * incrementally across turns; optionally, history is persisted to a JSON
- * session file so a conversation can be resumed across runs. No RAG layer yet.
+ * session file so a conversation can be resumed across runs. A separate,
+ * long-lived memory store (embeddings over past exchanges) can also be
+ * attached so relevant snippets from earlier sessions are recalled via
+ * simple retrieval-augmented generation (RAG).
  *
  * @author  Gábor Krisztián Girhiny and Junie
  * @date    2026-07-14
@@ -22,6 +25,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -58,6 +62,8 @@ struct aia_options {
     std::string prompt {};
     std::string context_path {};
     std::string session_path {};
+    std::string memory_path {};
+    int         memory_top_k { 3 };
     int         n_predict { 1024 };
     int         ctx_size { 4096 };
     float       temperature { 0.8F };
@@ -87,6 +93,8 @@ struct aia_options {
         ("prompt,p", po::value<std::string>(), "First prompt; if omitted, it is read interactively. Either way, the session continues as a multi-turn chat until you type \"exit\" or \"quit\" (or send EOF)")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
         ("session,s", po::value<std::string>(), "Path to a JSON file used to persist and reload the conversation history across runs")
+        ("memory,M", po::value<std::string>(), "Path to a JSON file used as a long-lived memory store (embeddings of past exchanges) for retrieval-augmented recall")
+        ("memory-top-k", po::value<int>()->default_value(3), "Number of past exchanges to recall from --memory per turn")
         ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
         ("ctx-size", po::value<int>()->default_value(4096), "Context window size in tokens; the whole conversation, including any --context file, must fit within it")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
@@ -99,7 +107,7 @@ struct aia_options {
     try {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
-            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--session <file>] [--n-predict <n>] "
+            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--session <file>] [--memory <file>] [--memory-top-k <n>] [--n-predict <n>] "
                          "[--ctx-size <n>] [--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
@@ -115,6 +123,8 @@ struct aia_options {
         .prompt       = vm.contains("prompt") ? vm["prompt"].as<std::string>() : "",
         .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
         .session_path = vm.contains("session") ? vm["session"].as<std::string>() : "",
+        .memory_path  = vm.contains("memory") ? vm["memory"].as<std::string>() : "",
+        .memory_top_k = vm["memory-top-k"].as<int>(),
         .n_predict    = vm["n-predict"].as<int>(),
         .ctx_size     = vm["ctx-size"].as<int>(),
         .temperature  = vm["temperature"].as<float>(),
@@ -240,6 +250,202 @@ void save_session(const std::string& session_path, const std::vector<chat_messag
 }
 
 /**
+ * @brief   Tokenize a prompt string using the model's vocabulary.
+ *
+ * @param   vocab   Model vocabulary.
+ * @param   prompt  Prompt text.
+ *
+ * @return  Token id sequence, including the beginning-of-sequence token if applicable.
+ */
+[[nodiscard]] auto tokenize_prompt(const llama_vocab* vocab, const std::string& prompt) -> std::vector<llama_token> {
+    const auto n_tokens = -llama_tokenize(vocab, prompt.c_str(), static_cast<int>(prompt.size()), nullptr, 0, true, true);
+
+    std::vector<llama_token> tokens(static_cast<std::size_t>(n_tokens));
+    llama_tokenize(vocab, prompt.c_str(), static_cast<int>(prompt.size()), tokens.data(), static_cast<int>(tokens.size()), true, true);
+
+    return tokens;
+}
+
+/**
+ * @brief   A past exchange stored in the long-lived memory store, together with the
+ *          embedding used to find it again by similarity.
+ */
+struct memory_entry {
+    std::string text;
+    std::vector<float> embedding;
+};
+
+/**
+ * @brief   Load the long-lived memory store from a JSON file.
+ *
+ * Same tolerant-of-absence/malformed behavior as `load_session`: a missing or broken
+ * store just means "no memories yet", not a hard error.
+ *
+ * @param   memory_path Path to the memory file, or empty to disable memory.
+ *
+ * @return  Loaded entries (possibly empty).
+ */
+[[nodiscard]] auto load_memories(const std::string& memory_path) -> std::vector<memory_entry> {
+    std::vector<memory_entry> memories;
+    if (memory_path.empty()) {
+        return memories;
+    }
+
+    std::ifstream file(memory_path);
+    if (not file) {
+        nova::topic_log::debug(LogTopic, "No existing memory file at {}, starting with empty memory", memory_path);
+        return memories;
+    }
+
+    try {
+        nlohmann::json json;
+        file >> json;
+        for (const auto& entry : json) {
+            memories.push_back({
+                entry.at("text").get<std::string>(),
+                entry.at("embedding").get<std::vector<float>>()
+            });
+        }
+        nova::topic_log::debug(LogTopic, "Loaded {} memory entrie(s) from {}", memories.size(), memory_path);
+    } catch (const std::exception& e) {
+        nova::topic_log::debug(LogTopic, "Failed to parse memory file {}: {}; starting with empty memory", memory_path, e.what());
+        memories.clear();
+    }
+
+    return memories;
+}
+
+/**
+ * @brief   Persist the long-lived memory store to a JSON file.
+ *
+ * @param   memory_path Path to the memory file, or empty to disable memory.
+ * @param   memories    Full set of memory entries to persist.
+ */
+void save_memories(const std::string& memory_path, const std::vector<memory_entry>& memories) {
+    if (memory_path.empty()) {
+        return;
+    }
+
+    nlohmann::json json = nlohmann::json::array();
+    for (const auto& entry : memories) {
+        json.push_back({ { "text", entry.text }, { "embedding", entry.embedding } });
+    }
+
+    std::ofstream file(memory_path);
+    if (not file) {
+        nova::topic_log::debug(LogTopic, "Could not open memory file for writing: {}", memory_path);
+        return;
+    }
+
+    file << json.dump();
+    nova::topic_log::debug(LogTopic, "Saved {} memory entrie(s) to {}", memories.size(), memory_path);
+}
+
+/**
+ * @brief   Compute a mean-pooled embedding for a piece of text using a dedicated
+ *          embeddings-enabled context over the same model used for generation.
+ *
+ * Uses a separate `llama_context` (rather than the chat context) because embeddings
+ * require `LLAMA_POOLING_TYPE_MEAN` and `llama_set_embeddings(true)`, which would
+ * otherwise interfere with normal causal-LM decoding for the chat loop. The memory
+ * is cleared before and after so this never affects, or is affected by, the chat
+ * context's KV cache (they are entirely separate contexts/memories anyway).
+ *
+ * @param   embed_ctx   Dedicated embeddings context (embeddings=true, pooling=MEAN).
+ * @param   vocab       Model vocabulary.
+ * @param   text        Text to embed.
+ *
+ * @return  Normalized embedding vector, or an empty vector on failure.
+ */
+[[nodiscard]] auto embed_text(llama_context* embed_ctx, const llama_vocab* vocab, const std::string& text) -> std::vector<float> {
+    auto tokens = tokenize_prompt(vocab, text);
+    const auto n_ctx = static_cast<std::size_t>(llama_n_ctx(embed_ctx));
+    if (tokens.size() > n_ctx) {
+        tokens.resize(n_ctx);
+    }
+
+    llama_memory_clear(llama_get_memory(embed_ctx), true);
+
+    llama_batch batch = llama_batch_get_one(tokens.data(), static_cast<int>(tokens.size()));
+    if (llama_decode(embed_ctx, batch) != 0) {
+        nova::topic_log::debug(LogTopic, "Failed to compute embedding for text");
+        return {};
+    }
+
+    const float* raw = llama_get_embeddings_seq(embed_ctx, 0);
+    if (raw == nullptr) {
+        nova::topic_log::debug(LogTopic, "No pooled embedding available for text");
+        return {};
+    }
+
+    const auto n_embd = static_cast<std::size_t>(llama_model_n_embd(llama_get_model(embed_ctx)));
+    std::vector<float> embedding(raw, raw + n_embd);
+
+    float norm = 0.0F;
+    for (const float v : embedding) {
+        norm += v * v;
+    }
+    norm = std::sqrt(norm);
+    if (norm > 0.0F) {
+        for (float& v : embedding) {
+            v /= norm;
+        }
+    }
+
+    return embedding;
+}
+
+/**
+ * @brief   Cosine similarity between two (assumed normalized) embeddings.
+ */
+[[nodiscard]] auto cosine_similarity(const std::vector<float>& a, const std::vector<float>& b) -> float {
+    if (a.size() != b.size() or a.empty()) {
+        return 0.0F;
+    }
+
+    float dot = 0.0F;
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        dot += a[i] * b[i];
+    }
+    return dot;
+}
+
+/**
+ * @brief   Find the memory entries most relevant to a query embedding.
+ *
+ * @param   memories        Memory store to search.
+ * @param   query_embedding Embedding of the current user message.
+ * @param   top_k           Maximum number of entries to return.
+ * @param   min_similarity  Minimum cosine similarity for an entry to be considered relevant.
+ *
+ * @return  Up to `top_k` entry texts, most relevant first.
+ */
+[[nodiscard]] auto retrieve_relevant_memories(
+        const std::vector<memory_entry>& memories,
+        const std::vector<float>& query_embedding,
+        int top_k,
+        float min_similarity = 0.5F)
+        -> std::vector<std::string>
+{
+    std::vector<std::pair<float, std::size_t>> scored;
+    scored.reserve(memories.size());
+    for (std::size_t i = 0; i < memories.size(); ++i) {
+        const auto sim = cosine_similarity(query_embedding, memories[i].embedding);
+        if (sim >= min_similarity) {
+            scored.emplace_back(sim, i);
+        }
+    }
+
+    std::ranges::sort(scored, std::greater<>{}, &std::pair<float, std::size_t>::first);
+
+    std::vector<std::string> result;
+    for (std::size_t i = 0; i < scored.size() and static_cast<int>(i) < top_k; ++i) {
+        result.push_back(memories[scored[i].second].text);
+    }
+    return result;
+}
+
+/**
  * @brief   Apply the model's chat template to a full conversation history.
  *
  * Falls back to concatenating the last message's content if the model has no chat template.
@@ -277,23 +483,6 @@ void save_session(const std::string& session_path, const std::vector<chat_messag
     }
 
     return std::string(buf.data(), static_cast<std::size_t>(n_written));
-}
-
-/**
- * @brief   Tokenize a prompt string using the model's vocabulary.
- *
- * @param   vocab   Model vocabulary.
- * @param   prompt  Prompt text.
- *
- * @return  Token id sequence, including the beginning-of-sequence token if applicable.
- */
-[[nodiscard]] auto tokenize_prompt(const llama_vocab* vocab, const std::string& prompt) -> std::vector<llama_token> {
-    const auto n_tokens = -llama_tokenize(vocab, prompt.c_str(), static_cast<int>(prompt.size()), nullptr, 0, true, true);
-
-    std::vector<llama_token> tokens(static_cast<std::size_t>(n_tokens));
-    llama_tokenize(vocab, prompt.c_str(), static_cast<int>(prompt.size()), tokens.data(), static_cast<int>(tokens.size()), true, true);
-
-    return tokens;
 }
 
 /**
@@ -504,12 +693,25 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
  * @param   n_predict       Maximum number of tokens to generate per turn.
  * @param   session_path    Path to a JSON file used to reload and persist the conversation
  *                          history across runs, or empty to disable persistence.
+ * @param   embed_ctx       Dedicated embeddings context for memory recall, or `nullptr` to
+ *                          disable retrieval-augmented recall entirely.
+ * @param   memory_path     Path to the long-lived memory store, or empty to disable it.
+ * @param   memory_top_k    Maximum number of recalled past exchanges to inject per turn.
  */
-void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::string& first_prompt, const std::optional<std::string>& context, int n_predict, const std::string& session_path) {
+void chat_loop(
+        llama_model* model, llama_context* ctx, llama_sampler* smpl,
+        const std::string& first_prompt, const std::optional<std::string>& context, int n_predict,
+        const std::string& session_path,
+        llama_context* embed_ctx, const std::string& memory_path, int memory_top_k)
+{
+    const llama_vocab* vocab = llama_model_get_vocab(model);
+
     auto history = load_session(session_path);
     if (history.empty()) {
         history.push_back({ "system", SystemPrompt });
     }
+    auto memories = load_memories(memory_path);
+
     std::size_t n_past = 0;
     bool first_turn = true;
 
@@ -530,6 +732,23 @@ void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, cons
             continue;
         }
 
+        // Recall relevant past exchanges (from this or earlier sessions) before the new
+        // turn is added, so the retrieval query is the user's own words, not anything
+        // already injected. This is inserted as a plain history entry (rather than kept
+        // separate) so it stays consistent with the KV cache like every other turn.
+        if (embed_ctx != nullptr and not memory_path.empty()) {
+            const auto query_embedding = embed_text(embed_ctx, vocab, prompt);
+            const auto recalled = retrieve_relevant_memories(memories, query_embedding, memory_top_k);
+            if (not recalled.empty()) {
+                std::string recall_block = "Relevant excerpts from earlier discussions (for context, may or may not be relevant):\n";
+                for (const auto& snippet : recalled) {
+                    recall_block += "---\n" + snippet + "\n";
+                }
+                nova::topic_log::debug(LogTopic, "Recalled {} memory entrie(s) for this turn", recalled.size());
+                history.push_back({ "system", recall_block });
+            }
+        }
+
         const auto user_message = first_turn ? build_user_message(prompt, context) : prompt;
         history.push_back({ "user", user_message });
 
@@ -537,6 +756,15 @@ void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, cons
         history.push_back({ "assistant", response });
 
         save_session(session_path, history);
+
+        if (embed_ctx != nullptr and not memory_path.empty()) {
+            const auto exchange_text = "User: " + user_message + "\nAssistant: " + response;
+            auto exchange_embedding = embed_text(embed_ctx, vocab, exchange_text);
+            if (not exchange_embedding.empty()) {
+                memories.push_back({ exchange_text, std::move(exchange_embedding) });
+                save_memories(memory_path, memories);
+            }
+        }
 
         first_turn = false;
     }
@@ -580,8 +808,29 @@ auto entrypoint(auto args) -> int {
 
     llama_sampler* smpl = build_sampler(*options);
 
-    chat_loop(model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict, options->session_path);
+    // A dedicated embeddings context is only needed for memory recall; keep it entirely
+    // separate from the chat context so pooled-embedding decoding never disturbs the
+    // chat KV cache (or vice versa).
+    llama_context* embed_ctx = nullptr;
+    if (not options->memory_path.empty()) {
+        llama_context_params embed_params = llama_context_default_params();
+        embed_params.n_ctx = static_cast<uint32_t>(options->ctx_size);
+        embed_params.embeddings = true;
+        embed_params.pooling_type = LLAMA_POOLING_TYPE_MEAN;
+        embed_ctx = llama_init_from_model(model, embed_params);
+        if (embed_ctx == nullptr) {
+            nova::topic_log::debug(LogTopic, "Failed to create embeddings context; memory recall disabled for this run");
+        }
+    }
 
+    chat_loop(
+        model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict, options->session_path,
+        embed_ctx, options->memory_path, options->memory_top_k
+    );
+
+    if (embed_ctx != nullptr) {
+        llama_free(embed_ctx);
+    }
     llama_sampler_free(smpl);
     llama_free(ctx);
     llama_model_free(model);
