@@ -55,6 +55,7 @@ struct aia_options {
     std::string prompt {};
     std::string context_path {};
     int         n_predict { 1024 };
+    int         ctx_size { 4096 };
     float       temperature { 0.8F };
     int         top_k { 40 };
     float       top_p { 0.95F };
@@ -82,6 +83,7 @@ struct aia_options {
         ("prompt,p", po::value<std::string>(), "First prompt; if omitted, it is read interactively. Either way, the session continues as a multi-turn chat until you type \"exit\" or \"quit\" (or send EOF)")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
         ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
+        ("ctx-size", po::value<int>()->default_value(4096), "Context window size in tokens; the whole conversation, including any --context file, must fit within it")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
         ("top-k", po::value<int>()->default_value(40), "Keep only the top K most likely tokens (0 = disabled)")
         ("top-p", po::value<float>()->default_value(0.95F), "Keep the smallest set of tokens whose cumulative probability exceeds P (1.0 = disabled)")
@@ -93,7 +95,7 @@ struct aia_options {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
             std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--n-predict <n>] "
-                         "[--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
+                         "[--ctx-size <n>] [--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
         }
@@ -108,6 +110,7 @@ struct aia_options {
         .prompt       = vm.contains("prompt") ? vm["prompt"].as<std::string>() : "",
         .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
         .n_predict    = vm["n-predict"].as<int>(),
+        .ctx_size     = vm["ctx-size"].as<int>(),
         .temperature  = vm["temperature"].as<float>(),
         .top_k        = vm["top-k"].as<int>(),
         .top_p        = vm["top-p"].as<float>(),
@@ -281,11 +284,15 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
  *          `std::nullopt` if decoding failed.
  */
 [[nodiscard]] auto feed_tokens(llama_context* ctx, const std::vector<llama_token>& tokens) -> std::optional<llama_batch> {
-    const auto n_batch = llama_n_batch(ctx);
+    // `llama_decode` requires each individual call's batch to fit within `n_ubatch`
+    // (the actual per-decode processing unit), not just `n_batch`: a chunk larger
+    // than `n_ubatch` fails with "failed to find a memory slot" even though it's
+    // still within `n_batch`.
+    const auto n_ubatch = llama_n_ubatch(ctx);
     std::size_t n_fed = 0;
     llama_batch batch {};
     while (n_fed < tokens.size()) {
-        const auto chunk_size = std::min(static_cast<std::size_t>(n_batch), tokens.size() - n_fed);
+        const auto chunk_size = std::min(static_cast<std::size_t>(n_ubatch), tokens.size() - n_fed);
         batch = llama_batch_get_one(const_cast<llama_token*>(tokens.data()) + n_fed, static_cast<int>(chunk_size));
         if (llama_decode(ctx, batch) != 0) {
             nova::topic_log::error(LogTopic, "llama_decode failed while processing prompt");
@@ -330,6 +337,21 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
 
     const std::vector<llama_token> new_tokens(full_tokens.begin() + static_cast<std::ptrdiff_t>(n_past), full_tokens.end());
 
+    // Check this up front rather than letting `llama_decode` fail mid-prompt with an
+    // opaque "failed to find a memory slot" once the KV cache fills up: a prompt (plus
+    // any attached --context file) that doesn't fit in the context window can never be
+    // fully processed, so fail clearly and point at the fix (--ctx-size).
+    const auto n_ctx = llama_n_ctx(ctx);
+    if (full_tokens.size() >= n_ctx) {
+        nova::topic_log::error(
+            LogTopic,
+            "Prompt is too long for the context window ({} tokens, but n_ctx={}); "
+            "shorten it (e.g. a smaller --context file) or raise --ctx-size",
+            full_tokens.size(), n_ctx
+        );
+        return {};
+    }
+
     auto batch = feed_tokens(ctx, new_tokens);
     if (not batch) {
         return {};
@@ -341,7 +363,6 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
     // Track how many tokens have been fed into the KV cache so we can stop before
     // exceeding the context window, instead of letting `llama_decode` fail and
     // silently cutting the response off mid-token.
-    const auto n_ctx = llama_n_ctx(ctx);
     bool reached_eog = false;
     int generated = 0;
     std::vector<llama_token> next_tokens;
@@ -469,7 +490,7 @@ auto entrypoint(auto args) -> int {
     }
 
     llama_context_params ctx_params = llama_context_default_params();
-    ctx_params.n_ctx = 4096;
+    ctx_params.n_ctx = static_cast<uint32_t>(options->ctx_size);
     llama_context* ctx = llama_init_from_model(model, ctx_params);
     if (ctx == nullptr) {
         nova::topic_log::error(LogTopic, "Failed to create inference context");

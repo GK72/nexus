@@ -38,10 +38,16 @@ aia --model /path/to/model.gguf --prompt "Review my code" --context ./main.cpp
 ```
 
 The prompt (including any attached context) is fed to the model in chunks no
-larger than `n_batch`, so long prompts (e.g. large files attached via
-`--context`) don't hit `llama.cpp`'s `n_tokens_all <= cparams.n_batch`
-assertion; it must still fit within the context window (`n_ctx`, currently
-4096 tokens).
+larger than `n_ubatch`, so long prompts (e.g. large files attached via
+`--context`) don't hit `llama.cpp`'s per-decode batch limit; it must still fit
+within the context window (`--ctx-size`, default 4096 tokens). If the whole
+conversation (system prompt + history + any `--context` file) doesn't fit,
+`aia` reports it clearly ("Prompt is too long for the context window")
+instead of a raw decode failure -- raise `--ctx-size` or shorten the input:
+
+```bash
+aia --model /path/to/model.gguf --prompt "Review my code" --context ./big_file.cpp --ctx-size 8192
+```
 
 Each next token is drawn from a sampler chain (top-k -> top-p -> temperature
 -> random draw) instead of always picking the single most likely token, so
@@ -53,8 +59,8 @@ aia --model /path/to/model.gguf --prompt "Hello, " --temperature 0.7 --top-k 40 
 ```
 
 Generation stops on an end-of-generation token, after `--n-predict` tokens
-(default 1024), or when the context window (`n_ctx`, 4096 tokens) is
-exhausted, whichever comes first. If a response looks cut off, raise
+(default 1024), or when the context window (`--ctx-size`, default 4096
+tokens) is exhausted, whichever comes first. If a response looks cut off, raise
 `--n-predict` (enable debug logging, e.g. `SPDLOG_LEVEL=debug,aia=debug`, to
 see which of these stopped it):
 
