@@ -10,7 +10,9 @@
  * attached so relevant snippets from earlier sessions are recalled via
  * simple retrieval-augmented generation (RAG). A LoRA adapter (trained
  * externally, e.g. via HF PEFT/QLoRA on collected conversations) can be
- * applied at inference time for cheap, reversible personalization.
+ * applied at inference time for cheap, reversible personalization; the
+ * collected --session/--memory files can themselves be exported into a
+ * JSONL dataset (--export-training-data) for that external training step.
  *
  * @author  Gábor Krisztián Girhiny and Junie
  * @date    2026-07-14
@@ -74,6 +76,8 @@ struct aia_options {
     int         top_k { 40 };
     float       top_p { 0.95F };
     uint32_t    seed { LLAMA_DEFAULT_SEED };
+    std::vector<std::string> export_training_sources {};
+    std::string export_training_output {};
     bool        help { false };
 };
 
@@ -93,7 +97,7 @@ struct aia_options {
     po::options_description desc("Options for aia");
     desc.add_options()
         ("help,h", "Produce help message")
-        ("model,m", po::value<std::string>()->required(), "Path to a GGUF model file")
+        ("model,m", po::value<std::string>(), "Path to a GGUF model file (not required when using --export-training-data)")
         ("prompt,p", po::value<std::string>(), "First prompt; if omitted, it is read interactively. Either way, the session continues as a multi-turn chat until you type \"exit\" or \"quit\" (or send EOF)")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
         ("session,s", po::value<std::string>(), "Path to a JSON file used to persist and reload the conversation history across runs")
@@ -101,6 +105,8 @@ struct aia_options {
         ("memory-top-k", po::value<int>()->default_value(3), "Number of past exchanges to recall from --memory per turn")
         ("lora", po::value<std::string>(), "Path to a GGUF LoRA adapter to apply on top of the base model (trained externally, e.g. via HF PEFT/QLoRA and converted with llama.cpp's convert_lora_to_gguf.py)")
         ("lora-scale", po::value<float>()->default_value(1.0F), "Scale factor applied to the LoRA adapter (1.0 = as trained; 0.0 effectively disables it without removing --lora)")
+        ("export-training-data", po::value<std::string>(), "Export one or more --session/--memory JSON files (given via --export-source) into a JSONL dataset ready for external LoRA/QLoRA fine-tuning, then exit")
+        ("export-source", po::value<std::vector<std::string>>()->multitoken(), "Path to a --session or --memory JSON file to include in --export-training-data (may be repeated)")
         ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
         ("ctx-size", po::value<int>()->default_value(4096), "Context window size in tokens; the whole conversation, including any --context file, must fit within it")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
@@ -114,7 +120,8 @@ struct aia_options {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
             std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--session <file>] [--memory <file>] [--memory-top-k <n>] [--lora <file>] [--lora-scale <s>] [--n-predict <n>] "
-                         "[--ctx-size <n>] [--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
+                         "[--ctx-size <n>] [--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n"
+                         "       aia --model <model.gguf> --export-training-data <output.jsonl> --export-source <session_or_memory.json> [--export-source <file2.json> ...]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
         }
@@ -124,8 +131,13 @@ struct aia_options {
         return std::nullopt;
     }
 
+    if (not vm.contains("model") and not vm.contains("export-training-data")) {
+        nova::topic_log::error(LogTopic, "Missing required option: --model");
+        return std::nullopt;
+    }
+
     return aia_options {
-        .model_path   = vm["model"].as<std::string>(),
+        .model_path   = vm.contains("model") ? vm["model"].as<std::string>() : "",
         .prompt       = vm.contains("prompt") ? vm["prompt"].as<std::string>() : "",
         .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
         .session_path = vm.contains("session") ? vm["session"].as<std::string>() : "",
@@ -138,7 +150,9 @@ struct aia_options {
         .temperature  = vm["temperature"].as<float>(),
         .top_k        = vm["top-k"].as<int>(),
         .top_p        = vm["top-p"].as<float>(),
-        .seed         = vm["seed"].as<uint32_t>()
+        .seed         = vm["seed"].as<uint32_t>(),
+        .export_training_sources = vm.contains("export-source") ? vm["export-source"].as<std::vector<std::string>>() : std::vector<std::string>{},
+        .export_training_output  = vm.contains("export-training-data") ? vm["export-training-data"].as<std::string>() : ""
     };
 }
 
@@ -255,6 +269,113 @@ void save_session(const std::string& session_path, const std::vector<chat_messag
 
     file << json.dump(2);
     nova::topic_log::debug(LogTopic, "Saved {} message(s) to session file {}", history.size(), session_path);
+}
+
+/**
+ * @brief   Export one or more --session/--memory JSON files into a JSONL dataset ready
+ *          for external Hugging Face `trl`/`peft` LoRA/QLoRA fine-tuning.
+ *
+ * Each `--session` file (a JSON array of `{"role", "content"}` messages) becomes a single
+ * `{"messages": [...]}` JSONL record, preserving system/user/assistant roles as-is. Each
+ * `--memory` file (a JSON array of `{"text", "embedding"}` entries, where `text` is a
+ * "User: ...\nAssistant: ..." exchange) is split back into one `{"messages": [...]}`
+ * record per exchange. Files that don't parse as either shape, or that yield no usable
+ * messages, are skipped rather than aborting the whole export.
+ *
+ * @param   sources Paths to `--session`/`--memory` JSON files to include.
+ * @param   output  Path to the JSONL file to write.
+ *
+ * @return  Number of records written.
+ */
+[[nodiscard]] auto export_training_data(const std::vector<std::string>& sources, const std::string& output) -> std::size_t {
+    std::ofstream out(output);
+    if (not out) {
+        nova::topic_log::error(LogTopic, "Could not open output file for writing: {}", output);
+        return 0;
+    }
+
+    std::size_t written = 0;
+    std::size_t skipped = 0;
+
+    for (const auto& source : sources) {
+        std::ifstream file(source);
+        if (not file) {
+            nova::topic_log::debug(LogTopic, "Could not open source file: {}", source);
+            ++skipped;
+            continue;
+        }
+
+        nlohmann::json json;
+        try {
+            file >> json;
+        } catch (const std::exception& e) {
+            nova::topic_log::debug(LogTopic, "Failed to parse source file {}: {}", source, e.what());
+            ++skipped;
+            continue;
+        }
+
+        if (not json.is_array()) {
+            nova::topic_log::debug(LogTopic, "Source file {} is not a JSON array, skipping", source);
+            ++skipped;
+            continue;
+        }
+
+        // Disambiguate a --session file (entries have "role"/"content") from a --memory
+        // file (entries have "text"/"embedding") by inspecting the first entry's shape.
+        const bool looks_like_session = not json.empty() and json.front().contains("role") and json.front().contains("content");
+
+        if (looks_like_session) {
+            nlohmann::json messages = nlohmann::json::array();
+            for (const auto& entry : json) {
+                if (not entry.contains("role") or not entry.contains("content")) {
+                    continue;
+                }
+                messages.push_back({ { "role", entry.at("role") }, { "content", entry.at("content") } });
+            }
+            if (messages.empty()) {
+                nova::topic_log::debug(LogTopic, "No usable messages in session file {}, skipping", source);
+                ++skipped;
+                continue;
+            }
+            out << nlohmann::json{ { "messages", messages } }.dump() << "\n";
+            ++written;
+            continue;
+        }
+
+        // Memory file: split each "User: ...\nAssistant: ..." exchange back into
+        // separate user/assistant messages, one JSONL record per exchange.
+        for (const auto& entry : json) {
+            if (not entry.contains("text")) {
+                ++skipped;
+                continue;
+            }
+            const auto text = entry.at("text").get<std::string>();
+            const auto user_prefix = std::string("User: ");
+            const auto assistant_marker = std::string("\nAssistant: ");
+            const auto assistant_pos = text.find(assistant_marker);
+            if (text.rfind(user_prefix, 0) != 0 or assistant_pos == std::string::npos) {
+                nova::topic_log::debug(LogTopic, "Malformed memory entry in {}, skipping", source);
+                ++skipped;
+                continue;
+            }
+            const auto user_content = text.substr(user_prefix.size(), assistant_pos - user_prefix.size());
+            const auto assistant_content = text.substr(assistant_pos + assistant_marker.size());
+            if (user_content.empty() or assistant_content.empty()) {
+                ++skipped;
+                continue;
+            }
+            nlohmann::json messages = nlohmann::json::array();
+            messages.push_back({ { "role", "user" }, { "content", user_content } });
+            messages.push_back({ { "role", "assistant" }, { "content", assistant_content } });
+            out << nlohmann::json{ { "messages", messages } }.dump() << "\n";
+            ++written;
+        }
+    }
+
+    nova::topic_log::debug(LogTopic, "Skipped {} malformed/empty entrie(s) while exporting training data", skipped);
+    nova::topic_log::info(LogTopic, "Exported {} record(s) to {}", written, output);
+
+    return written;
 }
 
 /**
@@ -794,6 +915,20 @@ auto entrypoint(auto args) -> int {
 
     if (options->help) {
         return EXIT_SUCCESS;
+    }
+
+    if (not options->export_training_output.empty()) {
+        if (options->export_training_sources.empty()) {
+            nova::topic_log::error(LogTopic, "--export-training-data requires at least one --export-source");
+            return EXIT_FAILURE;
+        }
+        const auto record_count = export_training_data(options->export_training_sources, options->export_training_output);
+        return record_count > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+
+    if (options->model_path.empty()) {
+        nova::topic_log::error(LogTopic, "Missing required option: --model");
+        return EXIT_FAILURE;
     }
 
     ggml_backend_load_all();

@@ -126,6 +126,25 @@ The adapter is applied on top of the frozen base model's weights for the
 whole session (never modifying the base model file itself), so it's cheap to
 swap or disable (drop `--lora`, or set `--lora-scale 0`) between runs.
 
+## Exporting training data for LoRA fine-tuning
+
+`aia` can convert its own `--session`/`--memory` JSON files into a JSONL
+dataset in the `{"messages": [...]}` format expected by Hugging Face `trl`'s
+`SFTTrainer` (see `aia/training/README.md`), so you can turn your own
+conversations into training data for the LoRA fine-tuning flow described
+above:
+
+```bash
+aia --export-training-data ./train.jsonl --export-source ./my-session.json --export-source ./my-memory.json
+```
+
+`--export-source` may be repeated to combine multiple `--session` and/or
+`--memory` files into a single dataset; `--model` is not required for this
+mode. Each `--session` file becomes one record per conversation (preserving
+system/user/assistant roles), and each `--memory` file is split back into one
+record per exchange. Malformed or empty entries are skipped (logged at debug
+level); the final exported record count is logged normally.
+
 ## Downloading a model
 
 Use `download-model.sh` to fetch a GGUF model from Hugging Face into `aia/models/`:
