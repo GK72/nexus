@@ -17,10 +17,13 @@
 
 #include <boost/program_options.hpp>
 
+#include <algorithm>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <ranges>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -30,11 +33,26 @@ namespace po = boost::program_options;
 const std::string LogTopic = "aia";
 
 /**
+ * @brief   System prompt steering the assistant towards asking clarifying
+ *          questions and requesting missing context instead of guessing.
+ *
+ * This is the minimal step towards "intelligence": it doesn't change the
+ * model, only how we frame the conversation for it.
+ */
+const std::string SystemPrompt =
+    "You are a careful, precise assistant. If the user's request is ambiguous, "
+    "underspecified, or depends on information you were not given (e.g. code, "
+    "files, error messages, or requirements), do not guess: ask a short, specific "
+    "clarifying question instead, or explicitly state what additional context you "
+    "need. Only answer directly once you have enough context to be confident.";
+
+/**
  * @brief   CLI options for the AIA tool.
  */
 struct aia_options {
     std::string model_path {};
     std::string prompt {};
+    std::string context_path {};
     int         n_predict { 128 };
     bool        help { false };
 };
@@ -57,6 +75,7 @@ struct aia_options {
         ("help,h", "Produce help message")
         ("model,m", po::value<std::string>()->required(), "Path to a GGUF model file")
         ("prompt,p", po::value<std::string>()->required(), "Prompt to complete")
+        ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
         ("n-predict,n", po::value<int>()->default_value(128), "Number of tokens to generate")
     ;
 
@@ -64,7 +83,7 @@ struct aia_options {
     try {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
-            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--n-predict <n>]\n";
+            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--n-predict <n>]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
         }
@@ -75,10 +94,88 @@ struct aia_options {
     }
 
     return aia_options {
-        .model_path = vm["model"].as<std::string>(),
-        .prompt     = vm["prompt"].as<std::string>(),
-        .n_predict  = vm["n-predict"].as<int>()
+        .model_path   = vm["model"].as<std::string>(),
+        .prompt       = vm["prompt"].as<std::string>(),
+        .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
+        .n_predict    = vm["n-predict"].as<int>()
     };
+}
+
+/**
+ * @brief   Read the contents of a context file, if given.
+ *
+ * @param   context_path    Path to the file, or empty for no context.
+ *
+ * @return  File contents, or `std::nullopt` if `context_path` is empty or the file could not be read.
+ */
+[[nodiscard]] auto read_context(const std::string& context_path) -> std::optional<std::string> {
+    if (context_path.empty()) {
+        return std::nullopt;
+    }
+
+    std::ifstream file(context_path);
+    if (not file) {
+        nova::topic_log::debug(LogTopic, "Could not open context file: {}", context_path);
+        return std::nullopt;
+    }
+
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
+/**
+ * @brief   Build the user-facing message, attaching context (e.g. file contents) if provided.
+ *
+ * @param   prompt      User's prompt text.
+ * @param   context     Optional context to attach (e.g. code to review).
+ *
+ * @return  Combined user message.
+ */
+[[nodiscard]] auto build_user_message(const std::string& prompt, const std::optional<std::string>& context) -> std::string {
+    if (not context) {
+        return prompt;
+    }
+
+    return prompt + "\n\nContext:\n```\n" + *context + "\n```";
+}
+
+/**
+ * @brief   Apply the model's chat template to a system + user message pair.
+ *
+ * Falls back to the raw user message if the model has no chat template.
+ *
+ * @param   model           Loaded model.
+ * @param   system_prompt   System message content.
+ * @param   user_message    User message content.
+ *
+ * @return  Formatted prompt ready for tokenization.
+ */
+[[nodiscard]] auto apply_chat_template(llama_model* model, const std::string& system_prompt, const std::string& user_message) -> std::string {
+    const char* tmpl = llama_model_chat_template(model, nullptr);
+    if (tmpl == nullptr) {
+        nova::topic_log::debug(LogTopic, "Model has no chat template, falling back to raw prompt");
+        return user_message;
+    }
+
+    const std::vector<llama_chat_message> messages {
+        { "system", system_prompt.c_str() },
+        { "user",   user_message.c_str() }
+    };
+
+    std::vector<char> buf(2 * (system_prompt.size() + user_message.size()) + 256);
+    auto n_written = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, buf.data(), static_cast<int32_t>(buf.size()));
+    if (n_written < 0) {
+        nova::topic_log::debug(LogTopic, "Failed to apply chat template, falling back to raw prompt");
+        return user_message;
+    }
+
+    if (static_cast<std::size_t>(n_written) > buf.size()) {
+        buf.resize(static_cast<std::size_t>(n_written));
+        n_written = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, buf.data(), static_cast<int32_t>(buf.size()));
+    }
+
+    return std::string(buf.data(), static_cast<std::size_t>(n_written));
 }
 
 /**
@@ -124,22 +221,47 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
 /**
  * @brief   Greedily generate `n_predict` tokens continuing the given prompt and log the response.
  *
+ * The prompt is wrapped with a system message (asking the model to request
+ * clarification or context instead of guessing) and, if given, an attached
+ * context (e.g. file contents), then formatted via the model's chat template.
+ *
  * @param   model       Loaded model.
  * @param   ctx         Inference context.
  * @param   prompt      Prompt text.
+ * @param   context     Optional context to attach (e.g. code to review).
  * @param   n_predict   Number of tokens to generate.
  */
-void generate(llama_model* model, llama_context* ctx, const std::string& prompt, int n_predict) {
+void generate(llama_model* model, llama_context* ctx, const std::string& prompt, const std::optional<std::string>& context, int n_predict) {
     const llama_vocab* vocab = llama_model_get_vocab(model);
 
-    auto tokens = tokenize_prompt(vocab, prompt);
+    const auto user_message = build_user_message(prompt, context);
+    const auto formatted_prompt = apply_chat_template(model, SystemPrompt, user_message);
 
-    llama_batch batch = llama_batch_get_one(tokens.data(), static_cast<int>(tokens.size()));
+    nova::topic_log::debug(LogTopic, "Formatted prompt: {}", formatted_prompt);
+
+    auto tokens = tokenize_prompt(vocab, formatted_prompt);
+
+    // `llama_decode` requires the batch to fit within `n_batch`, so the (potentially
+    // long, e.g. with attached context) prompt must be fed in chunks rather than as
+    // a single oversized batch. Only the final chunk's logits are needed to start
+    // sampling the continuation.
+    const auto n_batch = llama_n_batch(ctx);
+    std::size_t n_fed = 0;
+    llama_batch batch {};
+    while (n_fed < tokens.size()) {
+        const auto chunk_size = std::min(static_cast<std::size_t>(n_batch), tokens.size() - n_fed);
+        batch = llama_batch_get_one(tokens.data() + n_fed, static_cast<int>(chunk_size));
+        if (llama_decode(ctx, batch) != 0) {
+            nova::topic_log::error(LogTopic, "llama_decode failed while processing prompt");
+            return;
+        }
+        n_fed += chunk_size;
+    }
 
     std::string response;
 
     for (int i = 0; i < n_predict; ++i) {
-        if (llama_decode(ctx, batch) != 0) {
+        if (i > 0 and llama_decode(ctx, batch) != 0) {
             nova::topic_log::error(LogTopic, "llama_decode failed");
             return;
         }
@@ -202,7 +324,7 @@ auto entrypoint(auto args) -> int {
     }
 
     llama_context_params ctx_params = llama_context_default_params();
-    ctx_params.n_ctx = 2048;
+    ctx_params.n_ctx = 4096;
     llama_context* ctx = llama_init_from_model(model, ctx_params);
     if (ctx == nullptr) {
         nova::topic_log::error(LogTopic, "Failed to create inference context");
@@ -210,7 +332,7 @@ auto entrypoint(auto args) -> int {
         return EXIT_FAILURE;
     }
 
-    generate(model, ctx, options->prompt, options->n_predict);
+    generate(model, ctx, options->prompt, read_context(options->context_path), options->n_predict);
 
     llama_free(ctx);
     llama_model_free(model);
