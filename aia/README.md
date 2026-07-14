@@ -6,9 +6,9 @@ discussions.
 
 ## Current scope
 
-This is the initial scaffolding: a minimal CLI (`aia`) that loads a GGUF model
-via [`llama.cpp`](https://github.com/ggml-org/llama.cpp) and greedily
-completes a single prompt. No chat loop, sampling strategies, or memory/RAG
+This is a minimal CLI (`aia`) that loads a GGUF model via
+[`llama.cpp`](https://github.com/ggml-org/llama.cpp) and completes a single
+prompt using top-k/top-p/temperature sampling. No chat loop or memory/RAG
 layer yet.
 
 ```bash
@@ -30,6 +30,15 @@ larger than `n_batch`, so long prompts (e.g. large files attached via
 assertion; it must still fit within the context window (`n_ctx`, currently
 4096 tokens).
 
+Each next token is drawn from a sampler chain (top-k -> top-p -> temperature
+-> random draw) instead of always picking the single most likely token, so
+responses vary between runs. Tune it via `--temperature`, `--top-k`, `--top-p`,
+and `--seed` (fixing `--seed` makes output reproducible):
+
+```bash
+aia --model /path/to/model.gguf --prompt "Hello, " --temperature 0.7 --top-k 40 --top-p 0.9 --seed 42
+```
+
 ## Downloading a model
 
 Use `download-model.sh` to fetch a GGUF model from Hugging Face into `aia/models/`:
@@ -47,6 +56,6 @@ set in `conanfile.txt` to enable CUDA acceleration.
 
 ## Roadmap
 
-- Chat loop with proper sampling (temperature/top-k/top-p) instead of greedy decoding.
+- Multi-turn chat loop (retain conversation history across turns) instead of a single prompt/response.
 - Conversation persistence and a retrieval-augmented generation (RAG) layer over past discussions.
 - Periodic LoRA/QLoRA fine-tuning on collected conversation data.

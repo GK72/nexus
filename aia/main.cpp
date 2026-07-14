@@ -54,6 +54,10 @@ struct aia_options {
     std::string prompt {};
     std::string context_path {};
     int         n_predict { 128 };
+    float       temperature { 0.8F };
+    int         top_k { 40 };
+    float       top_p { 0.95F };
+    uint32_t    seed { LLAMA_DEFAULT_SEED };
     bool        help { false };
 };
 
@@ -77,13 +81,18 @@ struct aia_options {
         ("prompt,p", po::value<std::string>()->required(), "Prompt to complete")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
         ("n-predict,n", po::value<int>()->default_value(128), "Number of tokens to generate")
+        ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
+        ("top-k", po::value<int>()->default_value(40), "Keep only the top K most likely tokens (0 = disabled)")
+        ("top-p", po::value<float>()->default_value(0.95F), "Keep the smallest set of tokens whose cumulative probability exceeds P (1.0 = disabled)")
+        ("seed", po::value<uint32_t>()->default_value(LLAMA_DEFAULT_SEED), "Random seed for sampling (default: random)")
     ;
 
     po::variables_map vm;
     try {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
-            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--n-predict <n>]\n";
+            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--n-predict <n>] "
+                         "[--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
         }
@@ -97,7 +106,11 @@ struct aia_options {
         .model_path   = vm["model"].as<std::string>(),
         .prompt       = vm["prompt"].as<std::string>(),
         .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
-        .n_predict    = vm["n-predict"].as<int>()
+        .n_predict    = vm["n-predict"].as<int>(),
+        .temperature  = vm["temperature"].as<float>(),
+        .top_k        = vm["top-k"].as<int>(),
+        .top_p        = vm["top-p"].as<float>(),
+        .seed         = vm["seed"].as<uint32_t>()
     };
 }
 
@@ -219,19 +232,48 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
 }
 
 /**
- * @brief   Greedily generate `n_predict` tokens continuing the given prompt and log the response.
+ * @brief   Build a sampler chain applying top-k, top-p, and temperature before final sampling.
+ *
+ * Chain order matters: top-k and top-p narrow the candidate set first, temperature
+ * reshapes the remaining distribution, and `llama_sampler_init_dist` draws the final
+ * token from it. This replaces plain greedy (argmax) decoding.
+ *
+ * @param   options CLI options carrying the sampling parameters.
+ *
+ * @return  Owning sampler chain; caller must `llama_sampler_free` it.
+ */
+[[nodiscard]] auto build_sampler(const aia_options& options) -> llama_sampler* {
+    llama_sampler_chain_params sparams = llama_sampler_chain_default_params();
+    llama_sampler* smpl = llama_sampler_chain_init(sparams);
+
+    if (options.top_k > 0) {
+        llama_sampler_chain_add(smpl, llama_sampler_init_top_k(options.top_k));
+    }
+    if (options.top_p < 1.0F) {
+        llama_sampler_chain_add(smpl, llama_sampler_init_top_p(options.top_p, 1));
+    }
+    llama_sampler_chain_add(smpl, llama_sampler_init_temp(options.temperature));
+    llama_sampler_chain_add(smpl, llama_sampler_init_dist(options.seed));
+
+    return smpl;
+}
+
+/**
+ * @brief   Generate `n_predict` tokens continuing the given prompt and log the response.
  *
  * The prompt is wrapped with a system message (asking the model to request
  * clarification or context instead of guessing) and, if given, an attached
  * context (e.g. file contents), then formatted via the model's chat template.
+ * Tokens are drawn via `smpl` (top-k/top-p/temperature sampling) instead of greedy argmax.
  *
  * @param   model       Loaded model.
  * @param   ctx         Inference context.
+ * @param   smpl        Sampler chain used to pick each next token.
  * @param   prompt      Prompt text.
  * @param   context     Optional context to attach (e.g. code to review).
  * @param   n_predict   Number of tokens to generate.
  */
-void generate(llama_model* model, llama_context* ctx, const std::string& prompt, const std::optional<std::string>& context, int n_predict) {
+void generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::string& prompt, const std::optional<std::string>& context, int n_predict) {
     const llama_vocab* vocab = llama_model_get_vocab(model);
 
     const auto user_message = build_user_message(prompt, context);
@@ -266,30 +308,20 @@ void generate(llama_model* model, llama_context* ctx, const std::string& prompt,
             return;
         }
 
-        auto* logits = llama_get_logits_ith(ctx, batch.n_tokens - 1);
-        const auto n_vocab = llama_vocab_n_tokens(vocab);
+        const llama_token next_token = llama_sampler_sample(smpl, ctx, batch.n_tokens - 1);
+        llama_sampler_accept(smpl, next_token);
 
-        // Greedy sampling: pick the highest-probability token, no top-k/top-p/temperature.
-        llama_token best_token = 0;
-        float best_logit = logits[0];
-        for (llama_token id = 1; id < n_vocab; ++id) {
-            if (logits[id] > best_logit) {
-                best_logit = logits[id];
-                best_token = id;
-            }
-        }
-
-        if (llama_vocab_is_eog(vocab, best_token)) {
+        if (llama_vocab_is_eog(vocab, next_token)) {
             break;
         }
 
         char piece[256];
-        const auto piece_len = llama_token_to_piece(vocab, best_token, piece, sizeof(piece), 0, true);
+        const auto piece_len = llama_token_to_piece(vocab, next_token, piece, sizeof(piece), 0, true);
         response.append(piece, static_cast<std::size_t>(piece_len));
 
         nova::topic_log::debug(LogTopic, "Generated token {}: \"{}\"", i, std::string_view(piece, static_cast<std::size_t>(piece_len)));
 
-        tokens = { best_token };
+        tokens = { next_token };
         batch = llama_batch_get_one(tokens.data(), static_cast<int>(tokens.size()));
     }
 
@@ -332,8 +364,11 @@ auto entrypoint(auto args) -> int {
         return EXIT_FAILURE;
     }
 
-    generate(model, ctx, options->prompt, read_context(options->context_path), options->n_predict);
+    llama_sampler* smpl = build_sampler(*options);
 
+    generate(model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict);
+
+    llama_sampler_free(smpl);
     llama_free(ctx);
     llama_model_free(model);
 
