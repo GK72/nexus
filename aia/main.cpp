@@ -53,7 +53,7 @@ struct aia_options {
     std::string model_path {};
     std::string prompt {};
     std::string context_path {};
-    int         n_predict { 128 };
+    int         n_predict { 1024 };
     float       temperature { 0.8F };
     int         top_k { 40 };
     float       top_p { 0.95F };
@@ -80,7 +80,7 @@ struct aia_options {
         ("model,m", po::value<std::string>()->required(), "Path to a GGUF model file")
         ("prompt,p", po::value<std::string>()->required(), "Prompt to complete")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
-        ("n-predict,n", po::value<int>()->default_value(128), "Number of tokens to generate")
+        ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
         ("top-k", po::value<int>()->default_value(40), "Keep only the top K most likely tokens (0 = disabled)")
         ("top-p", po::value<float>()->default_value(0.95F), "Keep the smallest set of tokens whose cumulative probability exceeds P (1.0 = disabled)")
@@ -302,27 +302,52 @@ void generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const
 
     std::string response;
 
+    // Track how many tokens have been fed into the KV cache so we can stop before
+    // exceeding the context window, instead of letting `llama_decode` fail and
+    // silently cutting the response off mid-token.
+    const auto n_ctx = llama_n_ctx(ctx);
+    std::size_t n_used = tokens.size();
+    bool reached_eog = false;
+    int generated = 0;
+
     for (int i = 0; i < n_predict; ++i) {
+        if (n_used >= n_ctx) {
+            nova::topic_log::debug(LogTopic, "Stopping generation: context window ({} tokens) exhausted", n_ctx);
+            break;
+        }
+
         if (i > 0 and llama_decode(ctx, batch) != 0) {
             nova::topic_log::error(LogTopic, "llama_decode failed");
-            return;
+            break;
         }
 
         const llama_token next_token = llama_sampler_sample(smpl, ctx, batch.n_tokens - 1);
         llama_sampler_accept(smpl, next_token);
 
         if (llama_vocab_is_eog(vocab, next_token)) {
+            reached_eog = true;
             break;
         }
 
         char piece[256];
         const auto piece_len = llama_token_to_piece(vocab, next_token, piece, sizeof(piece), 0, true);
         response.append(piece, static_cast<std::size_t>(piece_len));
+        ++generated;
+        ++n_used;
 
         nova::topic_log::debug(LogTopic, "Generated token {}: \"{}\"", i, std::string_view(piece, static_cast<std::size_t>(piece_len)));
 
         tokens = { next_token };
         batch = llama_batch_get_one(tokens.data(), static_cast<int>(tokens.size()));
+    }
+
+    if (not reached_eog) {
+        nova::topic_log::debug(
+            LogTopic,
+            "Response truncated after {} tokens without reaching an end-of-generation token "
+            "(hit n_predict={} or the context window); increase --n-predict if the answer looks cut off",
+            generated, n_predict
+        );
     }
 
     nova::topic_log::info(LogTopic, "{}", response);

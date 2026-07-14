@@ -39,6 +39,16 @@ and `--seed` (fixing `--seed` makes output reproducible):
 aia --model /path/to/model.gguf --prompt "Hello, " --temperature 0.7 --top-k 40 --top-p 0.9 --seed 42
 ```
 
+Generation stops on an end-of-generation token, after `--n-predict` tokens
+(default 1024), or when the context window (`n_ctx`, 4096 tokens) is
+exhausted, whichever comes first. If a response looks cut off, raise
+`--n-predict` (enable debug logging, e.g. `SPDLOG_LEVEL=debug,aia=debug`, to
+see which of these stopped it):
+
+```bash
+aia --model /path/to/model.gguf --prompt "Explain X in detail" --n-predict 2048
+```
+
 ## Downloading a model
 
 Use `download-model.sh` to fetch a GGUF model from Hugging Face into `aia/models/`:
