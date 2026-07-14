@@ -27,6 +27,7 @@ add_subdirectory(libbtx)
 add_subdirectory(liblexy)
 add_subdirectory(libnxs)
 
+add_subdirectory(aia)
 add_subdirectory(baldr)
 add_subdirectory(btx)
 add_subdirectory(msg-gen)

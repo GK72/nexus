@@ -1,5 +1,5 @@
 # If you come from bash you might have to change your $PATH.
-export PATH=$HOME/.local/bin:$HOME/.cargo/bin:$PATH
+export PATH=$HOME/.local/bin:$HOME/.cargo/bin:/opt/cuda/bin:$PATH
 
 export TERM="xterm-256color"
 export EXA_ICON_SPACING=2
