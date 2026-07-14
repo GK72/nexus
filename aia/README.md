@@ -104,6 +104,28 @@ that turn, so the model can use them for context -- without ever growing the
 chat history by more than what's actually relevant. Unlike `--session`, the
 memory file is meant to accumulate across many separate conversations.
 
+## LoRA fine-tuning (personalization)
+
+`aia` cannot train a LoRA adapter itself -- `llama.cpp`'s C API only *loads
+and applies* one at inference time, it has no training/backward pass. The
+practical flow for "periodic fine-tuning on collected conversation data" is:
+
+1. Collect conversation data (e.g. from `--session`/`--memory` files) as
+   (prompt, response) pairs.
+2. Fine-tune a LoRA/QLoRA adapter on top of the same base model using
+   Hugging Face `peft`/`transformers` (outside this repo).
+3. Convert the resulting adapter to GGUF with `llama.cpp`'s
+   `convert_lora_to_gguf.py`.
+4. Point `aia` at it with `--lora`:
+
+```bash
+aia --model /path/to/model.gguf --lora ./my-adapter.gguf --lora-scale 1.0 --prompt "Hi"
+```
+
+The adapter is applied on top of the frozen base model's weights for the
+whole session (never modifying the base model file itself), so it's cheap to
+swap or disable (drop `--lora`, or set `--lora-scale 0`) between runs.
+
 ## Downloading a model
 
 Use `download-model.sh` to fetch a GGUF model from Hugging Face into `aia/models/`:
@@ -122,4 +144,4 @@ repo-wide Conan dependency) is used to serialize `--session` files.
 
 ## Roadmap
 
-- Periodic LoRA/QLoRA fine-tuning on collected conversation data.
+- Tooling to help prepare `--session`/`--memory` data for external LoRA/QLoRA fine-tuning.

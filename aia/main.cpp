@@ -8,7 +8,9 @@
  * session file so a conversation can be resumed across runs. A separate,
  * long-lived memory store (embeddings over past exchanges) can also be
  * attached so relevant snippets from earlier sessions are recalled via
- * simple retrieval-augmented generation (RAG).
+ * simple retrieval-augmented generation (RAG). A LoRA adapter (trained
+ * externally, e.g. via HF PEFT/QLoRA on collected conversations) can be
+ * applied at inference time for cheap, reversible personalization.
  *
  * @author  Gábor Krisztián Girhiny and Junie
  * @date    2026-07-14
@@ -64,6 +66,8 @@ struct aia_options {
     std::string session_path {};
     std::string memory_path {};
     int         memory_top_k { 3 };
+    std::string lora_path {};
+    float       lora_scale { 1.0F };
     int         n_predict { 1024 };
     int         ctx_size { 4096 };
     float       temperature { 0.8F };
@@ -95,6 +99,8 @@ struct aia_options {
         ("session,s", po::value<std::string>(), "Path to a JSON file used to persist and reload the conversation history across runs")
         ("memory,M", po::value<std::string>(), "Path to a JSON file used as a long-lived memory store (embeddings of past exchanges) for retrieval-augmented recall")
         ("memory-top-k", po::value<int>()->default_value(3), "Number of past exchanges to recall from --memory per turn")
+        ("lora", po::value<std::string>(), "Path to a GGUF LoRA adapter to apply on top of the base model (trained externally, e.g. via HF PEFT/QLoRA and converted with llama.cpp's convert_lora_to_gguf.py)")
+        ("lora-scale", po::value<float>()->default_value(1.0F), "Scale factor applied to the LoRA adapter (1.0 = as trained; 0.0 effectively disables it without removing --lora)")
         ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
         ("ctx-size", po::value<int>()->default_value(4096), "Context window size in tokens; the whole conversation, including any --context file, must fit within it")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
@@ -107,7 +113,7 @@ struct aia_options {
     try {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
-            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--session <file>] [--memory <file>] [--memory-top-k <n>] [--n-predict <n>] "
+            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--session <file>] [--memory <file>] [--memory-top-k <n>] [--lora <file>] [--lora-scale <s>] [--n-predict <n>] "
                          "[--ctx-size <n>] [--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
@@ -125,6 +131,8 @@ struct aia_options {
         .session_path = vm.contains("session") ? vm["session"].as<std::string>() : "",
         .memory_path  = vm.contains("memory") ? vm["memory"].as<std::string>() : "",
         .memory_top_k = vm["memory-top-k"].as<int>(),
+        .lora_path    = vm.contains("lora") ? vm["lora"].as<std::string>() : "",
+        .lora_scale   = vm["lora-scale"].as<float>(),
         .n_predict    = vm["n-predict"].as<int>(),
         .ctx_size     = vm["ctx-size"].as<int>(),
         .temperature  = vm["temperature"].as<float>(),
@@ -808,6 +816,28 @@ auto entrypoint(auto args) -> int {
 
     llama_sampler* smpl = build_sampler(*options);
 
+    // A LoRA adapter is loaded and trained externally (e.g. HF PEFT/QLoRA, then
+    // converted to GGUF via llama.cpp's convert_lora_to_gguf.py); aia only applies
+    // it at inference time, on top of the frozen base model's weights, which is
+    // exactly the "cheap, reversible personalization" approach discussed for
+    // periodic fine-tuning on collected conversation data.
+    llama_adapter_lora* lora = nullptr;
+    if (not options->lora_path.empty()) {
+        lora = llama_adapter_lora_init(model, options->lora_path.c_str());
+        if (lora == nullptr) {
+            nova::topic_log::error(LogTopic, "Failed to load LoRA adapter: {}", options->lora_path);
+            llama_sampler_free(smpl);
+            llama_free(ctx);
+            llama_model_free(model);
+            return EXIT_FAILURE;
+        }
+        if (llama_set_adapter_lora(ctx, lora, options->lora_scale) != 0) {
+            nova::topic_log::error(LogTopic, "Failed to apply LoRA adapter: {}", options->lora_path);
+        } else {
+            nova::topic_log::debug(LogTopic, "Applied LoRA adapter {} (scale={})", options->lora_path, options->lora_scale);
+        }
+    }
+
     // A dedicated embeddings context is only needed for memory recall; keep it entirely
     // separate from the chat context so pooled-embedding decoding never disturbs the
     // chat KV cache (or vice versa).
@@ -830,6 +860,9 @@ auto entrypoint(auto args) -> int {
 
     if (embed_ctx != nullptr) {
         llama_free(embed_ctx);
+    }
+    if (lora != nullptr) {
+        llama_adapter_lora_free(lora);
     }
     llama_sampler_free(smpl);
     llama_free(ctx);
