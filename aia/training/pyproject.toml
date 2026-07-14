@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aia-training"
+version = "0.1.0"
+description = "External LoRA/QLoRA training flow for AIA, meant to be installed via pipx"
+requires-python = ">=3.10"
+dependencies = [
+    "transformers>=4.44",
+    "peft>=0.12",
+    "trl>=0.9",
+    "bitsandbytes>=0.43",
+    "accelerate>=0.33",
+    "datasets>=2.20",
+]
+
+[project.scripts]
+aia-train-lora = "train_lora:main"
+
+[tool.setuptools]
+py-modules = ["train_lora"]

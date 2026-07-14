@@ -110,13 +110,29 @@ memory file is meant to accumulate across many separate conversations.
 and applies* one at inference time, it has no training/backward pass. The
 practical flow for "periodic fine-tuning on collected conversation data" is:
 
-1. Collect conversation data (e.g. from `--session`/`--memory` files) as
-   (prompt, response) pairs.
-2. Fine-tune a LoRA/QLoRA adapter on top of the same base model using
-   Hugging Face `peft`/`transformers` (outside this repo).
-3. Convert the resulting adapter to GGUF with `llama.cpp`'s
-   `convert_lora_to_gguf.py`.
-4. Point `aia` at it with `--lora`:
+1. **Collect and export** conversation data with `--export-training-data`
+   (see below) from your `--session`/`--memory` files.
+2. **Train** a LoRA/QLoRA adapter on top of the same base model using
+   Hugging Face `peft`/`transformers`/`trl`, via the `aia/training/` scaffold
+   (installed with `pipx`, kept fully outside this repo's C++ build):
+
+   ```bash
+   pipx install ./aia/training
+   aia-train-lora --base-model meta-llama/Llama-3.2-1B-Instruct --dataset ./train.jsonl --output-dir ./my-adapter
+   ```
+
+   See `aia/training/README.md` for the full flow and tunable options.
+
+3. **Convert** the resulting Hugging Face adapter directory
+   (`adapter_model.safetensors` + `adapter_config.json`) to GGUF with
+   `llama.cpp`'s `convert_lora_to_gguf.py`, against the *same* base GGUF
+   model you use with `aia`:
+
+   ```bash
+   python convert_lora_to_gguf.py --base /path/to/model.gguf --outfile ./my-adapter.gguf ./my-adapter
+   ```
+
+4. **Apply** it with `--lora`:
 
 ```bash
 aia --model /path/to/model.gguf --lora ./my-adapter.gguf --lora-scale 1.0 --prompt "Hi"
@@ -125,6 +141,20 @@ aia --model /path/to/model.gguf --lora ./my-adapter.gguf --lora-scale 1.0 --prom
 The adapter is applied on top of the frozen base model's weights for the
 whole session (never modifying the base model file itself), so it's cheap to
 swap or disable (drop `--lora`, or set `--lora-scale 0`) between runs.
+
+5. **A/B it**: run the same prompt with and without the adapter to confirm it
+   actually changed behavior in the intended direction before trusting it
+   day-to-day:
+
+```bash
+aia --model /path/to/model.gguf --lora ./my-adapter.gguf --lora-scale 1.0 --prompt "Same test prompt"
+aia --model /path/to/model.gguf --lora ./my-adapter.gguf --lora-scale 0.0 --prompt "Same test prompt"   # or drop --lora entirely
+```
+
+If the two responses don't meaningfully differ, the adapter likely didn't
+learn anything useful (check training loss); if the `--lora-scale 1.0`
+response degenerates into repeating training examples verbatim, the LoRA
+rank/epochs were probably too high for the dataset size.
 
 ## Exporting training data for LoRA fine-tuning
 
@@ -163,4 +193,4 @@ repo-wide Conan dependency) is used to serialize `--session` files.
 
 ## Roadmap
 
-- Tooling to help prepare `--session`/`--memory` data for external LoRA/QLoRA fine-tuning.
+- A small script tying the export -> train -> convert flow together, so it can be re-run periodically as `--session`/`--memory` files accumulate more conversations, without ever touching the frozen base model.

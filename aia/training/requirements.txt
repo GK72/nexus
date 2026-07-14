@@ -1,0 +1,11 @@
+# Pinned dependencies for the external LoRA/QLoRA training flow.
+#
+# This file is provided for reference/reproducibility; the recommended way to
+# actually install and run this tooling is via pipx (see aia/training/README.md),
+# which reads dependencies from pyproject.toml instead.
+transformers==4.44.2
+peft==0.12.0
+trl==0.9.6
+bitsandbytes==0.43.3
+accelerate==0.33.0
+datasets==2.20.0

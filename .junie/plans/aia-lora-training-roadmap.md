@@ -43,13 +43,13 @@ aia can convert its own --session and --memory JSON files into a JSONL dataset r
 - Convert each conversation/exchange into a `{"messages": [...]}` JSONL record matching the format expected by Hugging Face `trl`'s SFT trainer (system/user/assistant roles preserved).
 - Skip malformed or empty entries and log via `nova::topic_log` how many records were exported, at debug level, with the final count as the normal-level summary log.
 
-### * Step 2: Document and scaffold the external training environment
+### ✓ Step 2: Document and scaffold the external training environment
 A `aia/training/` folder documents and scaffolds the Python-side LoRA/QLoRA training flow, kept fully outside the CMake/Conan build.
 - Add `aia/training/README.md` describing the recommended flow: load base model in 4-bit via `bitsandbytes`, attach a `peft.LoraConfig` (starting `r=16`, `alpha=32`, target `q_proj`/`v_proj`), train with `trl`'s `SFTTrainer` on the exported JSONL.
 - Add `aia/training/requirements.txt` pinning `transformers`, `peft`, `trl`, `bitsandbytes`, `accelerate`.
 - Add an example `aia/training/train_lora.py` script (parameterized by base model repo id and dataset path) as a concrete, runnable starting point rather than just prose.
 
-###   Step 3: Document the conversion and apply/evaluate workflow
+### ✓ Step 3: Document the conversion and apply/evaluate workflow
 aia/README.md clearly documents the end-to-end loop from a freshly trained adapter to a testable GGUF adapter usable via the existing --lora flag.
 - Extend the existing "LoRA fine-tuning (personalization)" section in `aia/README.md` with concrete commands: `convert_lora_to_gguf.py` invocation against the same base GGUF model, followed by `aia --model <base.gguf> --lora <adapter.gguf> --lora-scale <s> --prompt "..."`.
 - Document an A/B verification step (same prompt with `--lora` vs `--lora-scale 0`) as the human-verifiable check that the adapter changed behavior as intended.
