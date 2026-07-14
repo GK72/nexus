@@ -1,9 +1,10 @@
 /**
  * Part of AIA (AI Assistant) Subproject.
  *
- * Minimal `llama.cpp`-based CLI for loading a GGUF model and generating text
- * from a single prompt. This is the scaffolding step: no chat loop, no
- * sampling strategies beyond greedy decoding, no context persistence.
+ * `llama.cpp`-based CLI for loading a GGUF model and running an interactive,
+ * multi-turn chat session with top-k/top-p/temperature sampling. Conversation
+ * history is retained for the whole session and the KV cache is reused
+ * incrementally across turns. No cross-session persistence or RAG layer yet.
  *
  * @author  Gábor Krisztián Girhiny and Junie
  * @date    2026-07-14
@@ -78,7 +79,7 @@ struct aia_options {
     desc.add_options()
         ("help,h", "Produce help message")
         ("model,m", po::value<std::string>()->required(), "Path to a GGUF model file")
-        ("prompt,p", po::value<std::string>()->required(), "Prompt to complete")
+        ("prompt,p", po::value<std::string>(), "First prompt; if omitted, it is read interactively. Either way, the session continues as a multi-turn chat until you type \"exit\" or \"quit\" (or send EOF)")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
         ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
@@ -104,7 +105,7 @@ struct aia_options {
 
     return aia_options {
         .model_path   = vm["model"].as<std::string>(),
-        .prompt       = vm["prompt"].as<std::string>(),
+        .prompt       = vm.contains("prompt") ? vm["prompt"].as<std::string>() : "",
         .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
         .n_predict    = vm["n-predict"].as<int>(),
         .temperature  = vm["temperature"].as<float>(),
@@ -154,33 +155,44 @@ struct aia_options {
 }
 
 /**
- * @brief   Apply the model's chat template to a system + user message pair.
- *
- * Falls back to the raw user message if the model has no chat template.
- *
- * @param   model           Loaded model.
- * @param   system_prompt   System message content.
- * @param   user_message    User message content.
- *
- * @return  Formatted prompt ready for tokenization.
+ * @brief   A single message in a conversation (role + content), owning its strings so
+ *          pointers handed to `llama_chat_message` stay valid for the call's duration.
  */
-[[nodiscard]] auto apply_chat_template(llama_model* model, const std::string& system_prompt, const std::string& user_message) -> std::string {
+struct chat_message {
+    std::string role;
+    std::string content;
+};
+
+/**
+ * @brief   Apply the model's chat template to a full conversation history.
+ *
+ * Falls back to concatenating the last message's content if the model has no chat template.
+ *
+ * @param   model       Loaded model.
+ * @param   history     Full conversation so far (system + alternating user/assistant turns).
+ *
+ * @return  Formatted prompt ready for tokenization, including the assistant generation prompt.
+ */
+[[nodiscard]] auto apply_chat_template(llama_model* model, const std::vector<chat_message>& history) -> std::string {
     const char* tmpl = llama_model_chat_template(model, nullptr);
     if (tmpl == nullptr) {
         nova::topic_log::debug(LogTopic, "Model has no chat template, falling back to raw prompt");
-        return user_message;
+        return history.empty() ? std::string{} : history.back().content;
     }
 
-    const std::vector<llama_chat_message> messages {
-        { "system", system_prompt.c_str() },
-        { "user",   user_message.c_str() }
-    };
+    std::vector<llama_chat_message> messages;
+    messages.reserve(history.size());
+    std::size_t total_size = 0;
+    for (const auto& msg : history) {
+        messages.push_back({ msg.role.c_str(), msg.content.c_str() });
+        total_size += msg.content.size();
+    }
 
-    std::vector<char> buf(2 * (system_prompt.size() + user_message.size()) + 256);
+    std::vector<char> buf(2 * total_size + 256);
     auto n_written = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, buf.data(), static_cast<int32_t>(buf.size()));
     if (n_written < 0) {
         nova::topic_log::debug(LogTopic, "Failed to apply chat template, falling back to raw prompt");
-        return user_message;
+        return history.empty() ? std::string{} : history.back().content;
     }
 
     if (static_cast<std::size_t>(n_written) > buf.size()) {
@@ -259,46 +271,70 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
 }
 
 /**
- * @brief   Generate `n_predict` tokens continuing the given prompt and log the response.
+ * @brief   Feed a sequence of tokens (already appended past `n_used`) into the KV cache in
+ *          chunks no larger than `n_batch`, since `llama_decode` requires the batch to fit.
  *
- * The prompt is wrapped with a system message (asking the model to request
- * clarification or context instead of guessing) and, if given, an attached
- * context (e.g. file contents), then formatted via the model's chat template.
- * Tokens are drawn via `smpl` (top-k/top-p/temperature sampling) instead of greedy argmax.
+ * @param   ctx     Inference context.
+ * @param   tokens  Tokens to feed.
  *
- * @param   model       Loaded model.
- * @param   ctx         Inference context.
- * @param   smpl        Sampler chain used to pick each next token.
- * @param   prompt      Prompt text.
- * @param   context     Optional context to attach (e.g. code to review).
- * @param   n_predict   Number of tokens to generate.
+ * @return  The batch used for the last chunk (its logits are ready for sampling), or
+ *          `std::nullopt` if decoding failed.
  */
-void generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::string& prompt, const std::optional<std::string>& context, int n_predict) {
-    const llama_vocab* vocab = llama_model_get_vocab(model);
-
-    const auto user_message = build_user_message(prompt, context);
-    const auto formatted_prompt = apply_chat_template(model, SystemPrompt, user_message);
-
-    nova::topic_log::debug(LogTopic, "Formatted prompt: {}", formatted_prompt);
-
-    auto tokens = tokenize_prompt(vocab, formatted_prompt);
-
-    // `llama_decode` requires the batch to fit within `n_batch`, so the (potentially
-    // long, e.g. with attached context) prompt must be fed in chunks rather than as
-    // a single oversized batch. Only the final chunk's logits are needed to start
-    // sampling the continuation.
+[[nodiscard]] auto feed_tokens(llama_context* ctx, const std::vector<llama_token>& tokens) -> std::optional<llama_batch> {
     const auto n_batch = llama_n_batch(ctx);
     std::size_t n_fed = 0;
     llama_batch batch {};
     while (n_fed < tokens.size()) {
         const auto chunk_size = std::min(static_cast<std::size_t>(n_batch), tokens.size() - n_fed);
-        batch = llama_batch_get_one(tokens.data() + n_fed, static_cast<int>(chunk_size));
+        batch = llama_batch_get_one(const_cast<llama_token*>(tokens.data()) + n_fed, static_cast<int>(chunk_size));
         if (llama_decode(ctx, batch) != 0) {
             nova::topic_log::error(LogTopic, "llama_decode failed while processing prompt");
-            return;
+            return std::nullopt;
         }
         n_fed += chunk_size;
     }
+    return batch;
+}
+
+/**
+ * @brief   Generate a response continuing `history` (whose last message is the new user
+ *          turn), reusing the KV cache across calls, and log it.
+ *
+ * Only the tokens beyond the previously processed prefix (`n_past`) are fed to the model,
+ * since the KV cache already holds the earlier turns; this keeps multi-turn conversations
+ * cheap instead of reprocessing the whole history every turn. `n_past` is updated in place
+ * to reflect everything now in the KV cache (prompt + generated response).
+ *
+ * @param   model       Loaded model.
+ * @param   ctx         Inference context.
+ * @param   smpl        Sampler chain used to pick each next token.
+ * @param   history     Full conversation so far, including the latest user message.
+ * @param   n_past      In/out: number of tokens already in the KV cache; advanced by this call.
+ * @param   n_predict   Maximum number of tokens to generate for this turn.
+ *
+ * @return  The generated response text (empty on decode failure).
+ */
+[[nodiscard]] auto generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::vector<chat_message>& history, std::size_t& n_past, int n_predict) -> std::string {
+    const llama_vocab* vocab = llama_model_get_vocab(model);
+
+    const auto formatted_prompt = apply_chat_template(model, history);
+    nova::topic_log::debug(LogTopic, "Formatted prompt: {}", formatted_prompt);
+
+    auto full_tokens = tokenize_prompt(vocab, formatted_prompt);
+    if (full_tokens.size() < n_past) {
+        // Should not happen (history only grows), but guard against a template that
+        // doesn't produce a stable prefix.
+        nova::topic_log::debug(LogTopic, "Formatted prompt shrank versus KV cache, resetting n_past");
+        n_past = 0;
+    }
+
+    const std::vector<llama_token> new_tokens(full_tokens.begin() + static_cast<std::ptrdiff_t>(n_past), full_tokens.end());
+
+    auto batch = feed_tokens(ctx, new_tokens);
+    if (not batch) {
+        return {};
+    }
+    n_past = full_tokens.size();
 
     std::string response;
 
@@ -306,22 +342,26 @@ void generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const
     // exceeding the context window, instead of letting `llama_decode` fail and
     // silently cutting the response off mid-token.
     const auto n_ctx = llama_n_ctx(ctx);
-    std::size_t n_used = tokens.size();
     bool reached_eog = false;
     int generated = 0;
+    std::vector<llama_token> next_tokens;
 
     for (int i = 0; i < n_predict; ++i) {
-        if (n_used >= n_ctx) {
+        if (n_past >= n_ctx) {
             nova::topic_log::debug(LogTopic, "Stopping generation: context window ({} tokens) exhausted", n_ctx);
             break;
         }
 
-        if (i > 0 and llama_decode(ctx, batch) != 0) {
-            nova::topic_log::error(LogTopic, "llama_decode failed");
-            break;
+        if (i > 0) {
+            const auto rebatched = feed_tokens(ctx, next_tokens);
+            if (not rebatched) {
+                break;
+            }
+            batch = rebatched;
+            n_past += next_tokens.size();
         }
 
-        const llama_token next_token = llama_sampler_sample(smpl, ctx, batch.n_tokens - 1);
+        const llama_token next_token = llama_sampler_sample(smpl, ctx, batch->n_tokens - 1);
         llama_sampler_accept(smpl, next_token);
 
         if (llama_vocab_is_eog(vocab, next_token)) {
@@ -333,12 +373,10 @@ void generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const
         const auto piece_len = llama_token_to_piece(vocab, next_token, piece, sizeof(piece), 0, true);
         response.append(piece, static_cast<std::size_t>(piece_len));
         ++generated;
-        ++n_used;
 
         nova::topic_log::debug(LogTopic, "Generated token {}: \"{}\"", i, std::string_view(piece, static_cast<std::size_t>(piece_len)));
 
-        tokens = { next_token };
-        batch = llama_batch_get_one(tokens.data(), static_cast<int>(tokens.size()));
+        next_tokens = { next_token };
     }
 
     if (not reached_eog) {
@@ -351,6 +389,56 @@ void generate(llama_model* model, llama_context* ctx, llama_sampler* smpl, const
     }
 
     nova::topic_log::info(LogTopic, "{}", response);
+
+    return response;
+}
+
+/**
+ * @brief   Run an interactive, multi-turn chat session.
+ *
+ * The conversation history (system prompt plus every user/assistant turn) is retained
+ * for the whole session and re-fed through the model's chat template each turn, but the
+ * KV cache is reused incrementally (`n_past`) so only the newest turn is actually decoded.
+ * The first turn's user message optionally carries attached context (e.g. a file to
+ * review); later turns are plain follow-up messages. The session ends on "exit"/"quit" or EOF.
+ *
+ * @param   model           Loaded model.
+ * @param   ctx             Inference context.
+ * @param   smpl            Sampler chain used to pick each next token.
+ * @param   first_prompt    First user message; if empty, it is read from stdin like every later turn.
+ * @param   context         Optional context to attach to the first user message.
+ * @param   n_predict       Maximum number of tokens to generate per turn.
+ */
+void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::string& first_prompt, const std::optional<std::string>& context, int n_predict) {
+    std::vector<chat_message> history { { "system", SystemPrompt } };
+    std::size_t n_past = 0;
+    bool first_turn = true;
+
+    while (true) {
+        std::string prompt = first_prompt;
+        if (not first_turn or prompt.empty()) {
+            std::cout << "> ";
+            if (not std::getline(std::cin, prompt)) {
+                break;
+            }
+        }
+
+        if (prompt == "exit" or prompt == "quit") {
+            break;
+        }
+
+        if (prompt.empty()) {
+            continue;
+        }
+
+        const auto user_message = first_turn ? build_user_message(prompt, context) : prompt;
+        history.push_back({ "user", user_message });
+
+        const auto response = generate(model, ctx, smpl, history, n_past, n_predict);
+        history.push_back({ "assistant", response });
+
+        first_turn = false;
+    }
 }
 
 /**
@@ -391,7 +479,7 @@ auto entrypoint(auto args) -> int {
 
     llama_sampler* smpl = build_sampler(*options);
 
-    generate(model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict);
+    chat_loop(model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict);
 
     llama_sampler_free(smpl);
     llama_free(ctx);

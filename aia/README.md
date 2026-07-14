@@ -6,19 +6,32 @@ discussions.
 
 ## Current scope
 
-This is a minimal CLI (`aia`) that loads a GGUF model via
-[`llama.cpp`](https://github.com/ggml-org/llama.cpp) and completes a single
-prompt using top-k/top-p/temperature sampling. No chat loop or memory/RAG
+This is a CLI (`aia`) that loads a GGUF model via
+[`llama.cpp`](https://github.com/ggml-org/llama.cpp) and runs an interactive,
+multi-turn chat session using top-k/top-p/temperature sampling. No memory/RAG
 layer yet.
 
 ```bash
 aia --model /path/to/model.gguf --prompt "Hello, "
 ```
 
-The prompt is wrapped in a system message that instructs the model to ask
-clarifying questions or request missing context instead of guessing, and is
-formatted via the model's chat template. Attach extra context (e.g. code to
-review) with `--context`:
+The session continues after the first response: you're prompted (`> `) for
+follow-up messages on stdin, and the conversation history (including the
+model's own prior replies) is kept for every subsequent turn. `--prompt` may
+be omitted entirely to start straight in interactive mode. End the session
+with `exit`, `quit`, or EOF (Ctrl-D):
+
+```bash
+aia --model /path/to/model.gguf   # first message is read interactively too
+```
+
+Each turn is wrapped in a system message (sent once, at the start of the
+conversation) that instructs the model to ask clarifying questions or request
+missing context instead of guessing, and the full history is formatted via
+the model's chat template on every turn. Only the newest turn is actually fed
+through `llama_decode`, though -- the KV cache from earlier turns is reused,
+so longer conversations don't get progressively slower to process. Attach
+extra context (e.g. code to review) to the first message with `--context`:
 
 ```bash
 aia --model /path/to/model.gguf --prompt "Review my code" --context ./main.cpp
@@ -66,6 +79,5 @@ set in `conanfile.txt` to enable CUDA acceleration.
 
 ## Roadmap
 
-- Multi-turn chat loop (retain conversation history across turns) instead of a single prompt/response.
 - Conversation persistence and a retrieval-augmented generation (RAG) layer over past discussions.
 - Periodic LoRA/QLoRA fine-tuning on collected conversation data.
