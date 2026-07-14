@@ -25,6 +25,21 @@ with `exit`, `quit`, or EOF (Ctrl-D):
 aia --model /path/to/model.gguf   # first message is read interactively too
 ```
 
+By default, the conversation is lost once the process exits. Attach `--session`
+to a path and it's saved as JSON after every turn, then reloaded on the next
+run so the same conversation (system prompt + full history) picks up where it
+left off:
+
+```bash
+aia --model /path/to/model.gguf --session ./my-session.json --prompt "Hi"
+# ... exit, then later:
+aia --model /path/to/model.gguf --session ./my-session.json --prompt "Continue where we left off"
+```
+
+On resume, the whole persisted history is fed back through the model (there's
+no KV cache to reuse across process runs, only within a single run), so
+reloading a long session costs one full re-processing pass over that history.
+
 Each turn is wrapped in a system message (sent once, at the start of the
 conversation) that instructs the model to ask clarifying questions or request
 missing context instead of guessing, and the full history is formatted via
@@ -81,9 +96,10 @@ Use `download-model.sh` to fetch a GGUF model from Hugging Face into `aia/models
 ## Dependencies
 
 `llama.cpp` is pulled in via Conan (`llama-cpp/b6565`), with `with_cuda=True`
-set in `conanfile.txt` to enable CUDA acceleration.
+set in `conanfile.txt` to enable CUDA acceleration. `nlohmann_json` (already a
+repo-wide Conan dependency) is used to serialize `--session` files.
 
 ## Roadmap
 
-- Conversation persistence and a retrieval-augmented generation (RAG) layer over past discussions.
+- A retrieval-augmented generation (RAG) layer over past discussions.
 - Periodic LoRA/QLoRA fine-tuning on collected conversation data.

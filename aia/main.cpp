@@ -4,7 +4,8 @@
  * `llama.cpp`-based CLI for loading a GGUF model and running an interactive,
  * multi-turn chat session with top-k/top-p/temperature sampling. Conversation
  * history is retained for the whole session and the KV cache is reused
- * incrementally across turns. No cross-session persistence or RAG layer yet.
+ * incrementally across turns; optionally, history is persisted to a JSON
+ * session file so a conversation can be resumed across runs. No RAG layer yet.
  *
  * @author  Gábor Krisztián Girhiny and Junie
  * @date    2026-07-14
@@ -17,6 +18,8 @@
 #include <llama.h>
 
 #include <boost/program_options.hpp>
+
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -54,6 +57,7 @@ struct aia_options {
     std::string model_path {};
     std::string prompt {};
     std::string context_path {};
+    std::string session_path {};
     int         n_predict { 1024 };
     int         ctx_size { 4096 };
     float       temperature { 0.8F };
@@ -82,6 +86,7 @@ struct aia_options {
         ("model,m", po::value<std::string>()->required(), "Path to a GGUF model file")
         ("prompt,p", po::value<std::string>(), "First prompt; if omitted, it is read interactively. Either way, the session continues as a multi-turn chat until you type \"exit\" or \"quit\" (or send EOF)")
         ("context,c", po::value<std::string>(), "Path to a file whose contents are attached as context (e.g. code to review)")
+        ("session,s", po::value<std::string>(), "Path to a JSON file used to persist and reload the conversation history across runs")
         ("n-predict,n", po::value<int>()->default_value(1024), "Number of tokens to generate")
         ("ctx-size", po::value<int>()->default_value(4096), "Context window size in tokens; the whole conversation, including any --context file, must fit within it")
         ("temperature,t", po::value<float>()->default_value(0.8F), "Sampling temperature (higher = more random)")
@@ -94,7 +99,7 @@ struct aia_options {
     try {
         po::store(po::command_line_parser(args_vec).options(desc).run(), vm);
         if (vm.contains("help")) {
-            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--n-predict <n>] "
+            std::cout << "Usage: aia --model <model.gguf> --prompt \"<text>\" [--context <file>] [--session <file>] [--n-predict <n>] "
                          "[--ctx-size <n>] [--temperature <t>] [--top-k <k>] [--top-p <p>] [--seed <s>]\n";
             std::cout << desc << "\n";
             return aia_options { .help = true };
@@ -109,6 +114,7 @@ struct aia_options {
         .model_path   = vm["model"].as<std::string>(),
         .prompt       = vm.contains("prompt") ? vm["prompt"].as<std::string>() : "",
         .context_path = vm.contains("context") ? vm["context"].as<std::string>() : "",
+        .session_path = vm.contains("session") ? vm["session"].as<std::string>() : "",
         .n_predict    = vm["n-predict"].as<int>(),
         .ctx_size     = vm["ctx-size"].as<int>(),
         .temperature  = vm["temperature"].as<float>(),
@@ -165,6 +171,73 @@ struct chat_message {
     std::string role;
     std::string content;
 };
+
+/**
+ * @brief   Load a previously persisted conversation history from a JSON session file.
+ *
+ * The file is a JSON array of `{"role": ..., "content": ...}` objects, in order. Missing
+ * or unreadable/malformed files are treated as "no history yet" rather than a hard error,
+ * since a session file legitimately doesn't exist on the very first run.
+ *
+ * @param   session_path    Path to the session file, or empty to disable persistence.
+ *
+ * @return  Loaded history (possibly empty).
+ */
+[[nodiscard]] auto load_session(const std::string& session_path) -> std::vector<chat_message> {
+    std::vector<chat_message> history;
+    if (session_path.empty()) {
+        return history;
+    }
+
+    std::ifstream file(session_path);
+    if (not file) {
+        nova::topic_log::debug(LogTopic, "No existing session file at {}, starting fresh", session_path);
+        return history;
+    }
+
+    try {
+        nlohmann::json json;
+        file >> json;
+        for (const auto& entry : json) {
+            history.push_back({ entry.at("role").get<std::string>(), entry.at("content").get<std::string>() });
+        }
+        nova::topic_log::debug(LogTopic, "Loaded {} message(s) from session file {}", history.size(), session_path);
+    } catch (const std::exception& e) {
+        nova::topic_log::debug(LogTopic, "Failed to parse session file {}: {}; starting fresh", session_path, e.what());
+        history.clear();
+    }
+
+    return history;
+}
+
+/**
+ * @brief   Persist the current conversation history to a JSON session file.
+ *
+ * Overwrites the file with the full history (including the system prompt) so the next
+ * run of `aia --session <same file>` can resume the conversation from where it left off.
+ *
+ * @param   session_path    Path to the session file, or empty to disable persistence.
+ * @param   history         Full conversation history to persist.
+ */
+void save_session(const std::string& session_path, const std::vector<chat_message>& history) {
+    if (session_path.empty()) {
+        return;
+    }
+
+    nlohmann::json json = nlohmann::json::array();
+    for (const auto& msg : history) {
+        json.push_back({ { "role", msg.role }, { "content", msg.content } });
+    }
+
+    std::ofstream file(session_path);
+    if (not file) {
+        nova::topic_log::debug(LogTopic, "Could not open session file for writing: {}", session_path);
+        return;
+    }
+
+    file << json.dump(2);
+    nova::topic_log::debug(LogTopic, "Saved {} message(s) to session file {}", history.size(), session_path);
+}
 
 /**
  * @brief   Apply the model's chat template to a full conversation history.
@@ -429,9 +502,14 @@ void ggml_log_to_topic(ggml_log_level level, const char* text, void* user_data) 
  * @param   first_prompt    First user message; if empty, it is read from stdin like every later turn.
  * @param   context         Optional context to attach to the first user message.
  * @param   n_predict       Maximum number of tokens to generate per turn.
+ * @param   session_path    Path to a JSON file used to reload and persist the conversation
+ *                          history across runs, or empty to disable persistence.
  */
-void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::string& first_prompt, const std::optional<std::string>& context, int n_predict) {
-    std::vector<chat_message> history { { "system", SystemPrompt } };
+void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, const std::string& first_prompt, const std::optional<std::string>& context, int n_predict, const std::string& session_path) {
+    auto history = load_session(session_path);
+    if (history.empty()) {
+        history.push_back({ "system", SystemPrompt });
+    }
     std::size_t n_past = 0;
     bool first_turn = true;
 
@@ -457,6 +535,8 @@ void chat_loop(llama_model* model, llama_context* ctx, llama_sampler* smpl, cons
 
         const auto response = generate(model, ctx, smpl, history, n_past, n_predict);
         history.push_back({ "assistant", response });
+
+        save_session(session_path, history);
 
         first_turn = false;
     }
@@ -500,7 +580,7 @@ auto entrypoint(auto args) -> int {
 
     llama_sampler* smpl = build_sampler(*options);
 
-    chat_loop(model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict);
+    chat_loop(model, ctx, smpl, options->prompt, read_context(options->context_path), options->n_predict, options->session_path);
 
     llama_sampler_free(smpl);
     llama_free(ctx);
