@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -85,19 +86,34 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
  *          project in `project_dir`.
  *
  * Automatically (re-)configures CMake if needed: either the build directory
- * was never configured (missing marker file), or `CMakeCache.txt` itself is
- * missing (partially-created build directory).
+ * was never configured (missing marker file), `CMakeCache.txt` itself is
+ * missing (partially-created build directory), or `clean_build` was given.
+ *
+ * @param   clean_build     If `true`, wipe the resolved build directory
+ *                          (CMake) or run `make clean` (Makefile, if a
+ *                          `clean` target exists) before building.
  *
  * @returns the build command to run.
  */
-[[nodiscard]] auto discover_project_type(const std::string& project_dir, const std::string& build_type) -> std::vector<std::string> {
+[[nodiscard]] auto discover_project_type(const std::string& project_dir, const std::string& build_type, bool clean_build) -> std::vector<std::string> {
     if (not fs::exists(fs::path(project_dir) / "CMakeLists.txt")) {
+        if (clean_build and fs::exists(fs::path(project_dir) / "Makefile")) {
+            nova::log::debug("Cleaning Makefile project in '{}'...", project_dir);
+            std::ignore = run_streamed({ "make", "clean" }, project_dir);
+        }
         return { "make" };
     }
 
     auto build_dir_rel = cmake_build_dir(build_type);
     auto build_dir = fs::path(project_dir) / build_dir_rel;
-    bool needs_configure = not fs::exists(build_dir / "CMakeCache.txt")
+
+    if (clean_build and fs::exists(build_dir)) {
+        nova::log::debug("Deleting build directory '{}'...", build_dir.string());
+        fs::remove_all(build_dir);
+    }
+
+    bool needs_configure =
+           not fs::exists(build_dir / "CMakeCache.txt")
         or not fs::exists(build_dir / DefinesMarkerFile);
 
     if (needs_configure) {
@@ -122,10 +138,10 @@ builder::builder(std::string project_dir, std::string build_type)
     , m_build_type(canonical_build_type(build_type))
 {}
 
-void builder::build() const {
+void builder::build(bool clean_build) const {
     nova::log::debug("Building in '{}'...", m_project_dir);
 
-    int code = run_streamed(discover_project_type(m_project_dir, m_build_type), m_project_dir);
+    int code = run_streamed(discover_project_type(m_project_dir, m_build_type, clean_build), m_project_dir);
     if (code == 0) {
         nxs::rlog::success("Build successful.");
     } else {

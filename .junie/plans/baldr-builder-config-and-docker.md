@@ -139,13 +139,13 @@ Resolved: `baldr`'s own binary is bind-mounted into the container (config/CLI `b
 - Add a `--build-type <name>` CLI flag immediately (default `"debug"`), wired into `builder`'s `build_type` field from the start; the value is validated case-insensitively against the standard CMake build types (`Debug`, `Release`, `RelWithDebInfo`, `MinSizeRel`), canonical casing used for CMake, all-lowercase for the build directory name.
 - Verify against the existing `baldr/tests/cmake-project` fixture that a first `baldr build` configures once, and a second run does not reconfigure.
 
-### * Step 2: Add `--delete` clean-build flag
-`baldr build --delete` performs a clean rebuild.
+### ✓ Step 2: Add `--clean` clean-build flag
+`baldr build --clean` performs a clean rebuild (renamed from `--delete` per user request).
 
-- Add a `delete_build` bool to `main.cpp`'s `options`/CLI (`--delete`), threaded into `builder::build()`; when set, `fs::remove_all` the resolved build directory (CMake) or, for Makefile projects, run `make clean` if a `clean` target exists, before proceeding.
-- Update `print_help()` and manually verify `baldr build --delete` against `baldr/tests`.
+- Add a `clean_build` bool to `main.cpp`'s `options`/CLI (`--clean`), threaded into `builder::build()`; when set, `fs::remove_all` the resolved build directory (CMake) or, for Makefile projects, run `make clean` if a `clean` target exists, before proceeding.
+- Update `print_help()` and manually verify `baldr build --clean` against `baldr/tests`.
 
-###   Step 3: Add `--` argument forwarding to `run`
+### * Step 3: Add `--` argument forwarding to `run`
 `baldr run -t app -- <args>` forwards extra args to the target's own argv.
 
 - Add a `forwarded_args` field to `options`, populated from everything following a literal `--` in argv (split out before handing the rest to `boost::program_options`, since `command_line_parser` already stops parsing at `--`).

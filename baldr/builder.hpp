@@ -19,16 +19,20 @@ namespace baldr {
  */
 class builder {
 public:
-    explicit builder(std::string project_dir = ".", std::string build_type = "debug");
+    explicit builder(std::string project_dir = ".", std::string build_type = "Debug");
 
     /**
      * @brief   Run the build command inside `project_dir`, streaming its
      *          combined stdout/stderr output via `nova::log::info`.
      *
+     * @param   clean_build     If `true`, wipe the resolved build directory
+     *                          (CMake) or run `make clean` (Makefile, if a
+     *                          `clean` target exists) before building.
+     *
      * @throws  nova::exception if the build command exits with a non-zero
      *          code.
      */
-    void build() const;
+    void build(bool clean_build = false) const;
 
     /**
      * @brief   Run `target`, attached to the caller's own TTY.

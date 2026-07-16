@@ -84,6 +84,7 @@ struct options {
     command_type command;
     std::string project_dir;
     std::string build_type;
+    bool clean_build = false;
     std::optional<std::string> target;
     bool build_before_run = false;
     std::optional<std::string> image;
@@ -105,6 +106,7 @@ struct options {
         ("version,v", "Print version and exit")
         ("project,p", po::value<std::string>()->default_value("."), "Project directory (default: current directory)")
         ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir (default: 'Debug')")
+        ("clean", po::bool_switch()->default_value(false), "For 'build': wipe the build directory before building (clean build)")
         ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
         ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
@@ -134,6 +136,7 @@ struct options {
     options result;
     result.project_dir = vm["project"].as<std::string>();
     result.build_type = vm["build-type"].as<std::string>();
+    result.clean_build = vm["clean"].as<bool>();
     result.build_before_run = vm["build"].as<bool>();
 
     if (vm.contains("target")) {
@@ -205,13 +208,13 @@ auto entrypoint(auto args) -> int {
         switch (options->command) {
             case command_type::build: {
                 auto builder = baldr::builder{ options->project_dir, options->build_type };
-                builder.build();
+                builder.build(options->clean_build);
                 break;
             }
             case command_type::run: {
                 auto builder = baldr::builder{ options->project_dir, options->build_type };
                 if (options->build_before_run) {
-                    builder.build();
+                    builder.build(options->clean_build);
                 }
                 builder.run(*options->target);
                 break;
