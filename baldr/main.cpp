@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -51,19 +52,19 @@ namespace {
 void print_help(std::ostream& out) {
     out << "Usage: baldr [options] <command>\n";
     out << "Options:\n";
-    out << "  -h, --help           Produce help message\n";
-    out << "  -v, --version        Print version and exit\n";
-    out << "  -p, --project <dir>  Project directory (default: current directory)\n";
-    out << "      --build-type <name>  CMake build type/output subdir (default: 'Debug')\n";
-    out << "      --clean              For 'build': wipe the build directory before building (clean build)\n";
+    out << "  -h, --help                Produce help message\n";
+    out << "  -v, --version             Print version and exit\n";
+    out << "  -p, --project <dir>       Project directory (default: current directory)\n";
+    out << "      --build-type <name>   CMake build type/output subdir (default: 'Debug')\n";
+    out << "      --clean               For 'build': wipe the build directory before building (clean build)\n";
+    out << "  -D, --cmake-define        CMake define, repeatable (e.g. -DFOO=1); triggers reconfigure on change\n";
+    out << "  -t, --target <name>       Executable name to run (required for 'run')\n";
+    out << "      --build               For 'run': build the project first\n";
+    out << "      -- <args...>          For 'run': forward everything after '--' to the target's own argv\n";
     out << "\n";
     out << "  CMake projects are always configured with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON;\n";
     out << "  for the 'Debug' build type, <project_dir>/compile_commands.json is kept\n";
     out << "  symlinked to it (no need to switch it for other build types).\n";
-    out << "\n";
-    out << "  -t, --target <name>  Executable name to run (required for 'run')\n";
-    out << "      --build          For 'run': build the project first\n";
-    out << "      -- <args...>     For 'run': forward everything after '--' to the target's own argv\n";
     out << "\n";
     out << "  -i, --image <name>   Docker image to use (required for 'docker')\n";
     out << "\n";
@@ -91,6 +92,7 @@ struct options {
     std::string project_dir;
     std::string build_type;
     bool clean_build = false;
+    std::map<std::string, std::string> cmake_defines;
     std::optional<std::string> target;
     bool build_before_run = false;
     std::optional<std::string> image;
@@ -126,6 +128,7 @@ struct options {
         ("project,p", po::value<std::string>()->default_value("."), "Project directory (default: current directory)")
         ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir (default: 'Debug')")
         ("clean", po::bool_switch()->default_value(false), "For 'build': wipe the build directory before building (clean build)")
+        ("cmake-define,D", po::value<std::vector<std::string>>()->composing(), "CMake define KEY=VALUE, repeatable")
         ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
         ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
@@ -158,6 +161,16 @@ struct options {
     result.clean_build = vm["clean"].as<bool>();
     result.build_before_run = vm["build"].as<bool>();
     result.forwarded_args = std::move(forwarded_args);
+
+    if (vm.contains("cmake-define")) {
+        for (const auto& define: vm["cmake-define"].as<std::vector<std::string>>()) {
+            auto eq_pos = define.find('=');
+            if (eq_pos == std::string::npos) {
+                throw nova::exception("Invalid -D/--define value '{}' (expected KEY=VALUE)", define);
+            }
+            result.cmake_defines[define.substr(0, eq_pos)] = define.substr(eq_pos + 1);
+        }
+    }
 
     if (vm.contains("target")) {
         result.target = vm["target"].as<std::string>();
@@ -227,12 +240,12 @@ auto entrypoint(auto args) -> int {
     try {
         switch (options->command) {
             case command_type::build: {
-                auto builder = baldr::builder{ options->project_dir, options->build_type };
+                auto builder = baldr::builder{ options->project_dir, options->build_type, options->cmake_defines };
                 builder.build(options->clean_build);
                 break;
             }
             case command_type::run: {
-                auto builder = baldr::builder{ options->project_dir, options->build_type };
+                auto builder = baldr::builder{ options->project_dir, options->build_type, options->cmake_defines };
                 if (options->build_before_run) {
                     builder.build(options->clean_build);
                 }

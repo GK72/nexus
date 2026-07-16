@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -20,7 +21,11 @@ namespace baldr {
  */
 class builder {
 public:
-    explicit builder(std::string project_dir = ".", std::string build_type = "Debug");
+    builder(
+        std::string project_dir = ".",
+        std::string build_type = "Debug",
+        std::map<std::string, std::string> cmake_defines = {}
+    );
 
     /**
      * @brief   Run the build command inside `project_dir`, streaming its
@@ -52,6 +57,7 @@ public:
 private:
     std::string m_project_dir;
     std::string m_build_type;
+    std::map<std::string, std::string> m_cmake_defines;
 };
 
 } // namespace baldr

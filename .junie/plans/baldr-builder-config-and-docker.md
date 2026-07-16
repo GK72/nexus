@@ -152,7 +152,7 @@ Resolved: `baldr`'s own binary is bind-mounted into the container (config/CLI `b
 - Update `builder::run(target, forwarded_args)` to append `forwarded_args` after the target's own path in the `command` argv.
 - Update `print_help()` and manually verify `baldr run -t app -- --foo bar` against `baldr/tests`.
 
-### * Step 4: Add `-D` CMake define forwarding with change-based reconfiguration
+### ✓ Step 4: Add `-D` CMake define forwarding with change-based reconfiguration
 `baldr build -DFOO=1 -DBAR=2` passes defines to CMake and automatically reconfigures whenever the resolved define set changes between runs.
 
 - Add a repeatable `-D`/`--define KEY=VALUE` CLI option (`po::value<std::vector<std::string>>()->multitoken()` or repeated `->composing()`) collected into `options.cmake_defines`.
@@ -160,7 +160,7 @@ Resolved: `baldr`'s own binary is bind-mounted into the container (config/CLI `b
 - Change the reconfigure check to compare the current resolved defines against the marker file's contents (in addition to the missing-file case from Stage 1), reconfiguring on any mismatch.
 - Verify manually: building once with `-DFOO=1`, then rebuilding with `-DFOO=2` triggers a fresh `cmake` configure while an unchanged rebuild does not.
 
-###   Step 5: Add `.baldr.yaml`/`~/.baldr.yaml` single-project config loading
+### * Step 5: Add `.baldr.yaml`/`~/.baldr.yaml` single-project config loading
 A project-local or home-directory YAML config supplies default debugger and CMake-define settings that CLI flags can still override.
 
 - Link `yaml-cpp::yaml-cpp` into `baldr/CMakeLists.txt`.

@@ -13,6 +13,8 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -118,20 +120,37 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
 }
 
 /**
+ * @brief   Serialize `defines` into the same textual form written to /
+ *          read from the `.baldr-defines` marker file, so that comparing
+ *          two `std::string`s is enough to detect a change.
+ */
+[[nodiscard]] auto serialize_defines(const std::map<std::string, std::string>& defines) -> std::string {
+    std::ostringstream out;
+    for (const auto& [key, value]: defines) {
+        out << key << '=' << value << '\n';
+    }
+    return out.str();
+}
+
+/**
  * @brief   Decide whether `make` or `cmake` should be used to build the
  *          project in `project_dir`.
  *
  * Automatically (re-)configures CMake if needed: either the build directory
  * was never configured (missing marker file), `CMakeCache.txt` itself is
- * missing (partially-created build directory), or `clean_build` was given.
+ * missing (partially-created build directory), the resolved `-D` defines
+ * changed since the last configure, or `clean_build` was given.
  *
  * @param   clean_build     If `true`, wipe the resolved build directory
  *                          (CMake) or run `make clean` (Makefile, if a
  *                          `clean` target exists) before building.
+ * @param   cmake_defines   `-D` defines to pass to `cmake` at configure
+ *                          time; a change from the marker file's recorded
+ *                          set of defines triggers a reconfigure.
  *
  * @returns the build command to run.
  */
-[[nodiscard]] auto discover_project_type(const std::string& project_dir, const std::string& build_type, bool clean_build) -> std::vector<std::string> {
+[[nodiscard]] auto discover_project_type(const std::string& project_dir, const std::string& build_type, bool clean_build, const std::map<std::string, std::string>& cmake_defines) -> std::vector<std::string> {
     if (not fs::exists(fs::path(project_dir) / "CMakeLists.txt")) {
         if (clean_build and fs::exists(fs::path(project_dir) / "Makefile")) {
             nova::log::debug("Cleaning Makefile project in '{}'...", project_dir);
@@ -148,18 +167,33 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
         fs::remove_all(build_dir);
     }
 
+    auto resolved_defines = serialize_defines(cmake_defines);
+
     bool needs_configure =
            not fs::exists(build_dir / "CMakeCache.txt")
         or not fs::exists(build_dir / DefinesMarkerFile);
 
+    if (not needs_configure) {
+        std::ifstream marker(build_dir / DefinesMarkerFile);
+        std::ostringstream recorded;
+        recorded << marker.rdbuf();
+        needs_configure = recorded.str() != resolved_defines;
+    }
+
     if (needs_configure) {
         nova::log::debug("Configuring CMake project in '{}'...", project_dir);
-        if (int code = run_streamed({ "cmake", "-S", ".", "-B", build_dir_rel, "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" }, project_dir); code != 0) {
+
+        std::vector<std::string> configure_cmd{ "cmake", "-S", ".", "-B", build_dir_rel, "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" };
+        for (const auto& [key, value]: cmake_defines) {
+            configure_cmd.push_back(fmt::format("-D{}={}", key, value));
+        }
+
+        if (int code = run_streamed(configure_cmd, project_dir); code != 0) {
             throw nova::exception("CMake configure failed (exit code {}).", code);
         }
 
         fs::create_directories(build_dir);
-        std::ofstream(build_dir / DefinesMarkerFile) << "";
+        std::ofstream(build_dir / DefinesMarkerFile) << resolved_defines;
     }
 
     link_compile_commands(project_dir, build_type, build_dir);
@@ -171,15 +205,20 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
 
 namespace baldr {
 
-builder::builder(std::string project_dir, std::string build_type)
+builder::builder(
+        std::string project_dir,
+        std::string build_type,
+        std::map<std::string, std::string> cmake_defines
+)
     : m_project_dir(std::move(project_dir))
     , m_build_type(canonical_build_type(build_type))
+    , m_cmake_defines(std::move(cmake_defines))
 {}
 
 void builder::build(bool clean_build) const {
     nova::log::debug("Building in '{}'...", m_project_dir);
 
-    int code = run_streamed(discover_project_type(m_project_dir, m_build_type, clean_build), m_project_dir);
+    int code = run_streamed(discover_project_type(m_project_dir, m_build_type, clean_build, m_cmake_defines), m_project_dir);
     if (code == 0) {
         nxs::rlog::success("Build successful.");
     } else {
