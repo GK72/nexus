@@ -53,6 +53,8 @@ void print_help(std::ostream& out) {
     out << "  -h, --help           Produce help message\n";
     out << "  -v, --version        Print version and exit\n";
     out << "  -p, --project <dir>  Project directory (default: current directory)\n";
+    out << "      --build-type <name>  CMake build type/output subdir (default: 'Debug')\n";
+    out << "      --clean              For 'build': wipe the build directory before building (clean build)\n";
     out << "\n";
     out << "  -t, --target <name>  Executable name to run (required for 'run')\n";
     out << "      --build          For 'run': build the project first\n";
@@ -81,6 +83,7 @@ enum class command_type {
 struct options {
     command_type command;
     std::string project_dir;
+    std::string build_type;
     std::optional<std::string> target;
     bool build_before_run = false;
     std::optional<std::string> image;
@@ -101,6 +104,7 @@ struct options {
         ("help,h", "Produce help message")
         ("version,v", "Print version and exit")
         ("project,p", po::value<std::string>()->default_value("."), "Project directory (default: current directory)")
+        ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir (default: 'Debug')")
         ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
         ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
@@ -129,6 +133,7 @@ struct options {
 
     options result;
     result.project_dir = vm["project"].as<std::string>();
+    result.build_type = vm["build-type"].as<std::string>();
     result.build_before_run = vm["build"].as<bool>();
 
     if (vm.contains("target")) {
@@ -199,12 +204,12 @@ auto entrypoint(auto args) -> int {
     try {
         switch (options->command) {
             case command_type::build: {
-                auto builder = baldr::builder{ options->project_dir };
+                auto builder = baldr::builder{ options->project_dir, options->build_type };
                 builder.build();
                 break;
             }
             case command_type::run: {
-                auto builder = baldr::builder{ options->project_dir };
+                auto builder = baldr::builder{ options->project_dir, options->build_type };
                 if (options->build_before_run) {
                     builder.build();
                 }
@@ -217,7 +222,7 @@ auto entrypoint(auto args) -> int {
         }
     } catch (const nova::exception& ex) {
         nxs::rlog::failure(ex.what());
-        throw ex;
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;

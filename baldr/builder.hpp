@@ -19,7 +19,7 @@ namespace baldr {
  */
 class builder {
 public:
-    explicit builder(std::string project_dir = ".");
+    explicit builder(std::string project_dir = ".", std::string build_type = "debug");
 
     /**
      * @brief   Run the build command inside `project_dir`, streaming its
@@ -41,6 +41,7 @@ public:
 
 private:
     std::string m_project_dir;
+    std::string m_build_type;
 };
 
 } // namespace baldr

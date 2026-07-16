@@ -8,3 +8,4 @@ BALDR="${PROJECT_DIR}/build/debug/baldr/baldr"
 
 SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/make-project" run -t hello --build
 SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build
+SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -b Release
