@@ -10,3 +10,4 @@ SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/make-project" run -t 
 SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build
 SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -b Release
 SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -b Release --clean
+SPDLOG_MODE=standard $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -- --foo bar

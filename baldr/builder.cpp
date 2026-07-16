@@ -156,7 +156,7 @@ void builder::build(bool clean_build) const {
  *
  * Makefile-based projects build directly into `project_dir`.
  */
-void builder::run(const std::string& target) const {
+void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args) const {
     // TODO(feat): Discover the executable. It mirrors the build tree.
     auto build_dir_rel = cmake_build_dir(m_build_type);
     auto cmake_target = fs::path(m_project_dir) / build_dir_rel / target;
@@ -166,7 +166,10 @@ void builder::run(const std::string& target) const {
 
     nova::log::debug("Running '{}' in '{}'...", exe_path, m_project_dir);
 
-    auto cmd = command{ { exe_path }, {}, m_project_dir, /*interactive=*/true };
+    std::vector<std::string> argv{ exe_path };
+    argv.insert(argv.end(), forwarded_args.begin(), forwarded_args.end());
+
+    auto cmd = command{ argv, {}, m_project_dir, /*interactive=*/true };
     cmd.run();
 
     if (int code = cmd.wait(); code != 0) {

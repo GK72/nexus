@@ -11,6 +11,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace baldr {
 
@@ -37,11 +38,16 @@ public:
     /**
      * @brief   Run `target`, attached to the caller's own TTY.
      *
-     * @param   target  Executable name (relative to `project_dir`) to run.
+     * @param   target          Executable name (relative to `project_dir`)
+     *                          to run.
+     * @param   forwarded_args  Extra arguments appended after `target`'s own
+     *                          path, forwarded verbatim to its argv (e.g.
+     *                          everything following a literal `--` on
+     *                          baldr's own command line).
      *
      * @throws  nova::exception if `target` exits with a non-zero code.
      */
-    void run(const std::string& target) const;
+    void run(const std::string& target, const std::vector<std::string>& forwarded_args = {}) const;
 
 private:
     std::string m_project_dir;

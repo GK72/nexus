@@ -21,6 +21,7 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <optional>
@@ -58,6 +59,7 @@ void print_help(std::ostream& out) {
     out << "\n";
     out << "  -t, --target <name>  Executable name to run (required for 'run')\n";
     out << "      --build          For 'run': build the project first\n";
+    out << "      -- <args...>     For 'run': forward everything after '--' to the target's own argv\n";
     out << "\n";
     out << "  -i, --image <name>   Docker image to use (required for 'docker')\n";
     out << "\n";
@@ -89,17 +91,30 @@ struct options {
     bool build_before_run = false;
     std::optional<std::string> image;
     std::vector<std::string> docker_args;
+    std::vector<std::string> forwarded_args;
 };
 
 /**
  * @brief   Parse `args` (excluding the program name) into a `options`.
+ *
+ * Everything following the literal `--` is forwarded verbatim to the target's
+ * own argv (for 'run') and never handed to boost::program_options itself.
  *
  * @param   args    Command line arguments, excluding `argv[0]`.
  *
  * @return  Parsed options, or `std::nullopt` on a parsing error (already
  *          logged via `nova::log::error`).
  */
-[[nodiscard]] auto parse_args(const std::vector<std::string>& args) -> std::optional<options> {
+[[nodiscard]] auto parse_args(const std::vector<std::string>& all_args) -> std::optional<options> {
+    std::vector<std::string> args;
+    std::vector<std::string> forwarded_args;
+    if (auto it = std::ranges::find(all_args, std::string("--")); it != all_args.end()) {
+        args.assign(all_args.begin(), it);
+        forwarded_args.assign(std::next(it), all_args.end());
+    } else {
+        args = all_args;
+    }
+
     po::options_description desc("Baldr options");
     desc.add_options()
         ("help,h", "Produce help message")
@@ -138,6 +153,7 @@ struct options {
     result.build_type = vm["build-type"].as<std::string>();
     result.clean_build = vm["clean"].as<bool>();
     result.build_before_run = vm["build"].as<bool>();
+    result.forwarded_args = std::move(forwarded_args);
 
     if (vm.contains("target")) {
         result.target = vm["target"].as<std::string>();
@@ -216,7 +232,7 @@ auto entrypoint(auto args) -> int {
                 if (options->build_before_run) {
                     builder.build(options->clean_build);
                 }
-                builder.run(*options->target);
+                builder.run(*options->target, options->forwarded_args);
                 break;
             }
             case command_type::docker: {

@@ -145,14 +145,14 @@ Resolved: `baldr`'s own binary is bind-mounted into the container (config/CLI `b
 - Add a `clean_build` bool to `main.cpp`'s `options`/CLI (`--clean`), threaded into `builder::build()`; when set, `fs::remove_all` the resolved build directory (CMake) or, for Makefile projects, run `make clean` if a `clean` target exists, before proceeding.
 - Update `print_help()` and manually verify `baldr build --clean` against `baldr/tests`.
 
-### * Step 3: Add `--` argument forwarding to `run`
+### ✓ Step 3: Add `--` argument forwarding to `run`
 `baldr run -t app -- <args>` forwards extra args to the target's own argv.
 
 - Add a `forwarded_args` field to `options`, populated from everything following a literal `--` in argv (split out before handing the rest to `boost::program_options`, since `command_line_parser` already stops parsing at `--`).
 - Update `builder::run(target, forwarded_args)` to append `forwarded_args` after the target's own path in the `command` argv.
 - Update `print_help()` and manually verify `baldr run -t app -- --foo bar` against `baldr/tests`.
 
-###   Step 4: Add `-D` CMake define forwarding with change-based reconfiguration
+### * Step 4: Add `-D` CMake define forwarding with change-based reconfiguration
 `baldr build -DFOO=1 -DBAR=2` passes defines to CMake and automatically reconfigures whenever the resolved define set changes between runs.
 
 - Add a repeatable `-D`/`--define KEY=VALUE` CLI option (`po::value<std::vector<std::string>>()->multitoken()` or repeated `->composing()`) collected into `options.cmake_defines`.
