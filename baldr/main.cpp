@@ -170,20 +170,25 @@ auto entrypoint(auto args) -> int {
         return EXIT_SUCCESS;
     }
 
-    switch (options->command) {
-        case command_type::build: {
-            auto builder = baldr::builder{ options->project_dir };
-            builder.build();
-            break;
-        }
-        case command_type::run: {
-            auto builder = baldr::builder{ options->project_dir };
-            if (options->build_before_run) {
+    try {
+        switch (options->command) {
+            case command_type::build: {
+                auto builder = baldr::builder{ options->project_dir };
                 builder.build();
+                break;
             }
-            builder.run(*options->target);
-            break;
+            case command_type::run: {
+                auto builder = baldr::builder{ options->project_dir };
+                if (options->build_before_run) {
+                    builder.build();
+                }
+                builder.run(*options->target);
+                break;
+            }
         }
+    } catch (const nova::exception& ex) {
+        nxs::rlog::failure(ex.what());
+        throw ex;
     }
 
     return EXIT_SUCCESS;

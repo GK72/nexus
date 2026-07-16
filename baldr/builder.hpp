@@ -11,7 +11,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 namespace baldr {
 
@@ -20,7 +19,7 @@ namespace baldr {
  */
 class builder {
 public:
-    explicit builder(std::string project_dir = ".", std::vector<std::string> build_command = { "make" });
+    explicit builder(std::string project_dir = ".");
 
     /**
      * @brief   Run the build command inside `project_dir`, streaming its
@@ -42,7 +41,6 @@ public:
 
 private:
     std::string m_project_dir;
-    std::vector<std::string> m_build_command;
 };
 
 } // namespace baldr
