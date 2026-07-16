@@ -57,6 +57,10 @@ void print_help(std::ostream& out) {
     out << "      --build-type <name>  CMake build type/output subdir (default: 'Debug')\n";
     out << "      --clean              For 'build': wipe the build directory before building (clean build)\n";
     out << "\n";
+    out << "  CMake projects are always configured with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON;\n";
+    out << "  for the 'Debug' build type, <project_dir>/compile_commands.json is kept\n";
+    out << "  symlinked to it (no need to switch it for other build types).\n";
+    out << "\n";
     out << "  -t, --target <name>  Executable name to run (required for 'run')\n";
     out << "      --build          For 'run': build the project first\n";
     out << "      -- <args...>     For 'run': forward everything after '--' to the target's own argv\n";

@@ -82,6 +82,42 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
 }
 
 /**
+ * @brief   Keep `<project_dir>/compile_commands.json` symlinked to the
+ *          `debug` build's copy, so tooling (e.g. clangd) picks it up from
+ *          the repository root without needing to track other build types.
+ *
+ * A no-op for anything other than the `Debug` build type.
+ */
+void link_compile_commands(const std::string& project_dir, const std::string& build_type, const fs::path& build_dir) {
+    if (build_type != "Debug") {
+        return;
+    }
+
+    auto link_path = fs::path(project_dir) / "compile_commands.json";
+    auto target_path = build_dir / "compile_commands.json";
+
+    if (fs::is_symlink(link_path)) {
+        nova::log::debug("Symlink 'compile_commands.json' already exists");
+        std::error_code ec;
+        auto current_target = fs::read_symlink(link_path, ec);
+        if (not ec and current_target == target_path) {
+            nova::log::debug("Symlink 'compile_commands.json' is correct");
+            return;
+        }
+    }
+
+    if (not fs::exists(link_path)) {
+        std::error_code ec;
+        fs::remove(link_path, ec);
+        fs::create_symlink(target_path, link_path, ec);
+        nova::log::debug("Symlink 'compile_commands.json' has been created");
+        if (ec) {
+            nova::log::warn("Failed to symlink 'compile_commands.json': {}", ec.message());
+        }
+    }
+}
+
+/**
  * @brief   Decide whether `make` or `cmake` should be used to build the
  *          project in `project_dir`.
  *
@@ -118,13 +154,15 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
 
     if (needs_configure) {
         nova::log::debug("Configuring CMake project in '{}'...", project_dir);
-        if (int code = run_streamed({ "cmake", "-S", ".", "-B", build_dir_rel }, project_dir); code != 0) {
+        if (int code = run_streamed({ "cmake", "-S", ".", "-B", build_dir_rel, "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" }, project_dir); code != 0) {
             throw nova::exception("CMake configure failed (exit code {}).", code);
         }
 
         fs::create_directories(build_dir);
         std::ofstream(build_dir / DefinesMarkerFile) << "";
     }
+
+    link_compile_commands(project_dir, build_type, build_dir);
 
     return { "cmake", "--build", build_dir_rel };
 }
