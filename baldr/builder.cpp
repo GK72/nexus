@@ -72,7 +72,7 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
     }
     lines.feed_eof();
 
-    return cmd.wait();
+    return cmd.wait().code();
 }
 
 /**
@@ -322,8 +322,8 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
     auto cmd = command{ argv, {}, m_project_dir, /*interactive=*/true };
     cmd.run();
 
-    if (int code = cmd.wait(); code != 0) {
-        throw nova::exception("'{}' exited with code {}.", exe_path, code);
+    if (auto status = cmd.wait(); not status.success()) {
+        throw nova::exception("{}", status.describe());
     }
 }
 

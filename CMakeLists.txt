@@ -4,7 +4,7 @@ if(CMAKE_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     message(FATAL_ERROR "Building in-source is not supported! Create a build dir and remove ${CMAKE_SOURCE_DIR}/CMakeCache.txt")
 endif()
 
-set(NEXUS_VERSION "0.3.11")
+set(NEXUS_VERSION "0.3.12")
 project("nexus" VERSION ${NEXUS_VERSION} LANGUAGES CXX)
 message(STATUS "Nexus version ${NEXUS_VERSION}")
 

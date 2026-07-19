@@ -18,6 +18,11 @@
 #include <libnova/error.hpp>
 #include <fmt/format.h>
 
+#include <cerrno>
+#include <csignal>
+#include <cstring>
+#include <tuple>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -40,6 +45,67 @@ public:
         stdout,
         stderr,
         both
+    };
+
+    /**
+     * @brief   Detailed outcome of a finished process, distinguishing a
+     *          normal exit from being killed by a signal or from `execvp`
+     *          itself failing (e.g. the executable doesn't exist).
+     */
+    class exit_status {
+    public:
+        enum class kind {
+            exited,       // Process ran and exited normally; `value` is the exit code.
+            signaled,     // Process was killed by a signal; `value` is the signal number.
+            exec_failed,  // `execvp` itself failed; `value` is the `errno` from `execvp`.
+        };
+
+        exit_status(const char* name, kind type, int value)
+            : m_name(name)
+            , m_type(type)
+            , m_value(value)
+        {}
+
+        [[nodiscard]] auto success() const -> bool {
+            return m_type == kind::exited
+                && m_value == 0;
+        }
+
+        /**
+         * @brief   Shell-style numeric exit code, for callers that only
+         *          care about a single integer (128+signal for signals,
+         *          127 for a failed `execvp`, following common convention).
+         */
+        [[nodiscard]] auto code() const -> int {
+            switch (m_type) {
+                case kind::exited:      return m_value;
+                case kind::signaled:    return 128 + m_value;
+                case kind::exec_failed: return 127;
+            }
+            return EXIT_FAILURE;
+        }
+
+        /**
+         * @brief   Human-readable description of the outcome, naming the signal
+         *          or the `errno` reason instead of just a bare, ambiguous exit code.
+         */
+        [[nodiscard]] auto describe() const -> std::string {
+            switch (m_type) {
+                case kind::exited:
+                    return fmt::format("`{}` exited with code {}.", m_name, m_value);
+                case kind::signaled:
+                    return fmt::format("`{}` was terminated by signal {} ({}).", m_name, m_value, strsignal(m_value));
+                case kind::exec_failed:
+                    return fmt::format("Failed to execute `{}`: {}.", m_name, strerror(m_value));
+            }
+            return fmt::format("`{}` exited abnormally.", m_name);
+        }
+
+    private:
+        const char* m_name;
+        kind m_type = kind::exited;
+        int m_value = 0;
+
     };
 
     /**
@@ -115,12 +181,18 @@ public:
      *          child's stdout/stderr are redirected to the internal pipe.
      */
     auto run() {
+        if (fcntl(m_error_pipe.write(), F_SETFD, FD_CLOEXEC) == -1) {
+            throw nova::exception("Failed to configure error pipe");
+        }
+
         m_pid = fork();
         if (m_pid == -1) {
             throw nova::exception("Failed to fork process");
         }
 
         if (m_pid == 0) {
+            m_error_pipe.close_read();
+
             if (not m_interactive) {
                 m_pipe.redirect(file_descriptor::both);
             }
@@ -130,13 +202,24 @@ public:
             }
 
             if (not m_working_directory.empty() and chdir(m_working_directory.c_str()) == -1) {
-                perror("chdir");
+                int chdir_errno = errno;
+                std::ignore = ::write(m_error_pipe.write(), &chdir_errno, sizeof(chdir_errno));
                 _exit(EXIT_FAILURE);
             }
 
             execvp(m_args[0], m_args.data());
-            perror("execvp");
+            int exec_errno = errno;
+            std::ignore = ::write(m_error_pipe.write(), &exec_errno, sizeof(exec_errno));
             _exit(EXIT_FAILURE);
+        }
+
+        m_error_pipe.close_write();
+        int exec_errno = 0;
+        ssize_t n = ::read(m_error_pipe.read(), &exec_errno, sizeof(exec_errno));
+        m_error_pipe.close_read();
+        if (n == sizeof(exec_errno)) {
+            m_exec_failed = true;
+            m_exec_errno = exec_errno;
         }
 
         if (not m_interactive) {
@@ -172,10 +255,10 @@ public:
     /**
      * @brief   Wait for the process to exit.
      *
-     * @return  The process's exit code, or `EXIT_FAILURE` if it did not
-     *          exit normally.
+     * @return  The detailed outcome, distinguishing a normal exit from a
+     *          signal or a failed `execvp`.
      */
-    auto wait() -> int {
+    auto wait() -> exit_status {
         if (not m_interactive) {
             ::close(m_pipe.read());
         }
@@ -183,11 +266,19 @@ public:
         int status = 0;
         waitpid(m_pid, &status, 0);
 
-        if (not WIFEXITED(status)) {
-            return EXIT_FAILURE;
+        if (m_exec_failed) {
+            return { m_args[0], exit_status::kind::exec_failed, m_exec_errno };
         }
 
-        return WEXITSTATUS(status);
+        if (WIFSIGNALED(status)) {
+            return { m_args[0], exit_status::kind::signaled, WTERMSIG(status) };
+        }
+
+        if (WIFEXITED(status)) {
+            return { m_args[0], exit_status::kind::exited, WEXITSTATUS(status) };
+        }
+
+        return { m_args[0], exit_status::kind::exited, EXIT_FAILURE };
     }
 
 private:
@@ -195,9 +286,12 @@ private:
     std::vector<char*> m_args;
     std::map<std::string, std::string> m_env_map;
     pipe m_pipe;
+    pipe m_error_pipe;
     pid_t m_pid = -1;
     bool m_interactive = false;
     std::string m_working_directory;
+    bool m_exec_failed = false;
+    int m_exec_errno = 0;
 
     static constexpr auto BufferSize = 4096;
     std::array<char, BufferSize> m_buffer{ };

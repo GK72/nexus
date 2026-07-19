@@ -39,12 +39,12 @@ int main() {
     }
     lines.feed_eof();
 
-    int code = cmd.wait();
-    if (code == 0) {
+    auto status = cmd.wait();
+    if (status.success()) {
         nova::log::info("Command finished successfully.");
     } else {
-        nova::log::error("Command failed with exit code {}.", code);
+        nova::log::error("{}", status.describe());
     }
 
-    return code;
+    return status.code();
 }
