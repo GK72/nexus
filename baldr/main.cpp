@@ -260,21 +260,15 @@ auto entrypoint(auto args) -> int {
                     throw nova::exception("Failed to load .baldr.yaml: {}", cfg.error().message);
                 }
 
-                auto build_type = options->build_type_explicit ? options->build_type : cfg->build_type;
-
-                auto cmake_defines = cfg->cmake_defines;
+                auto merged_cfg = *cfg;
+                if (options->build_type_explicit) {
+                    merged_cfg.build_type = options->build_type;
+                }
                 for (const auto& [key, value]: options->cmake_defines) {
-                    cmake_defines[key] = value;
+                    merged_cfg.cmake_defines[key] = value;
                 }
 
-                auto builder = baldr::builder{
-                    options->project_dir,
-                    build_type,
-                    cmake_defines,
-                    cfg->env,
-                    cfg->debugger,
-                    cfg->debugger_args
-                };
+                auto builder = baldr::builder{ options->project_dir, merged_cfg };
 
                 if (options->command == command_type::build) {
                     builder.build(options->clean_build);

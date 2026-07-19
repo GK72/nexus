@@ -197,18 +197,14 @@ namespace baldr {
 
 builder::builder(
         std::string project_dir,
-        std::string build_type,
-        std::map<std::string, std::string> cmake_defines,
-        std::map<std::string, std::string> cmake_env,
-        std::string debugger,
-        std::vector<std::string> debugger_args
+        config cfg
 )
     : m_project_dir(std::move(project_dir))
-    , m_build_type(canonical_build_type(build_type))
-    , m_cmake_defines(std::move(cmake_defines))
-    , m_cmake_env(std::move(cmake_env))
-    , m_debugger(std::move(debugger))
-    , m_debugger_args(std::move(debugger_args))
+    , m_build_type(canonical_build_type(cfg.build_type))
+    , m_cmake_defines(std::move(cfg.cmake_defines))
+    , m_cmake_env(std::move(cfg.env))
+    , m_debugger(std::move(cfg.debugger))
+    , m_debugger_args(std::move(cfg.debugger_args))
 {}
 
 /**

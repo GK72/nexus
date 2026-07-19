@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <baldr/config.hpp>
+
 #include <map>
 #include <string>
 #include <vector>
@@ -26,13 +28,17 @@ enum class project_type {
  */
 class builder {
 public:
+    /**
+     * @brief   Construct a `builder` for `project_dir`, sourcing build
+     *          type, CMake defines/env and debugger settings from `cfg`.
+     *
+     * @param   project_dir     Project directory to build/run in.
+     * @param   cfg             Resolved configuration (already merged with
+     *                          any CLI overrides by the caller).
+     */
     builder(
         std::string project_dir = ".",
-        std::string build_type = "Debug",
-        std::map<std::string, std::string> cmake_defines = {},
-        std::map<std::string, std::string> cmake_env = {},
-        std::string debugger = "gdb",
-        std::vector<std::string> debugger_args = { "--args" }
+        config cfg = {}
     );
 
     /**
