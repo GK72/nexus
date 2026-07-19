@@ -16,6 +16,11 @@
 
 namespace baldr {
 
+enum class project_type {
+    make,
+    cmake
+};
+
 /**
  * @brief   Wraps a project's build invocation via `baldr::command`.
  */
@@ -38,7 +43,7 @@ public:
      * @throws  nova::exception if the build command exits with a non-zero
      *          code.
      */
-    void build(bool clean_build = false) const;
+    void build(bool clean_build = false);
 
     /**
      * @brief   Run `target`, attached to the caller's own TTY.
@@ -52,12 +57,17 @@ public:
      *
      * @throws  nova::exception if `target` exits with a non-zero code.
      */
-    void run(const std::string& target, const std::vector<std::string>& forwarded_args = {}) const;
+    void run(const std::string& target, const std::vector<std::string>& forwarded_args = {});
 
 private:
     std::string m_project_dir;
     std::string m_build_type;
     std::map<std::string, std::string> m_cmake_defines;
+    project_type m_project_type { project_type::make };
+
+
+    [[nodiscard]] auto
+    discover_project_type(bool clean_build) -> std::vector<std::string>;
 };
 
 } // namespace baldr

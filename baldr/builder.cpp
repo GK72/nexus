@@ -84,6 +84,53 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
 }
 
 /**
+ * @brief   Search `build_dir` recursively for a regular, executable file
+ *          named `target`
+ *
+ * @return  The paths to all matching executables.
+ *
+ * @note    Multiple executables can be found if the project structure is refactored.
+ */
+[[nodiscard]] auto
+find_built_executables(const fs::path& build_dir, const std::string& target) -> std::vector<fs::path> {
+    std::vector<fs::path> ret;
+
+    if (not fs::exists(build_dir)) {
+        throw nova::exception("Build directory does not exist: `{}`", build_dir.string());
+    }
+
+    std::error_code ec;
+    for (auto it = fs::recursive_directory_iterator(build_dir, fs::directory_options::skip_permission_denied, ec);
+         it != fs::recursive_directory_iterator();
+         it.increment(ec)
+    ) {
+        if (ec) {
+            break;
+        }
+
+        const auto& entry = *it;
+        if (entry.path().filename() != target) {
+            continue;
+        }
+
+        if (not entry.is_regular_file()) {
+            continue;
+        }
+
+        bool is_executable =
+            (entry.status().permissions() &
+                (fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec)
+            ) != fs::perms::none;
+
+        if (is_executable) {
+            ret.push_back(std::move(entry.path()));
+        }
+    }
+
+    return ret;
+}
+
+/**
  * @brief   Keep `<project_dir>/compile_commands.json` symlinked to the
  *          `debug` build's copy, so tooling (e.g. clangd) picks it up from
  *          the repository root without needing to track other build types.
@@ -132,6 +179,20 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
     return out.str();
 }
 
+} // namespace
+
+namespace baldr {
+
+builder::builder(
+        std::string project_dir,
+        std::string build_type,
+        std::map<std::string, std::string> cmake_defines
+)
+    : m_project_dir(std::move(project_dir))
+    , m_build_type(canonical_build_type(build_type))
+    , m_cmake_defines(std::move(cmake_defines))
+{}
+
 /**
  * @brief   Decide whether `make` or `cmake` should be used to build the
  *          project in `project_dir`.
@@ -150,24 +211,31 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
  *
  * @returns the build command to run.
  */
-[[nodiscard]] auto discover_project_type(const std::string& project_dir, const std::string& build_type, bool clean_build, const std::map<std::string, std::string>& cmake_defines) -> std::vector<std::string> {
-    if (not fs::exists(fs::path(project_dir) / "CMakeLists.txt")) {
-        if (clean_build and fs::exists(fs::path(project_dir) / "Makefile")) {
-            nova::log::debug("Cleaning Makefile project in '{}'...", project_dir);
-            std::ignore = run_streamed({ "make", "clean" }, project_dir);
+[[nodiscard]] auto
+builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
+    if (not fs::exists(fs::path(m_project_dir) / "CMakeLists.txt")) {
+        nova::log::debug("Discovered Makefile project in '{}'", m_project_dir);
+
+        if (clean_build and fs::exists(fs::path(m_project_dir) / "Makefile")) {
+            nova::log::debug("Cleaning Makefile project in '{}'...", m_project_dir);
+            std::ignore = run_streamed({ "make", "clean" }, m_project_dir);
         }
+        m_project_type = project_type::make;
         return { "make" };
     }
 
-    auto build_dir_rel = cmake_build_dir(build_type);
-    auto build_dir = fs::path(project_dir) / build_dir_rel;
+    nova::log::debug("Discovered CMake project in '{}'", m_project_dir);
+    m_project_type = project_type::cmake;
+
+    auto build_dir_rel = cmake_build_dir(m_build_type);
+    auto build_dir = fs::path(m_project_dir) / build_dir_rel;
 
     if (clean_build and fs::exists(build_dir)) {
         nova::log::debug("Deleting build directory '{}'...", build_dir.string());
         fs::remove_all(build_dir);
     }
 
-    auto resolved_defines = serialize_defines(cmake_defines);
+    auto resolved_defines = serialize_defines(m_cmake_defines);
 
     bool needs_configure =
            not fs::exists(build_dir / "CMakeCache.txt")
@@ -181,14 +249,14 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
     }
 
     if (needs_configure) {
-        nova::log::debug("Configuring CMake project in '{}'...", project_dir);
+        nova::log::debug("Configuring CMake project in '{}'...", m_project_dir);
 
         std::vector<std::string> configure_cmd{ "cmake", "-S", ".", "-B", build_dir_rel, "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" };
-        for (const auto& [key, value]: cmake_defines) {
+        for (const auto& [key, value]: m_cmake_defines) {
             configure_cmd.push_back(fmt::format("-D{}={}", key, value));
         }
 
-        if (int code = run_streamed(configure_cmd, project_dir); code != 0) {
+        if (int code = run_streamed(configure_cmd, m_project_dir); code != 0) {
             throw nova::exception("CMake configure failed (exit code {}).", code);
         }
 
@@ -196,29 +264,15 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
         std::ofstream(build_dir / DefinesMarkerFile) << resolved_defines;
     }
 
-    link_compile_commands(project_dir, build_type, build_dir);
+    link_compile_commands(m_project_dir, m_build_type, build_dir);
 
     return { "cmake", "--build", build_dir_rel };
 }
 
-} // namespace
-
-namespace baldr {
-
-builder::builder(
-        std::string project_dir,
-        std::string build_type,
-        std::map<std::string, std::string> cmake_defines
-)
-    : m_project_dir(std::move(project_dir))
-    , m_build_type(canonical_build_type(build_type))
-    , m_cmake_defines(std::move(cmake_defines))
-{}
-
-void builder::build(bool clean_build) const {
+void builder::build(bool clean_build) {
     nova::log::debug("Building in '{}'...", m_project_dir);
 
-    int code = run_streamed(discover_project_type(m_project_dir, m_build_type, clean_build, m_cmake_defines), m_project_dir);
+    int code = run_streamed(discover_project_type(clean_build), m_project_dir);
     if (code == 0) {
         nxs::rlog::success("Build successful.");
     } else {
@@ -233,13 +287,32 @@ void builder::build(bool clean_build) const {
  *
  * Makefile-based projects build directly into `project_dir`.
  */
-void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args) const {
-    // TODO(feat): Discover the executable. It mirrors the build tree.
-    auto build_dir_rel = cmake_build_dir(m_build_type);
-    auto cmake_target = fs::path(m_project_dir) / build_dir_rel / target;
-    std::string exe_path = fs::exists(cmake_target)
-        ? fmt::format("./{}/{}", build_dir_rel, target)
-        : fmt::format("./{}", target);
+void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args) {
+    const auto build_dir = fs::path(m_project_dir) / cmake_build_dir(m_build_type);
+
+    std::string exe_path;
+
+    switch (m_project_type) {
+        case project_type::make: {
+            exe_path = fs::path(m_project_dir) / target;
+            break;
+        }
+        case project_type::cmake: {
+            auto exes = find_built_executables(build_dir, target);
+            if (exes.empty()) {
+                throw nova::exception("No executable found for target `{}`", target);
+            }
+
+            if (exes.size() > 1) {
+                throw nova::exception("Multiple executables found for target `{}` (suggested to make a clean build)", target);
+            }
+
+            exe_path = fmt::format("./{}", fs::relative(exes[0], m_project_dir).string());
+            break;
+        }
+        default:
+            throw nova::exception("Unsupported project type");
+    }
 
     nova::log::debug("Running '{}' in '{}'...", exe_path, m_project_dir);
 

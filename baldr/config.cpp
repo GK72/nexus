@@ -42,12 +42,12 @@ auto load(std::string_view yaml_content, config result) -> nova::expected<config
 }
 
 auto load(const std::filesystem::path& path, baldr::config result) -> nova::expected<baldr::config, nova::error> {
-    nova::log::trace("Trying to load config `{}`", path.string());
+    nova::log::debug("Trying to load config `{}`", path.string());
     if (not std::filesystem::exists(path)) {
         return result;
     }
 
-    nova::log::trace("Config `{}` loaded", path.string());
+    nova::log::debug("Config `{}` loaded", path.string());
 
     try {
         auto doc = nova::yaml{ path };
