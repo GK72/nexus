@@ -12,6 +12,7 @@
 
 #include <baldr/config.hpp>
 
+#include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
@@ -84,6 +85,24 @@ private:
 
     [[nodiscard]] auto
     discover_project_type(bool clean_build) -> std::vector<std::string>;
+
+    [[nodiscard]] auto
+    resolve_executable(const std::string& target) const -> std::string;
+
+    [[nodiscard]] auto
+    handle_makefile_project(bool clean_build) const -> std::vector<std::string>;
+
+    void configure_cmake(
+        const std::filesystem::path& build_dir,
+        const std::string& build_dir_rel,
+        const std::string& resolved_defines
+    ) const;
+
+    [[nodiscard]] auto build_argv(
+        const std::string& exe_path,
+        const std::vector<std::string>& forwarded_args,
+        bool debug
+    ) const -> std::vector<std::string>;
 };
 
 } // namespace baldr

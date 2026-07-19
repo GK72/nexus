@@ -191,6 +191,27 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
     return out.str();
 }
 
+/**
+ * @brief   Whether `build_dir` needs a (re-)configure: missing cache,
+ *          missing marker file, or a marker mismatch against
+ *          `resolved_defines`.
+ */
+[[nodiscard]] auto
+needs_cmake_configure(const fs::path& build_dir, const std::string& resolved_defines) -> bool {
+    bool needs_configure =
+           not fs::exists(build_dir / "CMakeCache.txt")
+        || not fs::exists(build_dir / DefinesMarkerFile);
+
+    if (not needs_configure) {
+        std::ifstream marker(build_dir / DefinesMarkerFile);
+        std::ostringstream recorded;
+        recorded << marker.rdbuf();
+        needs_configure = recorded.str() != resolved_defines;
+    }
+
+    return needs_configure;
+}
+
 } // namespace
 
 namespace baldr {
@@ -208,34 +229,59 @@ builder::builder(
 {}
 
 /**
- * @brief   Decide whether `make` or `cmake` should be used to build the
- *          project in `project_dir`.
- *
- * Automatically (re-)configures CMake if needed: either the build directory
- * was never configured (missing marker file), `CMakeCache.txt` itself is
- * missing (partially-created build directory), the resolved `-D` defines
- * changed since the last configure, or `clean_build` was given.
- *
- * @param   clean_build     If `true`, wipe the resolved build directory
- *                          (CMake) or run `make clean` (Makefile, if a
- *                          `clean` target exists) before building.
- * @param   cmake_defines   `-D` defines to pass to `cmake` at configure
- *                          time; a change from the marker file's recorded
- *                          set of defines triggers a reconfigure.
- *
- * @returns the build command to run.
+ * @brief   Handle the Makefile-project branch of
+ *          `discover_project_type`: optionally run `make clean`, then
+ *          return the build command.
  */
+[[nodiscard]] auto
+builder::handle_makefile_project(bool clean_build) const -> std::vector<std::string> {
+    nova::log::debug("Discovered Makefile project in '{}'", m_project_dir);
+
+    if (clean_build and fs::exists(fs::path(m_project_dir) / "Makefile")) {
+        nova::log::debug("Cleaning Makefile project in '{}'...", m_project_dir);
+        std::ignore = run_streamed({ "make", "clean" }, m_project_dir);
+    }
+
+    return { "make" };
+}
+
+/**
+ * @brief   Run `cmake`'s configure step for `build_dir_rel`, then
+ *          record `resolved_defines` in the marker file.
+ *
+ * @throws  nova::exception if the configure command fails.
+ */
+void builder::configure_cmake(
+        const fs::path& build_dir,
+        const std::string& build_dir_rel,
+        const std::string& resolved_defines
+) const {
+    nova::log::debug("Configuring CMake project in '{}'...", m_project_dir);
+
+    auto configure_cmd = std::vector<std::string>{
+        "cmake",
+        "-S", ".",
+        "-B", build_dir_rel,
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+    };
+
+    for (const auto& [key, value]: m_cmake_defines) {
+        configure_cmd.push_back(fmt::format("-D{}={}", key, value));
+    }
+
+    if (int code = run_streamed(configure_cmd, m_project_dir, m_cmake_env); code != 0) {
+        throw nova::exception("CMake configure failed (exit code {}).", code);
+    }
+
+    fs::create_directories(build_dir);
+    std::ofstream(build_dir / DefinesMarkerFile) << resolved_defines;
+}
+
 [[nodiscard]] auto
 builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
     if (not fs::exists(fs::path(m_project_dir) / "CMakeLists.txt")) {
-        nova::log::debug("Discovered Makefile project in '{}'", m_project_dir);
-
-        if (clean_build and fs::exists(fs::path(m_project_dir) / "Makefile")) {
-            nova::log::debug("Cleaning Makefile project in '{}'...", m_project_dir);
-            std::ignore = run_streamed({ "make", "clean" }, m_project_dir);
-        }
         m_project_type = project_type::make;
-        return { "make" };
+        return handle_makefile_project(clean_build);
     }
 
     nova::log::debug("Discovered CMake project in '{}'", m_project_dir);
@@ -244,38 +290,15 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
     auto build_dir_rel = cmake_build_dir(m_build_type);
     auto build_dir = fs::path(m_project_dir) / build_dir_rel;
 
-    if (clean_build and fs::exists(build_dir)) {
+    if (clean_build && fs::exists(build_dir)) {
         nova::log::debug("Deleting build directory '{}'...", build_dir.string());
         fs::remove_all(build_dir);
     }
 
     auto resolved_defines = serialize_defines(m_cmake_defines, m_cmake_env);
 
-    bool needs_configure =
-           not fs::exists(build_dir / "CMakeCache.txt")
-        or not fs::exists(build_dir / DefinesMarkerFile);
-
-    if (not needs_configure) {
-        std::ifstream marker(build_dir / DefinesMarkerFile);
-        std::ostringstream recorded;
-        recorded << marker.rdbuf();
-        needs_configure = recorded.str() != resolved_defines;
-    }
-
-    if (needs_configure) {
-        nova::log::debug("Configuring CMake project in '{}'...", m_project_dir);
-
-        std::vector<std::string> configure_cmd{ "cmake", "-S", ".", "-B", build_dir_rel, "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" };
-        for (const auto& [key, value]: m_cmake_defines) {
-            configure_cmd.push_back(fmt::format("-D{}={}", key, value));
-        }
-
-        if (int code = run_streamed(configure_cmd, m_project_dir, m_cmake_env); code != 0) {
-            throw nova::exception("CMake configure failed (exit code {}).", code);
-        }
-
-        fs::create_directories(build_dir);
-        std::ofstream(build_dir / DefinesMarkerFile) << resolved_defines;
+    if (needs_cmake_configure(build_dir, resolved_defines)) {
+        configure_cmake(build_dir, build_dir_rel, resolved_defines);
     }
 
     link_compile_commands(m_project_dir, m_build_type, build_dir);
@@ -295,23 +318,21 @@ void builder::build(bool clean_build) {
 }
 
 /**
- * @note
+ * @brief   Resolve `target`'s executable path, according to
+ *          `m_project_type` (an exact `Makefile` path, or the unique
+ *          match found by searching the CMake build directory).
  *
- * CMake projects place their build output in a dedicated build directory.
- *
- * Makefile-based projects build directly into `project_dir`.
+ * @throws  nova::exception if `target` can't be found or is ambiguous
+ *          (CMake projects only).
  */
-void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args, bool debug) {
-    const auto build_dir = fs::path(m_project_dir) / cmake_build_dir(m_build_type);
-
-    std::string exe_path;
-
+[[nodiscard]] auto
+builder::resolve_executable(const std::string& target) const -> std::string {
     switch (m_project_type) {
         case project_type::make: {
-            exe_path = fs::path(m_project_dir) / target;
-            break;
+            return fs::path(m_project_dir) / target;
         }
         case project_type::cmake: {
+            const auto build_dir = fs::path(m_project_dir) / cmake_build_dir(m_build_type);
             auto exes = find_built_executables(build_dir, target);
             if (exes.empty()) {
                 throw nova::exception("No executable found for target `{}`", target);
@@ -321,23 +342,50 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
                 throw nova::exception("Multiple executables found for target `{}` (suggested to make a clean build)", target);
             }
 
-            exe_path = fmt::format("./{}", fs::relative(exes[0], m_project_dir).string());
-            break;
+            return fmt::format("./{}", fs::relative(exes[0], m_project_dir).string());
         }
         default:
             throw nova::exception("Unsupported project type");
     }
+}
 
+/**
+ * @brief   Build the `argv` for launching `exe_path`, optionally
+ *          prefixed with the configured debugger.
+ *
+ * @param   exe_path        Resolved path to the executable to run.
+ * @param   forwarded_args  Extra arguments appended after `exe_path`.
+ * @param   debug           If `true`, prepend `m_debugger`/
+ *                          `m_debugger_args` ahead of `exe_path`.
+ */
+[[nodiscard]] auto builder::build_argv(
+        const std::string& exe_path,
+        const std::vector<std::string>& forwarded_args,
+        bool debug
+) const -> std::vector<std::string> {
     std::vector<std::string> argv;
+
     if (debug) {
         argv.push_back(m_debugger);
         argv.insert(argv.end(), m_debugger_args.begin(), m_debugger_args.end());
+    }
+
+    argv.push_back(exe_path);
+    argv.insert(argv.end(), forwarded_args.begin(), forwarded_args.end());
+
+    return argv;
+}
+
+void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args, bool debug) {
+    auto exe_path = resolve_executable(target);
+
+    if (debug) {
         nova::log::debug("Running '{}' in '{}' via debugger...", exe_path, m_project_dir);
     } else {
         nova::log::debug("Running '{}' in '{}'...", exe_path, m_project_dir);
     }
-    argv.push_back(exe_path);
-    argv.insert(argv.end(), forwarded_args.begin(), forwarded_args.end());
+
+    auto argv = build_argv(exe_path, forwarded_args, debug);
 
     auto cmd = command{ argv, m_cmake_env, m_project_dir, /*interactive=*/true };
     cmd.run();
