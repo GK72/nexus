@@ -160,7 +160,7 @@ Resolved: `baldr`'s own binary is bind-mounted into the container (config/CLI `b
 - Change the reconfigure check to compare the current resolved defines against the marker file's contents (in addition to the missing-file case from Stage 1), reconfiguring on any mismatch.
 - Verify manually: building once with `-DFOO=1`, then rebuilding with `-DFOO=2` triggers a fresh `cmake` configure while an unchanged rebuild does not.
 
-### * Step 5: Add `.baldr.yaml`/`~/.baldr.yaml` single-project config loading
+### ✓ Step 5: Add `.baldr.yaml`/`~/.baldr.yaml` single-project config loading
 A project-local or home-directory YAML config supplies default debugger and CMake-define settings that CLI flags can still override.
 
 - Link `yaml-cpp::yaml-cpp` into `baldr/CMakeLists.txt`.
@@ -169,7 +169,7 @@ A project-local or home-directory YAML config supplies default debugger and CMak
 - Add `baldr/config.test.cpp` covering: missing file (defaults), project-local file present, malformed YAML (error), and CLI-defines-override-config-defines merging logic.
 - Manually verify a `.baldr.yaml` with `cmake_defines` changes the effective build-type directory and defines used.
 
-###   Step 6: Add `--debug` flag to run the target under a configurable debugger
+### * Step 6: Add `--debug` flag to run the target under a configurable debugger
 `baldr run --debug -t app` attaches the resolved debugger (default `gdb`) to the freshly resolved target interactively.
 
 - Add a `--debug` bool flag to `main.cpp`'s CLI, valid alongside `run`.

@@ -22,14 +22,7 @@ target_link_libraries(nxs PUBLIC
     spdlog::spdlog_header_only
 )
 
-include(test.cmake)
-
-if(BUILD_TESTING)
-    find_package(GTest REQUIRED)
-    include(GoogleTest)
-
-    add_test_target(nxs)
-endif()
+add_test_target(nxs)
 
 add_executable(example-rlog rlog.ex.cpp)
 target_link_libraries(example-rlog PRIVATE nxs)

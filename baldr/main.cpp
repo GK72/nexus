@@ -9,6 +9,7 @@
  */
 
 #include <baldr/builder.hpp>
+#include <baldr/config.hpp>
 #include <baldr/docker.hpp>
 
 #include <libnxs/rlog.hpp>
@@ -66,6 +67,9 @@ void print_help(std::ostream& out) {
     out << "  for the 'Debug' build type, <project_dir>/compile_commands.json is kept\n";
     out << "  symlinked to it (no need to switch it for other build types).\n";
     out << "\n";
+    out << "  A project-local '.baldr.yaml' (falling back to '~/.baldr.yaml') can supply\n";
+    out << "  default 'build_type' and 'cmake_defines'; CLI flags always take precedence.\n";
+    out << "\n";
     out << "  -i, --image <name>   Docker image to use (required for 'docker')\n";
     out << "\n";
     out << "Commands:\n";
@@ -93,6 +97,7 @@ struct options {
     std::string build_type;
     bool clean_build = false;
     std::map<std::string, std::string> cmake_defines;
+    bool build_type_explicit = false;
     std::optional<std::string> target;
     bool build_before_run = false;
     std::optional<std::string> image;
@@ -158,6 +163,7 @@ struct options {
     options result;
     result.project_dir = vm["project"].as<std::string>();
     result.build_type = vm["build-type"].as<std::string>();
+    result.build_type_explicit = not vm["build-type"].defaulted();
     result.clean_build = vm["clean"].as<bool>();
     result.build_before_run = vm["build"].as<bool>();
     result.forwarded_args = std::move(forwarded_args);
@@ -239,17 +245,29 @@ auto entrypoint(auto args) -> int {
 
     try {
         switch (options->command) {
-            case command_type::build: {
-                auto builder = baldr::builder{ options->project_dir, options->build_type, options->cmake_defines };
-                builder.build(options->clean_build);
-                break;
-            }
+            case command_type::build:
             case command_type::run: {
-                auto builder = baldr::builder{ options->project_dir, options->build_type, options->cmake_defines };
-                if (options->build_before_run) {
-                    builder.build(options->clean_build);
+                auto cfg = baldr::load(options->project_dir);
+                if (not cfg) {
+                    throw nova::exception("Failed to load .baldr.yaml: {}", cfg.error().message);
                 }
-                builder.run(*options->target, options->forwarded_args);
+
+                auto build_type = options->build_type_explicit ? options->build_type : cfg->build_type;
+
+                auto cmake_defines = cfg->cmake_defines;
+                for (const auto& [key, value]: options->cmake_defines) {
+                    cmake_defines[key] = value;
+                }
+
+                auto builder = baldr::builder{ options->project_dir, build_type, cmake_defines };
+                if (options->command == command_type::build) {
+                    builder.build(options->clean_build);
+                } else {
+                    if (options->build_before_run) {
+                        builder.build(options->clean_build);
+                    }
+                    builder.run(*options->target, options->forwarded_args);
+                }
                 break;
             }
             case command_type::docker: {
