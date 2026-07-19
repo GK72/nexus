@@ -13,6 +13,10 @@ debugger: gdb
 debugger-args:
 build-type: Release
 
+env:
+  GLOBAL_ENV: global
+  CUSTOM_ENV: something
+
 cmake:
   definitions:
     GLOBAL_DEFINE: global
@@ -20,6 +24,10 @@ cmake:
 )yaml"sv;
 
 constexpr auto local_config = R"yaml(
+
+env:
+  CUSTOM_ENV: something else
+  LOCAL_ENV: local
 
 cmake:
   definitions:
@@ -38,6 +46,7 @@ TEST(config, MissingFileReturnsDefaults) {
     EXPECT_EQ(res.debugger, "gdb");
     EXPECT_EQ(res.build_type, "Debug");
     EXPECT_TRUE(res.cmake_defines.empty());
+    EXPECT_TRUE(res.env.empty());
 }
 
 TEST(config, ProjectLocalFileIsLoaded) {
@@ -47,6 +56,8 @@ TEST(config, ProjectLocalFileIsLoaded) {
     EXPECT_EQ(res->build_type, "Debug");
     EXPECT_EQ(res->cmake_defines.at("CUSTOM_DEFINE"), "something else");
     EXPECT_EQ(res->cmake_defines.at("LOCAL_DEFINE"), "local");
+    EXPECT_EQ(res->env.at("CUSTOM_ENV"), "something else");
+    EXPECT_EQ(res->env.at("LOCAL_ENV"), "local");
 }
 
 TEST(config, BuildTypeOverride) {
@@ -66,6 +77,9 @@ TEST(config, ConfigMerging) {
     EXPECT_EQ(res->cmake_defines.at("GLOBAL_DEFINE"), "global");
     EXPECT_EQ(res->cmake_defines.at("CUSTOM_DEFINE"), "something else");
     EXPECT_EQ(res->cmake_defines.at("LOCAL_DEFINE"), "local");
+    EXPECT_EQ(res->env.at("GLOBAL_ENV"), "global");
+    EXPECT_EQ(res->env.at("CUSTOM_ENV"), "something else");
+    EXPECT_EQ(res->env.at("LOCAL_ENV"), "local");
 }
 
 } // namespace

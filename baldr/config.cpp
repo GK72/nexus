@@ -29,6 +29,13 @@ namespace baldr {
         }
     }
 
+    if (doc.contains("env")) {
+        auto env = doc.lookup<std::map<std::string, std::string>>("cmake.env");
+        for (auto& [key, value] : env) {
+            result.env.insert_or_assign(key, std::move(value));
+        }
+    }
+
     return result;
 }
 

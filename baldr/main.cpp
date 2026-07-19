@@ -62,15 +62,15 @@ void print_help(std::ostream& out) {
     out << "  -t, --target <name>       Executable name to run (required for 'run')\n";
     out << "      --build               For 'run': build the project first\n";
     out << "      -- <args...>          For 'run': forward everything after '--' to the target's own argv\n";
+    out << "  -i, --image <name>        Docker image to use (required for 'docker')\n";
     out << "\n";
     out << "  CMake projects are always configured with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON;\n";
     out << "  for the 'Debug' build type, <project_dir>/compile_commands.json is kept\n";
     out << "  symlinked to it (no need to switch it for other build types).\n";
     out << "\n";
     out << "  A project-local '.baldr.yaml' (falling back to '~/.baldr.yaml') can supply\n";
-    out << "  default 'build_type' and 'cmake_defines'; CLI flags always take precedence.\n";
-    out << "\n";
-    out << "  -i, --image <name>   Docker image to use (required for 'docker')\n";
+    out << "  default 'build_type', 'cmake.definitions' and 'cmake.env'; CLI flags always\n";
+    out << "  take precedence over config values.\n";
     out << "\n";
     out << "Commands:\n";
     out << "  build      Configure (if needed) and build the project\n";
@@ -259,7 +259,7 @@ auto entrypoint(auto args) -> int {
                     cmake_defines[key] = value;
                 }
 
-                auto builder = baldr::builder{ options->project_dir, build_type, cmake_defines };
+                auto builder = baldr::builder{ options->project_dir, build_type, cmake_defines, cfg->env };
                 if (options->command == command_type::build) {
                     builder.build(options->clean_build);
                 } else {

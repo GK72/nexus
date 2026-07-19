@@ -61,8 +61,12 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
  *
  * @return  The command's exit code.
  */
-[[nodiscard]] auto run_streamed(const std::vector<std::string>& args, const std::string& working_directory) -> int {
-    auto cmd = baldr::command{ args, {}, working_directory };
+[[nodiscard]] auto run_streamed(
+        const std::vector<std::string>& args,
+        const std::string& working_directory,
+        const std::map<std::string, std::string>& env = {}
+) -> int {
+    auto cmd = baldr::command{ args, env, working_directory };
     cmd.run();
 
     nxs::line_reader lines([](std::string& line) { nova::log::info("{}", line); });
@@ -167,13 +171,21 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
 }
 
 /**
- * @brief   Serialize `defines` into the same textual form written to /
- *          read from the `.baldr-defines` marker file, so that comparing
- *          two `std::string`s is enough to detect a change.
+ * @brief   Serialize `defines` and `env` into the same textual form written
+ *          to / read from the `.baldr-defines` marker file, so that
+ *          comparing two `std::string`s is enough to detect a change (either
+ *          one can affect the configured build).
  */
-[[nodiscard]] auto serialize_defines(const std::map<std::string, std::string>& defines) -> std::string {
+[[nodiscard]] auto serialize_defines(
+        const std::map<std::string, std::string>& defines,
+        const std::map<std::string, std::string>& env
+) -> std::string {
     std::ostringstream out;
     for (const auto& [key, value]: defines) {
+        out << key << '=' << value << '\n';
+    }
+    out << "--env--\n";
+    for (const auto& [key, value]: env) {
         out << key << '=' << value << '\n';
     }
     return out.str();
@@ -186,11 +198,13 @@ namespace baldr {
 builder::builder(
         std::string project_dir,
         std::string build_type,
-        std::map<std::string, std::string> cmake_defines
+        std::map<std::string, std::string> cmake_defines,
+        std::map<std::string, std::string> cmake_env
 )
     : m_project_dir(std::move(project_dir))
     , m_build_type(canonical_build_type(build_type))
     , m_cmake_defines(std::move(cmake_defines))
+    , m_cmake_env(std::move(cmake_env))
 {}
 
 /**
@@ -235,7 +249,7 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
         fs::remove_all(build_dir);
     }
 
-    auto resolved_defines = serialize_defines(m_cmake_defines);
+    auto resolved_defines = serialize_defines(m_cmake_defines, m_cmake_env);
 
     bool needs_configure =
            not fs::exists(build_dir / "CMakeCache.txt")
@@ -256,7 +270,7 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
             configure_cmd.push_back(fmt::format("-D{}={}", key, value));
         }
 
-        if (int code = run_streamed(configure_cmd, m_project_dir); code != 0) {
+        if (int code = run_streamed(configure_cmd, m_project_dir, m_cmake_env); code != 0) {
             throw nova::exception("CMake configure failed (exit code {}).", code);
         }
 
@@ -272,7 +286,7 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
 void builder::build(bool clean_build) {
     nova::log::debug("Building in '{}'...", m_project_dir);
 
-    int code = run_streamed(discover_project_type(clean_build), m_project_dir);
+    int code = run_streamed(discover_project_type(clean_build), m_project_dir, m_cmake_env);
     if (code == 0) {
         nxs::rlog::success("Build successful.");
     } else {
@@ -319,7 +333,7 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
     std::vector<std::string> argv{ exe_path };
     argv.insert(argv.end(), forwarded_args.begin(), forwarded_args.end());
 
-    auto cmd = command{ argv, {}, m_project_dir, /*interactive=*/true };
+    auto cmd = command{ argv, m_cmake_env, m_project_dir, /*interactive=*/true };
     cmd.run();
 
     if (auto status = cmd.wait(); not status.success()) {

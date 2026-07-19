@@ -29,7 +29,8 @@ public:
     builder(
         std::string project_dir = ".",
         std::string build_type = "Debug",
-        std::map<std::string, std::string> cmake_defines = {}
+        std::map<std::string, std::string> cmake_defines = {},
+        std::map<std::string, std::string> cmake_env = {}
     );
 
     /**
@@ -63,6 +64,7 @@ private:
     std::string m_project_dir;
     std::string m_build_type;
     std::map<std::string, std::string> m_cmake_defines;
+    std::map<std::string, std::string> m_cmake_env;
     project_type m_project_type { project_type::make };
 
 

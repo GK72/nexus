@@ -30,6 +30,7 @@ struct config {
     std::vector<std::string> debugger_args = { "--args" };
     std::string build_type = "Debug";
     std::map<std::string, std::string> cmake_defines;
+    std::map<std::string, std::string> env;
 };
 
 /**
