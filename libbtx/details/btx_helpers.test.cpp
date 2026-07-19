@@ -6,7 +6,7 @@
 
 namespace btx::details::test {
 
-TEST(btx_helpers, HexToInt) {
+TEST(BtxHelpers, HexToInt) {
     EXPECT_EQ(*hex_to_int('0'), 0);
     EXPECT_EQ(*hex_to_int('9'), 9);
     EXPECT_EQ(*hex_to_int('a'), 10);
@@ -16,7 +16,7 @@ TEST(btx_helpers, HexToInt) {
     EXPECT_FALSE(hex_to_int('g').has_value());
 }
 
-TEST(btx_helpers, BitAccumulator) {
+TEST(BtxHelpers, BitAccumulator) {
     nova::bytes bytes;
     bit_accumulator acc(bytes);
 
@@ -48,7 +48,7 @@ TEST(btx_helpers, BitAccumulator) {
     EXPECT_EQ(static_cast<unsigned char>(bytes[1]), 0xC0);
 }
 
-TEST(btx_helpers, ParseHexToken) {
+TEST(BtxHelpers, ParseHexToken) {
     nova::bytes bytes;
     bit_accumulator acc(bytes);
     std::string_view input("41");
@@ -61,7 +61,7 @@ TEST(btx_helpers, ParseHexToken) {
     EXPECT_EQ(static_cast<unsigned char>(bytes[0]), 'A');
 }
 
-TEST(btx_helpers, ParseHexToken_Error) {
+TEST(BtxHelpers, ParseHexToken_Error) {
     nova::bytes bytes;
     bit_accumulator acc(bytes);
     std::string_view input_err("G1");
@@ -70,7 +70,7 @@ TEST(btx_helpers, ParseHexToken_Error) {
     EXPECT_FALSE(res_err.has_value());
 }
 
-TEST(btx_helpers, ParseBitToken) {
+TEST(BtxHelpers, ParseBitToken) {
     nova::bytes bytes;
     bit_accumulator acc(bytes);
     std::string_view input("10101010\\x");
@@ -84,7 +84,7 @@ TEST(btx_helpers, ParseBitToken) {
     EXPECT_EQ(input[0], '\\');
 }
 
-TEST(btx_helpers, SkipComment) {
+TEST(BtxHelpers, SkipComment) {
     std::string_view input("// This is a comment\nNext line");
     auto res = skip_comment(input);
     EXPECT_TRUE(res.has_value());
@@ -92,7 +92,7 @@ TEST(btx_helpers, SkipComment) {
     EXPECT_EQ(input, "Next line");
 }
 
-TEST(btx_helpers, InvalidComment) {
+TEST(BtxHelpers, InvalidComment) {
     std::string_view input(" This is not a comment\nNext line");
     auto res = skip_comment(input);
     EXPECT_FALSE(res.has_value());

@@ -5,13 +5,13 @@
 
 using namespace nova::literals;
 
-TEST(btx, BasicHex) {
+TEST(Btx, BasicHex) {
     auto result = btx::to_binary("\\x48\\x65\\x6c\\x6c\\x6f");
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(nova::data_view(*result).as_string(), "Hello");
 }
 
-TEST(btx, WhitespaceAndComments) {
+TEST(Btx, WhitespaceAndComments) {
     auto result = btx::to_binary(
         "// Greeting\n"
         "\\x48 \\x65 // H e\n"
@@ -21,7 +21,7 @@ TEST(btx, WhitespaceAndComments) {
     EXPECT_EQ(nova::data_view(*result).as_string(), "Hello");
 }
 
-TEST(btx, ComplexHex) {
+TEST(Btx, ComplexHex) {
     auto result = btx::to_binary("\\x00\\xFF\\x01\\x10");
     ASSERT_TRUE(result.has_value());
 
@@ -32,21 +32,21 @@ TEST(btx, ComplexHex) {
     EXPECT_EQ(static_cast<unsigned char>((*result)[3]), 0x10);
 }
 
-TEST(btx, Bits) {
+TEST(Btx, Bits) {
     auto result = btx::to_binary("\\b1010'1011");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->size(), 1);
     EXPECT_EQ(static_cast<unsigned char>((*result)[0]), 0xAB);
 }
 
-TEST(btx, BitsAccumulation) {
+TEST(Btx, BitsAccumulation) {
     auto result = btx::to_binary("\\b1010____ \\b____1011");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->size(), 1);
     EXPECT_EQ(static_cast<unsigned char>((*result)[0]), 0xAB);
 }
 
-TEST(btx, BitsSeparators) {
+TEST(Btx, BitsSeparators) {
     auto result = btx::to_binary("\\b0001'0000 \\b0010'0000 \\b1100'0000");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->size(), 3);
@@ -55,14 +55,14 @@ TEST(btx, BitsSeparators) {
     EXPECT_EQ(static_cast<unsigned char>((*result)[2]), 0xC0);
 }
 
-TEST(btx, BitsPadding) {
+TEST(Btx, BitsPadding) {
     auto result = btx::to_binary("\\b101_____");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->size(), 1);
     EXPECT_EQ(static_cast<unsigned char>((*result)[0]), 0xA0); // 10100000
 }
 
-TEST(btx, BitsAndHexInterleaved) {
+TEST(Btx, BitsAndHexInterleaved) {
     auto result = btx::to_binary("\\b11110000 \\xAA \\b00001111");
     ASSERT_TRUE(result.has_value());
 
@@ -72,18 +72,18 @@ TEST(btx, BitsAndHexInterleaved) {
     EXPECT_EQ(static_cast<unsigned char>((*result)[2]), 0x0F);
 }
 
-TEST(btx, InvalidHex) {
+TEST(Btx, InvalidHex) {
     auto result = btx::to_binary("\\xGG");
     EXPECT_FALSE(result.has_value());
 }
 
-TEST(btx, InvalidComment) {
+TEST(Btx, InvalidComment) {
     auto result = btx::to_binary("/ Invalid comment");
     EXPECT_FALSE(result.has_value());
     EXPECT_EQ(result.error().message, "Invalid comment: expected '//'");
 }
 
-TEST(btx, FromBinary) {
+TEST(Btx, FromBinary) {
     std::string data = "Hello";
     nova::data_view view(data);
     btx::config cfg;
@@ -93,7 +93,7 @@ TEST(btx, FromBinary) {
     EXPECT_EQ(nova::data_view(*result).as_string(), "\\x48\\x65\\x6C\\x6C\\x6F");
 }
 
-TEST(btx, FromBinaryFormatted) {
+TEST(Btx, FromBinaryFormatted) {
     std::vector<uint8_t> data(10, 0x41); // 10 'A's
     nova::data_view view(data);
     btx::config cfg;

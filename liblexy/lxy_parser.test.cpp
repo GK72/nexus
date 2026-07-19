@@ -15,7 +15,7 @@ message player {
 }
 )lxy";
 
-TEST(lxy_parser, Positive_ParseSample) {
+TEST(LxyParser, Positive_ParseSample) {
     const auto res = lexy::load_descriptor_lxy(LxySample);
     ASSERT_TRUE(res.has_value()) << "Failed to parse .lxy descriptor: " << res.error().message;
 

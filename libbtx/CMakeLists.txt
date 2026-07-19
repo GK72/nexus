@@ -25,14 +25,7 @@ target_link_libraries(btx PUBLIC
     nova::nova
 )
 
-include(test.cmake)
-
-if(BUILD_TESTING)
-    find_package(GTest REQUIRED)
-    include(GoogleTest)
-
-    add_test_target(btx)
-endif()
+add_test_target(btx)
 
 install(TARGETS btx btx_c
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

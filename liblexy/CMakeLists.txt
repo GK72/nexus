@@ -24,14 +24,7 @@ target_link_libraries(lexy PUBLIC
     yaml-cpp
 )
 
-include(test.cmake)
-
-if(BUILD_TESTING)
-    find_package(GTest REQUIRED)
-    include(GoogleTest)
-
-    add_test_target(lexy)
-endif()
+add_test_target(lexy)
 
 install(TARGETS lexy
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
