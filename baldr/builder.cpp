@@ -5,6 +5,7 @@
 #include <libnxs/rlog.hpp>
 #include <libnova/error.hpp>
 #include <libnova/log.hpp>
+#include <libnova/utils.hpp>
 
 #include <fmt/format.h>
 
@@ -14,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -171,23 +173,32 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
 }
 
 /**
- * @brief   Serialize `defines` and `env` into the same textual form written
- *          to / read from the `.baldr-defines` marker file, so that
- *          comparing two `std::string`s is enough to detect a change (either
- *          one can affect the configured build).
+ * @brief   Serialize `defines`, `env` and the resolved Conan provider path
+ *          (if any) into the same textual form written to / read from the
+ *          `.baldr-defines` marker file, so that comparing two
+ *          `std::string`s is enough to detect a change (either one can
+ *          affect the configured build).
  */
 [[nodiscard]] auto serialize_defines(
         const std::map<std::string, std::string>& defines,
-        const std::map<std::string, std::string>& env
+        const std::map<std::string, std::string>& env,
+        const std::optional<std::string>& conan_provider = std::nullopt
 ) -> std::string {
     std::ostringstream out;
+
     for (const auto& [key, value]: defines) {
         out << key << '=' << value << '\n';
     }
+
     out << "--env--\n";
+
     for (const auto& [key, value]: env) {
         out << key << '=' << value << '\n';
     }
+
+    out << "--conan--\n";
+    out << conan_provider.value_or("") << '\n';
+
     return out.str();
 }
 
@@ -254,7 +265,8 @@ builder::handle_makefile_project(bool clean_build) const -> std::vector<std::str
 void builder::configure_cmake(
         const fs::path& build_dir,
         const std::string& build_dir_rel,
-        const std::string& resolved_defines
+        const std::string& resolved_defines,
+        const std::optional<std::string>& conan_provider
 ) const {
     nova::log::debug("Configuring CMake project in '{}'...", m_project_dir);
 
@@ -269,12 +281,62 @@ void builder::configure_cmake(
         configure_cmd.push_back(fmt::format("-D{}={}", key, value));
     }
 
+    if (conan_provider) {
+        nova::log::debug("Discovered Conan project, injecting CMAKE_PROJECT_TOP_LEVEL_INCLUDES=`{}`", *conan_provider);
+        configure_cmd.push_back(fmt::format("-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={}", *conan_provider));
+    }
+
     if (int code = run_streamed(configure_cmd, m_project_dir, m_cmake_env); code != 0) {
         throw nova::exception("CMake configure failed (exit code {}).", code);
     }
 
     fs::create_directories(build_dir);
     std::ofstream(build_dir / DefinesMarkerFile) << resolved_defines;
+}
+
+/**
+ * @brief   Resolve the `conan_provider.cmake` to inject via
+ *          `CMAKE_PROJECT_TOP_LEVEL_INCLUDES`, if `m_project_dir` looks like
+ *          a Conan-managed project.
+ *
+ * Only applies when a `conanfile.txt`/`conanfile.py` exists in
+ * `m_project_dir` and the user hasn't already supplied
+ * `CMAKE_PROJECT_TOP_LEVEL_INCLUDES` themselves; prefers a project-local
+ * `conan_provider.cmake`, falling back to `$HOME/conan_provider.cmake`.
+ *
+ * @return  The resolved provider path, or `std::nullopt` if Conan
+ *          auto-discovery doesn't apply.
+ */
+[[nodiscard]] auto
+builder::resolve_conan_provider() const -> std::optional<std::string> {
+    if (m_cmake_defines.contains("CMAKE_PROJECT_TOP_LEVEL_INCLUDES")) {
+        nova::log::debug("CMAKE_PROJECT_TOP_LEVEL_INCLUDES was defined, skipping Conan auto-configure");
+        return std::nullopt;
+    }
+
+    const auto project_path = fs::path(m_project_dir);
+    bool has_conanfile = fs::exists(project_path / "conanfile.txt")
+        || fs::exists(project_path / "conanfile.py");
+
+    if (not has_conanfile) {
+        nova::log::debug("No conanfile has been found");
+        return std::nullopt;
+    }
+
+    if (auto project_local = project_path / "conan_provider.cmake"; fs::exists(project_local)) {
+        nova::log::debug("Using project provided `conan_provider.cmake`");
+        return project_local.string();
+    }
+
+    auto home = nova::getenv("HOME").value();
+    if (auto home_provider = fs::path(home) / "conan_provider.cmake"; fs::exists(home_provider)) {
+        nova::log::debug("Using globally provided `~/conan_provider.cmake`");
+        return home_provider.string();
+    }
+
+    nova::log::warn("No `conan_provider.cmake` has been found");
+
+    return std::nullopt;
 }
 
 [[nodiscard]] auto
@@ -295,10 +357,11 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
         fs::remove_all(build_dir);
     }
 
-    auto resolved_defines = serialize_defines(m_cmake_defines, m_cmake_env);
+    auto conan_provider = resolve_conan_provider();
+    auto resolved_defines = serialize_defines(m_cmake_defines, m_cmake_env, conan_provider);
 
     if (needs_cmake_configure(build_dir, resolved_defines)) {
-        configure_cmake(build_dir, build_dir_rel, resolved_defines);
+        configure_cmake(build_dir, build_dir_rel, resolved_defines, conan_provider);
     }
 
     link_compile_commands(m_project_dir, m_build_type, build_dir);

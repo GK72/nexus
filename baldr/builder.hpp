@@ -14,6 +14,7 @@
 
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -82,20 +83,16 @@ private:
     std::vector<std::string> m_debugger_args;
     project_type m_project_type { project_type::make };
 
-
-    [[nodiscard]] auto
-    discover_project_type(bool clean_build) -> std::vector<std::string>;
-
-    [[nodiscard]] auto
-    resolve_executable(const std::string& target) const -> std::string;
-
-    [[nodiscard]] auto
-    handle_makefile_project(bool clean_build) const -> std::vector<std::string>;
+    [[nodiscard]] auto resolve_conan_provider() const -> std::optional<std::string>;
+    [[nodiscard]] auto discover_project_type(bool clean_build) -> std::vector<std::string>;
+    [[nodiscard]] auto resolve_executable(const std::string& target) const -> std::string;
+    [[nodiscard]] auto handle_makefile_project(bool clean_build) const -> std::vector<std::string>;
 
     void configure_cmake(
         const std::filesystem::path& build_dir,
         const std::string& build_dir_rel,
-        const std::string& resolved_defines
+        const std::string& resolved_defines,
+        const std::optional<std::string>& conan_provider
     ) const;
 
     [[nodiscard]] auto build_argv(
@@ -103,6 +100,7 @@ private:
         const std::vector<std::string>& forwarded_args,
         bool debug
     ) const -> std::vector<std::string>;
+
 };
 
 } // namespace baldr
