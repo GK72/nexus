@@ -74,7 +74,7 @@ public:
     void failure(const std::string& msg = "");
 
 private:
-    std::size_t m_visible_lines = 1;
+    std::size_t m_visible_lines = 10;
     std::size_t m_max_buffer = 1000;
     std::deque<std::string> m_buffer;
 

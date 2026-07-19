@@ -44,7 +44,7 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
         }
     }
 
-    throw nova::exception("Unknown build type '{}' (expected one of: Debug, Release, RelWithDebInfo, MinSizeRel).", build_type);
+    throw nova::exception("Unknown build type `{}` (expected one of: Debug, Release, RelWithDebInfo, MinSizeRel).", build_type);
 }
 
 /**
@@ -129,6 +129,7 @@ find_built_executables(const fs::path& build_dir, const std::string& target) -> 
             ) != fs::perms::none;
 
         if (is_executable) {
+            nova::log::debug("Found executable: `{}`", entry.path().string());
             ret.push_back(std::move(entry.path()));
         }
     }
@@ -152,11 +153,11 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
     auto target_path = build_dir / "compile_commands.json";
 
     if (fs::is_symlink(link_path)) {
-        nova::log::debug("Symlink 'compile_commands.json' already exists");
+        nova::log::debug("Symlink `compile_commands.json` already exists");
         std::error_code ec;
         auto current_target = fs::read_symlink(link_path, ec);
         if (not ec and current_target == target_path) {
-            nova::log::debug("Symlink 'compile_commands.json' is correct");
+            nova::log::debug("Symlink `compile_commands.json` is correct");
             return;
         }
     }
@@ -165,9 +166,9 @@ void link_compile_commands(const std::string& project_dir, const std::string& bu
         std::error_code ec;
         fs::remove(link_path, ec);
         fs::create_symlink(target_path, link_path, ec);
-        nova::log::debug("Symlink 'compile_commands.json' has been created");
+        nova::log::debug("Symlink `compile_commands.json` has been created");
         if (ec) {
-            nova::log::warn("Failed to symlink 'compile_commands.json': {}", ec.message());
+            nova::log::warn("Failed to symlink `compile_commands.json`: {}", ec.message());
         }
     }
 }
@@ -246,10 +247,10 @@ builder::builder(
  */
 [[nodiscard]] auto
 builder::handle_makefile_project(bool clean_build) const -> std::vector<std::string> {
-    nova::log::debug("Discovered Makefile project in '{}'", m_project_dir);
+    nova::log::debug("Discovered Makefile project in `{}`", m_project_dir);
 
     if (clean_build and fs::exists(fs::path(m_project_dir) / "Makefile")) {
-        nova::log::debug("Cleaning Makefile project in '{}'...", m_project_dir);
+        nova::log::debug("Cleaning Makefile project in `{}`...", m_project_dir);
         std::ignore = run_streamed({ "make", "clean" }, m_project_dir);
     }
 
@@ -268,7 +269,7 @@ void builder::configure_cmake(
         const std::string& resolved_defines,
         const std::optional<std::string>& conan_provider
 ) const {
-    nova::log::debug("Configuring CMake project in '{}'...", m_project_dir);
+    nova::log::debug("Configuring CMake project in `{}`...", m_project_dir);
 
     auto configure_cmd = std::vector<std::string>{
         "cmake",
@@ -346,14 +347,14 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
         return handle_makefile_project(clean_build);
     }
 
-    nova::log::debug("Discovered CMake project in '{}'", m_project_dir);
+    nova::log::debug("Discovered CMake project in `{}`", m_project_dir);
     m_project_type = project_type::cmake;
 
     auto build_dir_rel = cmake_build_dir(m_build_type);
     auto build_dir = fs::path(m_project_dir) / build_dir_rel;
 
     if (clean_build && fs::exists(build_dir)) {
-        nova::log::debug("Deleting build directory '{}'...", build_dir.string());
+        nova::log::debug("Deleting build directory `{}`...", build_dir.string());
         fs::remove_all(build_dir);
     }
 
@@ -370,7 +371,7 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
 }
 
 void builder::build(bool clean_build) {
-    nova::log::debug("Building in '{}'...", m_project_dir);
+    nova::log::debug("Building in `{}`...", m_project_dir);
 
     int code = run_streamed(discover_project_type(clean_build), m_project_dir, m_cmake_env);
     if (code == 0) {
@@ -443,9 +444,9 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
     auto exe_path = resolve_executable(target);
 
     if (debug) {
-        nova::log::debug("Running '{}' in '{}' via debugger...", exe_path, m_project_dir);
+        nova::log::debug("Running `{}` in `{}` via debugger...", exe_path, m_project_dir);
     } else {
-        nova::log::debug("Running '{}' in '{}'...", exe_path, m_project_dir);
+        nova::log::debug("Running `{}` in `{}`...", exe_path, m_project_dir);
     }
 
     auto argv = build_argv(exe_path, forwarded_args, debug);
