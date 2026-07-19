@@ -30,7 +30,9 @@ public:
         std::string project_dir = ".",
         std::string build_type = "Debug",
         std::map<std::string, std::string> cmake_defines = {},
-        std::map<std::string, std::string> cmake_env = {}
+        std::map<std::string, std::string> cmake_env = {},
+        std::string debugger = "gdb",
+        std::vector<std::string> debugger_args = { "--args" }
     );
 
     /**
@@ -55,16 +57,22 @@ public:
      *                          path, forwarded verbatim to its argv (e.g.
      *                          everything following a literal `--` on
      *                          baldr's own command line).
+     * @param   debug           If `true`, launch `target` under the
+     *                          configured debugger (`m_debugger`/
+     *                          `m_debugger_args`) instead of running it
+     *                          directly.
      *
      * @throws  nova::exception if `target` exits with a non-zero code.
      */
-    void run(const std::string& target, const std::vector<std::string>& forwarded_args = {});
+    void run(const std::string& target, const std::vector<std::string>& forwarded_args = {}, bool debug = false);
 
 private:
     std::string m_project_dir;
     std::string m_build_type;
     std::map<std::string, std::string> m_cmake_defines;
     std::map<std::string, std::string> m_cmake_env;
+    std::string m_debugger;
+    std::vector<std::string> m_debugger_args;
     project_type m_project_type { project_type::make };
 
 

@@ -199,12 +199,16 @@ builder::builder(
         std::string project_dir,
         std::string build_type,
         std::map<std::string, std::string> cmake_defines,
-        std::map<std::string, std::string> cmake_env
+        std::map<std::string, std::string> cmake_env,
+        std::string debugger,
+        std::vector<std::string> debugger_args
 )
     : m_project_dir(std::move(project_dir))
     , m_build_type(canonical_build_type(build_type))
     , m_cmake_defines(std::move(cmake_defines))
     , m_cmake_env(std::move(cmake_env))
+    , m_debugger(std::move(debugger))
+    , m_debugger_args(std::move(debugger_args))
 {}
 
 /**
@@ -301,7 +305,7 @@ void builder::build(bool clean_build) {
  *
  * Makefile-based projects build directly into `project_dir`.
  */
-void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args) {
+void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args, bool debug) {
     const auto build_dir = fs::path(m_project_dir) / cmake_build_dir(m_build_type);
 
     std::string exe_path;
@@ -328,9 +332,15 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
             throw nova::exception("Unsupported project type");
     }
 
-    nova::log::debug("Running '{}' in '{}'...", exe_path, m_project_dir);
-
-    std::vector<std::string> argv{ exe_path };
+    std::vector<std::string> argv;
+    if (debug) {
+        argv.push_back(m_debugger);
+        argv.insert(argv.end(), m_debugger_args.begin(), m_debugger_args.end());
+        nova::log::debug("Running '{}' in '{}' via debugger...", exe_path, m_project_dir);
+    } else {
+        nova::log::debug("Running '{}' in '{}'...", exe_path, m_project_dir);
+    }
+    argv.push_back(exe_path);
     argv.insert(argv.end(), forwarded_args.begin(), forwarded_args.end());
 
     auto cmd = command{ argv, m_cmake_env, m_project_dir, /*interactive=*/true };

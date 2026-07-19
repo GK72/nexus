@@ -61,6 +61,7 @@ void print_help(std::ostream& out) {
     out << "  -D, --cmake-define        CMake define, repeatable (e.g. -DFOO=1); triggers reconfigure on change\n";
     out << "  -t, --target <name>       Executable name to run (required for 'run')\n";
     out << "      --build               For 'run': build the project first\n";
+    out << "      --debug               For 'run': launch the target under the configured debugger (default: 'gdb --args')\n";
     out << "      -- <args...>          For 'run': forward everything after '--' to the target's own argv\n";
     out << "  -i, --image <name>        Docker image to use (required for 'docker')\n";
     out << "\n";
@@ -100,6 +101,7 @@ struct options {
     bool build_type_explicit = false;
     std::optional<std::string> target;
     bool build_before_run = false;
+    bool debug = false;
     std::optional<std::string> image;
     std::vector<std::string> docker_args;
     std::vector<std::string> forwarded_args;
@@ -136,6 +138,7 @@ struct options {
         ("cmake-define,D", po::value<std::vector<std::string>>()->composing(), "CMake define KEY=VALUE, repeatable")
         ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
+        ("debug", po::bool_switch()->default_value(false), "For 'run': launch the target under the configured debugger")
         ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
         ("command", po::value<std::string>(), "Command to run: 'build', 'run', 'docker'")
         ("args", po::value<std::vector<std::string>>()->multitoken(), "For 'docker': the container command")
@@ -166,6 +169,7 @@ struct options {
     result.build_type_explicit = not vm["build-type"].defaulted();
     result.clean_build = vm["clean"].as<bool>();
     result.build_before_run = vm["build"].as<bool>();
+    result.debug = vm["debug"].as<bool>();
     result.forwarded_args = std::move(forwarded_args);
 
     if (vm.contains("cmake-define")) {
@@ -214,6 +218,10 @@ struct options {
         throw nova::exception("Unknown command: {}", cmd);
     }
 
+    if (result.debug and result.command != command_type::run) {
+        throw nova::exception("'--debug' only applies to 'run'");
+    }
+
     return result;
 }
 
@@ -259,14 +267,22 @@ auto entrypoint(auto args) -> int {
                     cmake_defines[key] = value;
                 }
 
-                auto builder = baldr::builder{ options->project_dir, build_type, cmake_defines, cfg->env };
+                auto builder = baldr::builder{
+                    options->project_dir,
+                    build_type,
+                    cmake_defines,
+                    cfg->env,
+                    cfg->debugger,
+                    cfg->debugger_args
+                };
+
                 if (options->command == command_type::build) {
                     builder.build(options->clean_build);
                 } else {
                     if (options->build_before_run) {
                         builder.build(options->clean_build);
                     }
-                    builder.run(*options->target, options->forwarded_args);
+                    builder.run(*options->target, options->forwarded_args, options->debug);
                 }
                 break;
             }
