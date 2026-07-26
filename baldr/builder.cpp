@@ -23,6 +23,8 @@
 
 namespace fs = std::filesystem;
 
+using namespace std::string_literals;
+
 namespace {
 
 constexpr auto DefinesMarkerFile = ".baldr-defines";
@@ -275,8 +277,11 @@ void builder::configure_cmake(
         "cmake",
         "-S", ".",
         "-B", build_dir_rel,
-        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        fmt::format("-DCMAKE_BUILD_TYPE={}", m_build_type);
     };
+
+    nova::log::debug("CMake command: `{}`", fmt::join(configure_cmd, " "));
 
     for (const auto& [key, value]: m_cmake_defines) {
         configure_cmd.push_back(fmt::format("-D{}={}", key, value));
@@ -341,7 +346,7 @@ builder::resolve_conan_provider() const -> std::optional<std::string> {
 }
 
 [[nodiscard]] auto
-builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
+builder::discover_project_type(const std::string& target, bool clean_build) -> std::vector<std::string> {
     if (not fs::exists(fs::path(m_project_dir) / "CMakeLists.txt")) {
         m_project_type = project_type::make;
         return handle_makefile_project(clean_build);
@@ -367,13 +372,17 @@ builder::discover_project_type(bool clean_build) -> std::vector<std::string> {
 
     link_compile_commands(m_project_dir, m_build_type, build_dir);
 
-    return { "cmake", "--build", build_dir_rel };
+    if (target.empty()) {
+        return { "cmake", "--build", build_dir_rel };
+    }
+
+    return { "cmake", "--build", build_dir_rel, "--target", target };
 }
 
-void builder::build(bool clean_build) {
+void builder::build(const std::string& target, bool clean_build) {
     nova::log::debug("Building in `{}`...", m_project_dir);
 
-    int code = run_streamed(discover_project_type(clean_build), m_project_dir, m_cmake_env);
+    int code = run_streamed(discover_project_type(target, clean_build), m_project_dir, m_cmake_env);
     if (code == 0) {
         nxs::rlog::success("Build successful.");
     } else {

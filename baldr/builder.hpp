@@ -54,7 +54,7 @@ public:
      * @throws  nova::exception if the build command exits with a non-zero
      *          code.
      */
-    void build(bool clean_build = false);
+    void build(const std::string& target = "", bool clean_build = false);
 
     /**
      * @brief   Run `target`, attached to the caller's own TTY.
@@ -84,7 +84,7 @@ private:
     project_type m_project_type { project_type::make };
 
     [[nodiscard]] auto resolve_conan_provider() const -> std::optional<std::string>;
-    [[nodiscard]] auto discover_project_type(bool clean_build) -> std::vector<std::string>;
+    [[nodiscard]] auto discover_project_type(const std::string& target = "", bool clean_build) -> std::vector<std::string>;
     [[nodiscard]] auto resolve_executable(const std::string& target) const -> std::string;
     [[nodiscard]] auto handle_makefile_project(bool clean_build) const -> std::vector<std::string>;
 

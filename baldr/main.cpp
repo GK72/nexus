@@ -56,7 +56,7 @@ void print_help(std::ostream& out) {
     out << "  -h, --help                Produce help message\n";
     out << "  -v, --version             Print version and exit\n";
     out << "  -p, --project <dir>       Project directory (default: current directory)\n";
-    out << "      --build-type <name>   CMake build type/output subdir (default: 'Debug')\n";
+    out << "  -b, --build-type <name>   CMake build type/output subdir (default: 'Debug')\n";
     out << "      --clean               For 'build': wipe the build directory before building (clean build)\n";
     out << "  -D, --cmake-define        CMake define, repeatable (e.g. -DFOO=1); triggers reconfigure on change\n";
     out << "  -t, --target <name>       Executable name to run (required for 'run')\n";
@@ -271,10 +271,10 @@ auto entrypoint(auto args) -> int {
                 auto builder = baldr::builder{ options->project_dir, merged_cfg };
 
                 if (options->command == command_type::build) {
-                    builder.build(options->clean_build);
+                    builder.build(options->target, options->clean_build);
                 } else {
                     if (options->build_before_run) {
-                        builder.build(options->clean_build);
+                        builder.build(options->target, options->clean_build);
                     }
                     builder.run(*options->target, options->forwarded_args, options->debug);
                 }
