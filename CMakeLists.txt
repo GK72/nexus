@@ -29,6 +29,7 @@ add_subdirectory(libnxs)
 add_subdirectory(baldr)
 add_subdirectory(btx)
 add_subdirectory(msg-gen)
+add_subdirectory(examples/fluid-sim-3d)
 
 if(BUILD_TESTING)
     # Root tests if any
