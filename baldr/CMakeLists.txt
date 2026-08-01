@@ -29,7 +29,7 @@ target_compile_definitions(baldr PRIVATE
     BALDR_GIT_HASH="${BALDR_GIT_HASH}"
 )
 
-install(TARGETS baldr RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS baldr COMPONENT baldr)
 
 add_executable(example-command command.ex.cpp)
 target_link_libraries(example-command PRIVATE builder)

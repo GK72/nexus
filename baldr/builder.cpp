@@ -278,7 +278,7 @@ void builder::configure_cmake(
         "-S", ".",
         "-B", build_dir_rel,
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-        fmt::format("-DCMAKE_BUILD_TYPE={}", m_build_type);
+        fmt::format("-DCMAKE_BUILD_TYPE={}", m_build_type)
     };
 
     nova::log::debug("CMake command: `{}`", fmt::join(configure_cmd, " "));

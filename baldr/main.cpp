@@ -271,10 +271,10 @@ auto entrypoint(auto args) -> int {
                 auto builder = baldr::builder{ options->project_dir, merged_cfg };
 
                 if (options->command == command_type::build) {
-                    builder.build(options->target, options->clean_build);
+                    builder.build(*options->target, options->clean_build);
                 } else {
                     if (options->build_before_run) {
-                        builder.build(options->target, options->clean_build);
+                        builder.build(*options->target, options->clean_build);
                     }
                     builder.run(*options->target, options->forwarded_args, options->debug);
                 }
