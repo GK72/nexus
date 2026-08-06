@@ -86,6 +86,15 @@ public:
         }
 
         /**
+         * @brief   Whether the process was terminated by `SIGINT`, i.e. the
+         *          user hit Ctrl-C rather than the process actually failing.
+         */
+        [[nodiscard]] auto interrupted() const -> bool {
+            return m_type == kind::signaled
+                && m_value == SIGINT;
+        }
+
+        /**
          * @brief   Human-readable description of the outcome, naming the signal
          *          or the `errno` reason instead of just a bare, ambiguous exit code.
          */
@@ -201,7 +210,7 @@ public:
                 setenv(key.c_str(), value.c_str(), 1);
             }
 
-            if (not m_working_directory.empty() and chdir(m_working_directory.c_str()) == -1) {
+            if (not m_working_directory.empty() && chdir(m_working_directory.c_str()) == -1) {
                 int chdir_errno = errno;
                 std::ignore = ::write(m_error_pipe.write(), &chdir_errno, sizeof(chdir_errno));
                 _exit(EXIT_FAILURE);
@@ -240,7 +249,10 @@ public:
             return {};
         }
 
-        ssize_t n = ::read(m_pipe.read(), m_buffer.data(), m_buffer.size());
+        ssize_t n = 0;
+        do {
+            n = ::read(m_pipe.read(), m_buffer.data(), m_buffer.size());
+        } while (n == -1 && errno == EINTR);
 
         if (n <= 0) {
             return {};
@@ -250,6 +262,17 @@ public:
             m_buffer.data(),
             static_cast<std::size_t>(n)
         };
+    }
+
+    /**
+     * @brief   PID of the spawned process, valid once `run()` has returned.
+     *
+     * Useful for a caller that wants to act on the child independently of
+     * this class, e.g. registering it with `signal_handler::watch()` for a
+     * force-kill escalation while `poll()`/`wait()` are in progress.
+     */
+    [[nodiscard]] auto pid() const -> pid_t {
+        return m_pid;
     }
 
     /**
@@ -264,7 +287,10 @@ public:
         }
 
         int status = 0;
-        waitpid(m_pid, &status, 0);
+        while (waitpid(m_pid, &status, 0) == -1 && errno == EINTR) {
+            // Retry rather than trust a `status` a failed waitpid() never
+            // wrote to; see doc/baldr/developer-manual.adoc ("SA_RESTART").
+        }
 
         if (m_exec_failed) {
             return { m_args[0], exit_status::kind::exec_failed, m_exec_errno };

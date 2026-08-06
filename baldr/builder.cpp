@@ -1,5 +1,6 @@
 #include <baldr/builder.hpp>
 #include <baldr/command.hpp>
+#include <baldr/signal.hpp>
 
 #include <libnxs/line_reader.hpp>
 #include <libnxs/rlog.hpp>
@@ -12,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -63,15 +65,22 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
  * @brief   Run `cmd` inside `working_directory`, streaming its combined
  *          stdout/stderr output via `nova::log::info`.
  *
- * @return  The command's exit code.
+ * Registers the spawned child with `signal_handler::watch()` for `SIGINT`
+ * for the duration of the run (see `baldr/signal.hpp`), so repeated Ctrl-C
+ * still takes it down even if it's ignoring/outliving the signal itself.
+ *
+ * @return  The command's detailed outcome (see `baldr::command::exit_status`),
+ *          so callers can tell a `SIGINT` interruption apart from an actual
+ *          failure.
  */
 [[nodiscard]] auto run_streamed(
         const std::vector<std::string>& args,
         const std::string& working_directory,
         const std::map<std::string, std::string>& env = {}
-) -> int {
+) -> baldr::command::exit_status {
     auto cmd = baldr::command{ args, env, working_directory };
     cmd.run();
+    auto watch = baldr::signal_handler::scoped_watch{ SIGINT, cmd.pid() };
 
     nxs::line_reader lines([](std::string& line) { nova::log::info("{}", line); });
     std::string chunk;
@@ -80,7 +89,7 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
     }
     lines.feed_eof();
 
-    return cmd.wait().code();
+    return cmd.wait();
 }
 
 /**
@@ -292,8 +301,11 @@ void builder::configure_cmake(
         configure_cmd.push_back(fmt::format("-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={}", *conan_provider));
     }
 
-    if (int code = run_streamed(configure_cmd, m_project_dir, m_cmake_env); code != 0) {
-        throw nova::exception("CMake configure failed (exit code {}).", code);
+    if (auto status = run_streamed(configure_cmd, m_project_dir, m_cmake_env); not status.success()) {
+        if (status.interrupted()) {
+            throw nova::exception("CMake configure interrupted.");
+        }
+        throw nova::exception("CMake configure failed (exit code {}).", status.code());
     }
 
     fs::create_directories(build_dir);
@@ -382,11 +394,13 @@ builder::discover_project_type(const std::string& target, bool clean_build) -> s
 void builder::build(const std::string& target, bool clean_build) {
     nova::log::debug("Building in `{}`...", m_project_dir);
 
-    int code = run_streamed(discover_project_type(target, clean_build), m_project_dir, m_cmake_env);
-    if (code == 0) {
+    auto status = run_streamed(discover_project_type(target, clean_build), m_project_dir, m_cmake_env);
+    if (status.success()) {
         nxs::rlog::success("Build successful.");
+    } else if (status.interrupted()) {
+        throw nova::exception("Build interrupted.");
     } else {
-        throw nova::exception("Build failed (exit code {}).", code);
+        throw nova::exception("Build failed (exit code {}).", status.code());
     }
 }
 
@@ -462,8 +476,12 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
 
     auto cmd = command{ argv, m_cmake_env, m_project_dir, /*interactive=*/true };
     cmd.run();
+    auto watch = signal_handler::scoped_watch{ SIGINT, cmd.pid() };
 
     if (auto status = cmd.wait(); not status.success()) {
+        if (status.interrupted()) {
+            throw nova::exception("`{}` interrupted.", exe_path);
+        }
         throw nova::exception("{}", status.describe());
     }
 }

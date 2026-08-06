@@ -11,6 +11,7 @@
 #include <baldr/builder.hpp>
 #include <baldr/config.hpp>
 #include <baldr/docker.hpp>
+#include <baldr/signal.hpp>
 
 #include <libnxs/rlog.hpp>
 
@@ -23,6 +24,7 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <csignal>
 #include <cstdlib>
 #include <iostream>
 #include <map>
@@ -251,6 +253,12 @@ auto entrypoint(auto args) -> int {
         return EXIT_SUCCESS;
     }
 
+    // See doc/baldr/user-guide.adoc for what this covers, and
+    // doc/baldr/developer-manual.adoc for why signal_guard/signal_handler
+    // are separate types.
+    auto sigint = baldr::signal_guard{ SIGINT, &baldr::signal_handler::handle };
+
+    int result = EXIT_SUCCESS;
     try {
         switch (options->command) {
             case command_type::build:
@@ -281,15 +289,22 @@ auto entrypoint(auto args) -> int {
                 break;
             }
             case command_type::docker: {
-                return baldr::docker_run(*options->image, options->docker_args);
+                result = baldr::docker_run(*options->image, options->docker_args);
+                break;
             }
         }
     } catch (const nova::exception& ex) {
-        nxs::rlog::failure(ex.what());
-        return EXIT_FAILURE;
+        if (not baldr::signal_handler::triggered(SIGINT)) {
+            nxs::rlog::failure(ex.what());
+        }
+        result = EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    if (baldr::signal_handler::triggered(SIGINT)) {
+        sigint.reraise_default();
+    }
+
+    return result;
 }
 
 NOVA_MAIN(entrypoint);
