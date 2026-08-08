@@ -1,5 +1,90 @@
 = Baldr Developer's Manual
 
+== Child process output: `command::pty`
+
+`baldr::command` streams a non-interactive child's combined stdout/stderr
+through `poll()`. That channel is a pseudo-terminal (`command::pty`), not a
+plain `pipe(2)`.
+
+=== Why a pty instead of a pipe
+
+A pipe is the obvious choice and was the original implementation, but it has
+a side effect most CLI tools actively work around: `isatty()` on a pipe fd
+returns false, and compilers, build systems, and test runners (`gcc`/`clang`,
+`cmake`, `ninja`, `ctest`, `git`, ...) treat that as "output is being
+redirected to a file" and disable their own ANSI coloring accordingly — not
+because Baldr strips colors, but because the child never emits them in the
+first place. Swapping the pipe for a pty makes `isatty()` succeed in the
+child (and in anything it in turn `exec`s or forks, since the slave fd is
+inherited the same way a pipe fd would be), so tools keep coloring their
+output as if they were run directly in a terminal. `poll()` hands those bytes
+back completely unprocessed — Baldr does not recolor, strip, or otherwise
+interpret them; see `nxs::rlog::window` in `libnxs/rlog.cpp` for how the
+scrolling-window sink logs/replays them as-is rather than imposing its own
+color.
+
+The `pipe` class is still used for the separate exec-failure-reporting
+channel (`m_error_pipe`) — that one only ever carries a raw `errno` between
+processes, never anything meant to be displayed, so none of the above
+applies to it.
+
+=== Design notes
+
+* The child calls `setsid()` before opening the pty slave, so it lands in a
+  new session rather than keeping Baldr's own controlling terminal. Opening
+  a pty slave from a session leader with no controlling terminal makes that
+  pty the new controlling terminal automatically (standard SysV pty
+  semantics) — deliberately so, rather than leaving the child attached to
+  whatever terminal is running Baldr itself.
+* This does *not* rely on terminal-driven signal delivery for Ctrl-C — that
+  path is already handled explicitly via `signal_handler::watch()` forwarding
+  `SIGINT` straight to the child's PID (see "Signal handling" below).
+  `setsid()` only changes which terminal the child is attached to, not how
+  it's signaled.
+* A pty master reports "child side gone" differently from a pipe: reading
+  past the last slave close fails with `EIO` rather than returning `0`.
+  `poll()` doesn't special-case this — its existing `n <= 0` check already
+  treats any negative return the same as a clean EOF, so both channel types
+  fall out of the same code path.
+* A freshly opened pty starts with a `0x0` winsize, which some tools use to
+  decide column widths for wrapping/summaries. `pty`'s constructor queries
+  Baldr's own real terminal size (`ioctl(STDOUT_FILENO, TIOCGWINSZ, ...)`,
+  the same call `nxs::tty::terminal_width()` makes) and forwards it via
+  `TIOCSWINSZ`, so the child wraps/truncates its own output at the width
+  it'll actually be shown at in Baldr's live progress view. When Baldr's own
+  stdout isn't a real terminal (redirected to a file, CI, ...), that query
+  fails and it falls back to a fixed, generously wide default (`200x50`)
+  instead of whatever narrow width a fallback would otherwise suggest —
+  there's nothing live to match in that case, and an arbitrarily narrow
+  width would just wrap the child's output for no one to see. The queried
+  size is a one-time snapshot at pty creation, not kept in sync with actual
+  terminal resizes over the run — that would need `SIGWINCH` forwarding to
+  the child, deliberately left out for now: the existing `signal_handler`
+  is built around the count-then-escalate kill policy, not a fit for
+  relaying an arbitrary struct on delivery, and several tools (`gcc`,
+  `cmake`) cache the width once at startup and wouldn't react to a live
+  update anyway.
+* `command::pty` is unconditionally constructed as a data member (it always
+  opens a master fd), even when `interactive` is true and the channel goes
+  unused — mirroring the pre-existing `pipe m_pipe` member it replaced. This
+  is an accepted, pre-existing pattern here, not something newly introduced.
+
+=== Pitfalls if you touch this code
+
+* `posix_openpt`/`grantpt`/`unlockpt`/`ptsname_r` are POSIX/glibc, not
+  portable to non-Linux/BSD targets without an alternate code path — fine
+  given Baldr only targets Linux today, but don't assume it'll compile
+  unchanged if that ever expands.
+* If a child spawns a grandchild that inherits the pty slave fd and outlives
+  the immediate child (e.g. something explicitly daemonized), `poll()` won't
+  see `EIO` until *that* fd is also closed — the same "reader blocks past
+  the process you actually care about" hazard a pipe has with a lingering
+  writer, not a new one introduced by the pty.
+* Don't reintroduce the removed `::close(m_pipe.write())` step from `run()`
+  for the pty case — there's no parent-side duplicate of the slave fd to
+  close; the child closes its own master copy in `redirect_child()` before
+  `execvp()`.
+
 == Signal handling
 
 The abstractions live in `baldr/signal.hpp`: `baldr::signal_guard` and

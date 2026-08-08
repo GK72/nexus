@@ -20,11 +20,13 @@
 
 #include <cerrno>
 #include <csignal>
+#include <cstdlib>
 #include <cstring>
 #include <tuple>
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -167,6 +169,82 @@ public:
         }
     };
 
+    /**
+     * @brief   A wrapper around a pseudo-terminal, used in place of a
+     *          plain `pipe(2)` for the child's stdout/stderr.
+     *
+     * Unlike a pipe, a pty makes the child (and anything it in turn spawns) see
+     * a real terminal on `isatty()`, so they keep emitting their own ANSI
+     * colors instead of silently falling back to plain text because they think
+     * they're talking to a file/pipe.
+     */
+    class pty {
+    public:
+        pty() {
+            m_master = ::posix_openpt(O_RDWR | O_NOCTTY);
+            if (m_master == -1) {
+                throw nova::exception("Failed to open pty master");
+            }
+
+            if (::grantpt(m_master) == -1 || ::unlockpt(m_master) == -1) {
+                ::close(m_master);
+                throw nova::exception("Failed to configure pty");
+            }
+
+            std::array<char, 64> path{};
+            if (::ptsname_r(m_master, path.data(), path.size()) != 0) {
+                ::close(m_master);
+                throw nova::exception("Failed to resolve pty slave path");
+            }
+
+            m_slave_path = path.data();
+
+            winsize ws{};
+            if (::ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0 || ws.ws_row == 0) {
+                ws.ws_row = 50;
+                ws.ws_col = 200;
+            }
+            ::ioctl(m_master, TIOCSWINSZ, &ws);
+        }
+
+        [[nodiscard]] auto master() const -> int { return m_master; }
+
+        /**
+         * @brief   Open the slave side and dup it onto `fd`, then close both
+         *          the parent's master and the temporary slave descriptor.
+         *
+         * Child-side only: called after `fork()`, before `execvp()`.
+         */
+        void redirect_child(file_descriptor fd) const {
+            int slave = ::open(m_slave_path.c_str(), O_RDWR);
+            if (slave == -1) {
+                throw nova::exception("Failed to open pty slave");
+            }
+
+            switch (fd) {
+                case file_descriptor::stdout:
+                    dup2(slave, STDOUT_FILENO);
+                    break;
+                case file_descriptor::stderr:
+                    dup2(slave, STDERR_FILENO);
+                    break;
+                case file_descriptor::both:
+                    dup2(slave, STDOUT_FILENO);
+                    dup2(slave, STDERR_FILENO);
+                    break;
+            }
+
+            if (slave > STDERR_FILENO) {
+                ::close(slave);
+            }
+            ::close(m_master);
+        }
+
+    private:
+        int m_master = -1;
+        std::string m_slave_path;
+    };
+
     command(
             const std::vector<std::string>& args,
             const std::map<std::string, std::string>& env = {},
@@ -187,7 +265,9 @@ public:
 
     /**
      * @brief   Fork and exec the process. In non-interactive mode, the
-     *          child's stdout/stderr are redirected to the internal pipe.
+     *          child's stdout/stderr are redirected onto a pty, so the
+     *          child (and anything it spawns) still thinks it's talking to
+     *          a real terminal and keeps emitting its own colors.
      */
     auto run() {
         if (fcntl(m_error_pipe.write(), F_SETFD, FD_CLOEXEC) == -1) {
@@ -203,7 +283,12 @@ public:
             m_error_pipe.close_read();
 
             if (not m_interactive) {
-                m_pipe.redirect(file_descriptor::both);
+                if (setsid() == -1) {
+                    int setsid_errno = errno;
+                    std::ignore = ::write(m_error_pipe.write(), &setsid_errno, sizeof(setsid_errno));
+                    _exit(EXIT_FAILURE);
+                }
+                m_pty.redirect_child(file_descriptor::both);
             }
 
             for (const auto& [key, value] : m_env_map) {
@@ -230,10 +315,6 @@ public:
             m_exec_failed = true;
             m_exec_errno = exec_errno;
         }
-
-        if (not m_interactive) {
-            ::close(m_pipe.write());
-        }
     }
 
     /**
@@ -243,6 +324,10 @@ public:
      * @return  The chunk read, or an empty string on EOF/`interactive` mode.
      *          An empty return does not necessarily mean EOF for a single
      *          `read()`; callers should keep polling until `wait()`.
+     *
+     * A pty master reports the child side going away as `read()` failing
+     * with `EIO` rather than returning `0`, unlike a plain pipe; both are
+     * folded into the same empty-return, end-of-output case here.
      */
     auto poll() -> std::string {
         if (m_interactive) {
@@ -251,7 +336,7 @@ public:
 
         ssize_t n = 0;
         do {
-            n = ::read(m_pipe.read(), m_buffer.data(), m_buffer.size());
+            n = ::read(m_pty.master(), m_buffer.data(), m_buffer.size());
         } while (n == -1 && errno == EINTR);
 
         if (n <= 0) {
@@ -283,7 +368,7 @@ public:
      */
     auto wait() -> exit_status {
         if (not m_interactive) {
-            ::close(m_pipe.read());
+            ::close(m_pty.master());
         }
 
         int status = 0;
@@ -311,7 +396,7 @@ private:
     std::vector<std::string> m_args_vec;
     std::vector<char*> m_args;
     std::map<std::string, std::string> m_env_map;
-    pipe m_pipe;
+    pty m_pty;
     pipe m_error_pipe;
     pid_t m_pid = -1;
     bool m_interactive = false;

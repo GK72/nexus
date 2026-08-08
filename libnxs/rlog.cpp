@@ -238,11 +238,11 @@ void window::failure(const std::string& msg) {
     tty::erase_to_end();
 
     for (auto& line: m_buffer) {
-        fmt::println("\033[0;33m{}", line);
+        fmt::println("{}", line);
     }
 
     if (not msg.empty()) {
-        fmt::println("\033[0;31m{}\033[0m", msg);
+        fmt::println("\033[1;31m{}\033[0m", msg);
     }
 
     m_buffer.clear();
