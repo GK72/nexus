@@ -22,11 +22,16 @@ target_include_directories(builder PUBLIC
 
 add_executable(baldr main.cpp)
 target_link_libraries(baldr PRIVATE builder Boost::program_options)
+
 nexus_git_hash(BALDR_GIT_HASH)
+nexus_git_branch(BALDR_GIT_BRANCH)
+nexus_git_dirty(BALDR_GIT_DIRTY)
 
 target_compile_definitions(baldr PRIVATE
     BALDR_VERSION="${NEXUS_VERSION}"
     BALDR_GIT_HASH="${BALDR_GIT_HASH}"
+    BALDR_GIT_BRANCH="${BALDR_GIT_BRANCH}"
+    BALDR_GIT_DIRTY="${BALDR_GIT_DIRTY}"
 )
 
 install(TARGETS baldr COMPONENT baldr)

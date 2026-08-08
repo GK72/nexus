@@ -45,8 +45,23 @@ namespace {
 #define BALDR_GIT_HASH "unknown"
 #endif
 
+#ifndef BALDR_GIT_BRANCH
+#define BALDR_GIT_BRANCH "unknown"
+#endif
+
+#ifndef BALDR_GIT_DIRTY
+#define BALDR_GIT_DIRTY "unknown"
+#endif
+
 [[nodiscard]] auto baldr_version() {
-    return fmt::format("baldr v{}+{} (hosted by Nexus project)", BALDR_VERSION, BALDR_GIT_HASH);
+    const std::string dirty_suffix = std::string{BALDR_GIT_DIRTY} == "dirty" ? ".dirty" : "";
+    return fmt::format(
+        "baldr v{}+{}.{}{} (hosted by Nexus project)",
+        BALDR_VERSION,
+        BALDR_GIT_HASH,
+        BALDR_GIT_BRANCH,
+        dirty_suffix
+    );
 }
 
 /**
