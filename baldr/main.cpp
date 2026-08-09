@@ -65,23 +65,37 @@ namespace {
 }
 
 /**
- * @brief   Print the usage/help message to `out`.
+ * @brief   Build the description of Baldr's *visible* options, i.e.
+ *          everything except the positional `command`/`args` (which are
+ *          kept in a separate, hidden description so they don't show up as
+ *          fake `--command`/`--args` flags in `print_help()`'s output).
  */
-void print_help(std::ostream& out) {
+[[nodiscard]] auto build_options_description() -> po::options_description {
+    po::options_description desc("Options");
+    desc.add_options()
+        ("help,h", "Produce help message")
+        ("version,v", "Print version and exit")
+        ("project,p", po::value<std::string>()->default_value("."), "Project directory")
+        ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir")
+        ("clean", po::bool_switch()->default_value(false), "For 'build': wipe the build directory before building (clean build)")
+        ("cmake-define,D", po::value<std::vector<std::string>>()->composing(), "CMake define KEY=VALUE, repeatable; triggers reconfigure on change")
+        ("target,t", po::value<std::string>(), "Executable name to run (for 'run'; mutually exclusive with -x/--exec)")
+        ("exec,x", po::value<std::string>(), "Arbitrary executable (script or binary) to run instead of a built target (for 'run')")
+        ("build", po::bool_switch()->default_value(false), "For 'run': build the project first (not with -x/--exec)")
+        ("debug", po::bool_switch()->default_value(false), "For 'run': launch the target under the configured debugger (default: 'gdb --args')")
+        ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
+    ;
+    return desc;
+}
+
+/**
+ * @brief   Print the usage/help message to `out`, rendering `desc`
+ *          (see `build_options_description()`) for the flag table.
+ */
+void print_help(std::ostream& out, const po::options_description& desc) {
     out << "Usage: baldr [options] <command>\n";
-    out << "Options:\n";
-    out << "  -h, --help                Produce help message\n";
-    out << "  -v, --version             Print version and exit\n";
-    out << "  -p, --project <dir>       Project directory (default: current directory)\n";
-    out << "  -b, --build-type <name>   CMake build type/output subdir (default: 'Debug')\n";
-    out << "      --clean               For 'build': wipe the build directory before building (clean build)\n";
-    out << "  -D, --cmake-define        CMake define, repeatable (e.g. -DFOO=1); triggers reconfigure on change\n";
-    out << "  -t, --target <name>       Executable name to run (for 'run'; mutually exclusive with -x/--exec)\n";
-    out << "  -x, --exec <path>         Arbitrary executable (script or binary) to run instead of a built target (for 'run')\n";
-    out << "      --build               For 'run': build the project first (not with -x/--exec)\n";
-    out << "      --debug               For 'run': launch the target under the configured debugger (default: 'gdb --args')\n";
+    out << desc << '\n';
     out << "      -- <args...>          For 'run': forward everything after '--' to the target's own argv\n";
-    out << "  -i, --image <name>        Docker image to use (required for 'docker')\n";
     out << "\n";
     out << "  CMake projects are always configured with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON;\n";
     out << "  for the 'Debug' build type, <project_dir>/compile_commands.json is kept\n";
@@ -93,7 +107,7 @@ void print_help(std::ostream& out) {
     out << "\n";
     out << "Commands:\n";
     out << "  build      Configure (if needed) and build the project\n";
-    out << "  run        Run the built target given via -t/--target\n";
+    out << "  run        Run a built target (-t/--target) or an arbitrary executable (-x/--exec)\n";
     out << "  docker     Run a command inside a container: baldr docker -i <image> <cmd...>\n";
 }
 
@@ -106,9 +120,10 @@ enum class command_type {
 /**
  * @brief   Outcome of parsing the CLI arguments.
  *
- * `help` is set whenever the process should exit successfully without
- * running any command (e.g. `--help`/`--version` was given); `command`/
- * `log_mode` are only meaningful otherwise.
+ * Returned wrapped in `std::optional` by `parse_args()`: `std::nullopt`
+ * means the process should exit successfully without running any command
+ * (e.g. `--help`/`--version` was given, and already handled); otherwise
+ * every field below is meaningful.
  */
 struct options {
     command_type command;
@@ -134,8 +149,10 @@ struct options {
  *
  * @param   args    Command line arguments, excluding `argv[0]`.
  *
- * @return  Parsed options, or `std::nullopt` on a parsing error (already
- *          logged via `nova::log::error`).
+ * @return  Parsed options, or `std::nullopt` if `--help`/`--version` was
+ *          given (already printed to stdout).
+ *
+ * @throws  nova::exception on an invalid combination of flags/command.
  */
 [[nodiscard]] auto parse_args(const std::vector<std::string>& all_args) -> std::optional<options> {
     std::vector<std::string> args;
@@ -147,32 +164,28 @@ struct options {
         args = all_args;
     }
 
-    po::options_description desc("Baldr options");
-    desc.add_options()
-        ("help,h", "Produce help message")
-        ("version,v", "Print version and exit")
-        ("project,p", po::value<std::string>()->default_value("."), "Project directory (default: current directory)")
-        ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir (default: 'Debug')")
-        ("clean", po::bool_switch()->default_value(false), "For 'build': wipe the build directory before building (clean build)")
-        ("cmake-define,D", po::value<std::vector<std::string>>()->composing(), "CMake define KEY=VALUE, repeatable")
-        ("target,t", po::value<std::string>(), "Executable name to run (for 'run'; mutually exclusive with -x/--exec)")
-        ("exec,x", po::value<std::string>(), "Arbitrary executable (script or binary) to run instead of a built target (for 'run')")
-        ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
-        ("debug", po::bool_switch()->default_value(false), "For 'run': launch the target under the configured debugger")
-        ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
+    auto desc = build_options_description();
+
+    // Kept out of `desc` (and so out of `print_help()`'s output) since these
+    // are positional-only, not real `--command`/`--args` flags.
+    po::options_description positional_desc("Positional arguments");
+    positional_desc.add_options()
         ("command", po::value<std::string>(), "Command to run: 'build', 'run', 'docker'")
         ("args", po::value<std::vector<std::string>>()->multitoken(), "For 'docker': the container command")
     ;
+
+    po::options_description all_options;
+    all_options.add(desc).add(positional_desc);
 
     po::positional_options_description positional;
     positional.add("command", 1);
     positional.add("args", -1);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(args).options(desc).positional(positional).run(), vm);
+    po::store(po::command_line_parser(args).options(all_options).positional(positional).run(), vm);
 
     if (vm.contains("help")) {
-        print_help(std::cout);
+        print_help(std::cout, desc);
         return std::nullopt;
     }
 
@@ -219,7 +232,7 @@ struct options {
     }
 
     if (not vm.contains("command")) {
-        print_help(std::cerr);
+        print_help(std::cerr, desc);
         throw nova::exception("No command given");
     }
 
@@ -272,7 +285,7 @@ auto entrypoint(auto args) -> int {
     }
 
     if (args_vec.empty()) {
-        print_help(std::cerr);
+        print_help(std::cerr, build_options_description());
         return EXIT_FAILURE;
     }
 
