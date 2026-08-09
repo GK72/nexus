@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <chrono>
 #include <csignal>
 #include <filesystem>
 #include <fstream>
@@ -511,6 +512,8 @@ void builder::run_exec(const std::string& exec_path, const std::vector<std::stri
     env["BALDR_ENV_WORKING_DIR"] = fs::absolute(m_project_dir).string();
     env["BALDR_ENV_BUILD_DIR"] = cmake_build_dir(m_build_type);
 
+    const auto start = nova::steady_now();
+
     command::exit_status status = [&] {
         if (debug) {
             auto cmd = command{ argv, env, m_project_dir, /*interactive=*/true };
@@ -521,12 +524,20 @@ void builder::run_exec(const std::string& exec_path, const std::vector<std::stri
         return run_streamed(argv, m_project_dir, env);
     }();
 
-    if (not status.success()) {
-        if (status.interrupted()) {
-            throw nova::exception("`{}` interrupted.", resolved.string());
-        }
-        throw nova::exception("{}", status.describe());
+    const std::chrono::duration<double> elapsed = nova::steady_now() - start;
+
+    if (status.success()) {
+        nova::log::info("`{}` finished successfully (exit code {}) in {:.3f}s", resolved.string(), status.code(), elapsed.count());
+        return;
     }
+
+    if (status.interrupted()) {
+        nova::log::warn("`{}` interrupted after {:.3f}s", resolved.string(), elapsed.count());
+        throw nova::exception("`{}` interrupted.", resolved.string());
+    }
+
+    nova::log::error("`{}` failed (exit code {}) after {:.3f}s", resolved.string(), status.code(), elapsed.count());
+    throw nova::exception("{}", status.describe());
 }
 
 } // namespace baldr

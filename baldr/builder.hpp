@@ -87,6 +87,9 @@ public:
      * now, but is expected to become config-sourced (`.baldr.yaml`) rather
      * than fixed to just these two variables.
      *
+     * Wall-clock elapsed time is measured around the run and reported,
+     * together with the exit code.
+     *
      * @param   exec_path       Path to the executable to run, resolved
      *                          relative to `project_dir` if not absolute.
      * @param   forwarded_args  Extra arguments appended after the
