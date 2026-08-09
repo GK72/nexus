@@ -87,8 +87,9 @@ public:
      * now, but is expected to become config-sourced (`.baldr.yaml`) rather
      * than fixed to just these two variables.
      *
-     * Wall-clock elapsed time is measured around the run and reported,
-     * together with the exit code.
+     * Wall-clock elapsed time, CPU time and peak memory (via `wait4(2)`,
+     * see `command::exit_status::usage()`) are measured around the run and
+     * reported together with the exit code.
      *
      * @param   exec_path       Path to the executable to run, resolved
      *                          relative to `project_dir` if not absolute.

@@ -526,17 +526,30 @@ void builder::run_exec(const std::string& exec_path, const std::vector<std::stri
 
     const std::chrono::duration<double> elapsed = nova::steady_now() - start;
 
+    const auto& usage = status.usage();
+    const std::chrono::duration<double> cpu_time = usage.user_time + usage.system_time;
+    const double peak_rss_mb = static_cast<double>(usage.peak_rss_kb) / 1024.0;
+
     if (status.success()) {
-        nova::log::info("`{}` finished successfully (exit code {}) in {:.3f}s", resolved.string(), status.code(), elapsed.count());
+        nova::log::info(
+            "`{}` finished successfully (exit code {}) in {:.3f}s (cpu {:.3f}s, peak {:.1f} MB)",
+            resolved.string(), status.code(), elapsed.count(), cpu_time.count(), peak_rss_mb
+        );
         return;
     }
 
     if (status.interrupted()) {
-        nova::log::warn("`{}` interrupted after {:.3f}s", resolved.string(), elapsed.count());
+        nova::log::warn(
+            "`{}` interrupted after {:.3f}s (cpu {:.3f}s, peak {:.1f} MB)",
+            resolved.string(), elapsed.count(), cpu_time.count(), peak_rss_mb
+        );
         throw nova::exception("`{}` interrupted.", resolved.string());
     }
 
-    nova::log::error("`{}` failed (exit code {}) after {:.3f}s", resolved.string(), status.code(), elapsed.count());
+    nova::log::error(
+        "`{}` failed (exit code {}) after {:.3f}s (cpu {:.3f}s, peak {:.1f} MB)",
+        resolved.string(), status.code(), elapsed.count(), cpu_time.count(), peak_rss_mb
+    );
     throw nova::exception("{}", status.describe());
 }
 

@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 
 #include <cerrno>
+#include <chrono>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
@@ -27,10 +28,26 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
 namespace baldr {
+
+struct resource_usage {
+    std::chrono::microseconds user_time { 0 };
+    std::chrono::microseconds system_time { 0 };
+    long peak_rss_kb = 0;   // `ru_maxrss`; kilobytes on Linux.
+};
+
+[[nodiscard]] inline
+auto create_resource_usage(const rusage raw_usage) -> resource_usage {
+    return {
+        .user_time   = std::chrono::seconds{raw_usage.ru_utime.tv_sec} + std::chrono::microseconds{raw_usage.ru_utime.tv_usec},
+        .system_time = std::chrono::seconds{raw_usage.ru_stime.tv_sec} + std::chrono::microseconds{raw_usage.ru_stime.tv_usec},
+        .peak_rss_kb = raw_usage.ru_maxrss,
+    };
+}
 
 /**
  * @brief   Spawns a child process, exposing its combined stdout/stderr
@@ -62,10 +79,11 @@ public:
             exec_failed,  // `execvp` itself failed; `value` is the `errno` from `execvp`.
         };
 
-        exit_status(const char* name, kind type, int value)
+        exit_status(const char* name, kind type, int value, resource_usage usage = {})
             : m_name(name)
             , m_type(type)
             , m_value(value)
+            , m_usage(usage)
         {}
 
         [[nodiscard]] auto success() const -> bool {
@@ -112,10 +130,18 @@ public:
             return fmt::format("`{}` exited abnormally.", m_name);
         }
 
+        /**
+         * @brief   Resource usage accumulated by the process.
+         */
+        [[nodiscard]] auto usage() const -> const resource_usage& {
+            return m_usage;
+        }
+
     private:
         const char* m_name;
         kind m_type = kind::exited;
         int m_value = 0;
+        resource_usage m_usage;
 
     };
 
@@ -364,7 +390,8 @@ public:
      * @brief   Wait for the process to exit.
      *
      * @return  The detailed outcome, distinguishing a normal exit from a
-     *          signal or a failed `execvp`.
+     *          signal or a failed `execvp`, and carrying its resource usage
+     *          (CPU time, peak memory) as reported by `wait4(2)`.
      */
     auto wait() -> exit_status {
         if (not m_interactive) {
@@ -372,8 +399,9 @@ public:
         }
 
         int status = 0;
-        while (waitpid(m_pid, &status, 0) == -1 && errno == EINTR) {
-            // Retry rather than trust a `status` a failed waitpid() never
+        struct rusage raw_usage {};
+        while (wait4(m_pid, &status, 0, &raw_usage) == -1 && errno == EINTR) {
+            // Retry rather than trust a `status` a failed wait4() never
             // wrote to; see doc/baldr/developer-manual.adoc ("SA_RESTART").
         }
 
@@ -381,15 +409,17 @@ public:
             return { m_args[0], exit_status::kind::exec_failed, m_exec_errno };
         }
 
+        auto usage = create_resource_usage(raw_usage);
+
         if (WIFSIGNALED(status)) {
-            return { m_args[0], exit_status::kind::signaled, WTERMSIG(status) };
+            return { m_args[0], exit_status::kind::signaled, WTERMSIG(status), usage };
         }
 
         if (WIFEXITED(status)) {
-            return { m_args[0], exit_status::kind::exited, WEXITSTATUS(status) };
+            return { m_args[0], exit_status::kind::exited, WEXITSTATUS(status), usage };
         }
 
-        return { m_args[0], exit_status::kind::exited, EXIT_FAILURE };
+        return { m_args[0], exit_status::kind::exited, EXIT_FAILURE, usage };
     }
 
 private:
