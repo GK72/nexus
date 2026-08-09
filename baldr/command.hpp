@@ -138,7 +138,7 @@ public:
         }
 
     private:
-        const char* m_name;
+        std::string m_name;
         kind m_type = kind::exited;
         int m_value = 0;
         resource_usage m_usage;
