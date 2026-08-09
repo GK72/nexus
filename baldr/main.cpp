@@ -76,8 +76,9 @@ void print_help(std::ostream& out) {
     out << "  -b, --build-type <name>   CMake build type/output subdir (default: 'Debug')\n";
     out << "      --clean               For 'build': wipe the build directory before building (clean build)\n";
     out << "  -D, --cmake-define        CMake define, repeatable (e.g. -DFOO=1); triggers reconfigure on change\n";
-    out << "  -t, --target <name>       Executable name to run (required for 'run')\n";
-    out << "      --build               For 'run': build the project first\n";
+    out << "  -t, --target <name>       Executable name to run (for 'run'; mutually exclusive with -x/--exec)\n";
+    out << "  -x, --exec <path>         Arbitrary executable (script or binary) to run instead of a built target (for 'run')\n";
+    out << "      --build               For 'run': build the project first (not with -x/--exec)\n";
     out << "      --debug               For 'run': launch the target under the configured debugger (default: 'gdb --args')\n";
     out << "      -- <args...>          For 'run': forward everything after '--' to the target's own argv\n";
     out << "  -i, --image <name>        Docker image to use (required for 'docker')\n";
@@ -117,6 +118,7 @@ struct options {
     std::map<std::string, std::string> cmake_defines;
     bool build_type_explicit = false;
     std::optional<std::string> target;
+    std::optional<std::string> exec;
     bool build_before_run = false;
     bool debug = false;
     std::optional<std::string> image;
@@ -153,7 +155,8 @@ struct options {
         ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir (default: 'Debug')")
         ("clean", po::bool_switch()->default_value(false), "For 'build': wipe the build directory before building (clean build)")
         ("cmake-define,D", po::value<std::vector<std::string>>()->composing(), "CMake define KEY=VALUE, repeatable")
-        ("target,t", po::value<std::string>(), "Executable name to run (required for 'run')")
+        ("target,t", po::value<std::string>(), "Executable name to run (for 'run'; mutually exclusive with -x/--exec)")
+        ("exec,x", po::value<std::string>(), "Arbitrary executable (script or binary) to run instead of a built target (for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first")
         ("debug", po::bool_switch()->default_value(false), "For 'run': launch the target under the configured debugger")
         ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
@@ -203,6 +206,10 @@ struct options {
         result.target = vm["target"].as<std::string>();
     }
 
+    if (vm.contains("exec")) {
+        result.exec = vm["exec"].as<std::string>();
+    }
+
     if (vm.contains("image")) {
         result.image = vm["image"].as<std::string>();
     }
@@ -220,8 +227,14 @@ struct options {
         result.command = command_type::build;
     } else if (cmd == "run") {
         result.command = command_type::run;
-        if (not result.target) {
-            throw nova::exception("'run' requires -t/--target <name>");
+        if (not result.target and not result.exec) {
+            throw nova::exception("'run' requires -t/--target <name> or -x/--exec <path>");
+        }
+        if (result.target and result.exec) {
+            throw nova::exception("'run' accepts either -t/--target or -x/--exec, not both");
+        }
+        if (result.exec and result.build_before_run) {
+            throw nova::exception("'--build' cannot be combined with -x/--exec");
         }
     } else if (cmd == "docker") {
         result.command = command_type::docker;
@@ -295,6 +308,8 @@ auto entrypoint(auto args) -> int {
 
                 if (options->command == command_type::build) {
                     builder.build(*options->target, options->clean_build);
+                } else if (options->exec) {
+                    builder.run_exec(*options->exec, options->forwarded_args, options->debug);
                 } else {
                     if (options->build_before_run) {
                         builder.build(*options->target, options->clean_build);

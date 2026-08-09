@@ -486,4 +486,47 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
     }
 }
 
+void builder::run_exec(const std::string& exec_path, const std::vector<std::string>& forwarded_args, bool debug) {
+    auto resolved = fs::path(exec_path);
+    if (resolved.is_relative()) {
+        resolved = fs::path(m_project_dir) / resolved;
+    }
+
+    if (not fs::exists(resolved)) {
+        throw nova::exception("Executable does not exist: `{}`", resolved.string());
+    }
+
+    if (debug) {
+        nova::log::debug("Running `{}` in `{}` via debugger...", resolved.string(), m_project_dir);
+    } else {
+        nova::log::debug("Running `{}` in `{}`...", resolved.string(), m_project_dir);
+    }
+
+    auto argv = build_argv(resolved.string(), forwarded_args, debug);
+
+    // TODO: Hardcoded for now; should come from `.baldr.yaml` instead of
+    // just these two variables. Kept separate from `m_cmake_env` (CC/CXX
+    // etc. for the build), which doesn't apply here.
+    std::map<std::string, std::string> env;
+    env["BALDR_ENV_WORKING_DIR"] = fs::absolute(m_project_dir).string();
+    env["BALDR_ENV_BUILD_DIR"] = cmake_build_dir(m_build_type);
+
+    command::exit_status status = [&] {
+        if (debug) {
+            auto cmd = command{ argv, env, m_project_dir, /*interactive=*/true };
+            cmd.run();
+            auto watch = signal_handler::scoped_watch{ SIGINT, cmd.pid() };
+            return cmd.wait();
+        }
+        return run_streamed(argv, m_project_dir, env);
+    }();
+
+    if (not status.success()) {
+        if (status.interrupted()) {
+            throw nova::exception("`{}` interrupted.", resolved.string());
+        }
+        throw nova::exception("{}", status.describe());
+    }
+}
+
 } // namespace baldr
