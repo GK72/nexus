@@ -23,6 +23,13 @@ target_include_directories(builder PUBLIC
 add_executable(baldr main.cpp)
 target_link_libraries(baldr PRIVATE builder Boost::program_options)
 
+option(BALDR_STATIC_LINK "Fully statically link the baldr executable" OFF)
+
+if(BALDR_STATIC_LINK)
+    target_link_options(baldr PRIVATE -static -static-libgcc -static-libstdc++)
+    target_compile_definitions(baldr PRIVATE BALDR_STATIC_LINK)
+endif()
+
 nexus_git_hash(BALDR_GIT_HASH)
 nexus_git_branch(BALDR_GIT_BRANCH)
 nexus_git_dirty(BALDR_GIT_DIRTY)

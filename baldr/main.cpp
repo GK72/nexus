@@ -31,6 +31,7 @@
 #include <optional>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace po = boost::program_options;
@@ -55,12 +56,18 @@ namespace {
 
 [[nodiscard]] auto baldr_version() {
     const std::string dirty_suffix = std::string{BALDR_GIT_DIRTY} == "dirty" ? ".dirty" : "";
+#ifdef BALDR_STATIC_LINK
+    constexpr std::string_view linkage = "static";
+#else
+    constexpr std::string_view linkage = "dynamic";
+#endif
     return fmt::format(
-        "baldr v{}+{}.{}{} (hosted by Nexus project)",
+        "baldr v{}+{}.{}{} ({}, hosted by Nexus project)",
         BALDR_VERSION,
         BALDR_GIT_HASH,
         BALDR_GIT_BRANCH,
-        dirty_suffix
+        dirty_suffix,
+        linkage
     );
 }
 
@@ -77,6 +84,7 @@ namespace {
         ("version,v", "Print version and exit")
         ("project,p", po::value<std::string>()->default_value("."), "Project directory")
         ("build-type,b", po::value<std::string>()->default_value("Debug"), "CMake build type/output subdir")
+        ("build-dir", po::value<std::string>(), "Override the default build directory (default: build/<build_type>)")
         ("clean", po::bool_switch()->default_value(false), "For 'build': wipe the build directory before building (clean build)")
         ("cmake-define,D", po::value<std::vector<std::string>>()->composing(), "CMake define KEY=VALUE, repeatable; triggers reconfigure on change")
         ("target,t", po::value<std::string>(), "Executable name to run (for 'run'; mutually exclusive with -x/--exec)")
@@ -129,6 +137,7 @@ struct options {
     command_type command;
     std::string project_dir;
     std::string build_type;
+    std::optional<std::string> build_dir;
     bool clean_build = false;
     std::map<std::string, std::string> cmake_defines;
     bool build_type_explicit = false;
@@ -201,6 +210,9 @@ struct options {
     result.build_type = vm["build-type"].as<std::string>();
     result.build_type_explicit = not vm["build-type"].defaulted();
     result.clean_build = vm["clean"].as<bool>();
+    if (vm.contains("build-dir")) {
+        result.build_dir = vm["build-dir"].as<std::string>();
+    }
     result.build_before_run = vm["build"].as<bool>();
     result.debug = vm["debug"].as<bool>();
     result.forwarded_args = std::move(forwarded_args);
@@ -317,7 +329,7 @@ auto entrypoint(auto args) -> int {
                     merged_cfg.cmake_defines[key] = value;
                 }
 
-                auto builder = baldr::builder{ options->project_dir, merged_cfg };
+                auto builder = baldr::builder{ options->project_dir, merged_cfg, options->build_dir };
 
                 if (options->command == command_type::build) {
                     builder.build(*options->target, options->clean_build);

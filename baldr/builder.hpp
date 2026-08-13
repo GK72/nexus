@@ -34,13 +34,17 @@ public:
      * @brief   Construct a `builder` for `project_dir`, sourcing build
      *          type, CMake defines/env and debugger settings from `cfg`.
      *
-     * @param   project_dir     Project directory to build/run in.
-     * @param   cfg             Resolved configuration (already merged with
-     *                          any CLI overrides by the caller).
+     * @param   project_dir         Project directory to build/run in.
+     * @param   cfg                 Resolved configuration (already merged
+     *                              with any CLI overrides by the caller).
+     * @param   build_dir_override  If set, used instead of the default
+     *                              `build/<build_type>` build directory
+     *                              (relative to `project_dir`).
      */
     builder(
         std::string project_dir = ".",
-        config cfg = {}
+        config cfg = {},
+        std::optional<std::string> build_dir_override = std::nullopt
     );
 
     /**
@@ -108,6 +112,7 @@ public:
 private:
     std::string m_project_dir;
     std::string m_build_type;
+    std::optional<std::string> m_build_dir_override;
     std::map<std::string, std::string> m_cmake_defines;
     std::map<std::string, std::string> m_cmake_env;
     std::string m_debugger;
@@ -115,6 +120,7 @@ private:
     project_type m_project_type { project_type::make };
 
     [[nodiscard]] auto resolve_conan_provider() const -> std::optional<std::string>;
+    [[nodiscard]] auto effective_build_dir_rel() const -> std::string;
     [[nodiscard]] auto discover_project_type(const std::string& target = "", bool clean_build = false) -> std::vector<std::string>;
     [[nodiscard]] auto resolve_executable(const std::string& target) const -> std::string;
     [[nodiscard]] auto handle_makefile_project(bool clean_build) const -> std::vector<std::string>;

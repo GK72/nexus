@@ -242,10 +242,12 @@ namespace baldr {
 
 builder::builder(
         std::string project_dir,
-        config cfg
+        config cfg,
+        std::optional<std::string> build_dir_override
 )
     : m_project_dir(std::move(project_dir))
     , m_build_type(canonical_build_type(cfg.build_type))
+    , m_build_dir_override(std::move(build_dir_override))
     , m_cmake_defines(std::move(cfg.cmake_defines))
     , m_cmake_env(std::move(cfg.env))
     , m_debugger(std::move(cfg.debugger))
@@ -358,6 +360,16 @@ builder::resolve_conan_provider() const -> std::optional<std::string> {
     return std::nullopt;
 }
 
+/**
+ * @brief   Relative path (from `m_project_dir`) of the build directory to
+ *          use: `m_build_dir_override` if set, otherwise the default
+ *          `build/<build_type>` (see `cmake_build_dir()`).
+ */
+[[nodiscard]] auto
+builder::effective_build_dir_rel() const -> std::string {
+    return m_build_dir_override.value_or(cmake_build_dir(m_build_type));
+}
+
 [[nodiscard]] auto
 builder::discover_project_type(const std::string& target, bool clean_build) -> std::vector<std::string> {
     if (not fs::exists(fs::path(m_project_dir) / "CMakeLists.txt")) {
@@ -368,7 +380,7 @@ builder::discover_project_type(const std::string& target, bool clean_build) -> s
     nova::log::debug("Discovered CMake project in `{}`", m_project_dir);
     m_project_type = project_type::cmake;
 
-    auto build_dir_rel = cmake_build_dir(m_build_type);
+    auto build_dir_rel = effective_build_dir_rel();
     auto build_dir = fs::path(m_project_dir) / build_dir_rel;
 
     if (clean_build && fs::exists(build_dir)) {
@@ -420,7 +432,7 @@ builder::resolve_executable(const std::string& target) const -> std::string {
             return fs::path(m_project_dir) / target;
         }
         case project_type::cmake: {
-            const auto build_dir = fs::path(m_project_dir) / cmake_build_dir(m_build_type);
+            const auto build_dir = fs::path(m_project_dir) / effective_build_dir_rel();
             auto exes = find_built_executables(build_dir, target);
             if (exes.empty()) {
                 throw nova::exception("No executable found for target `{}`", target);
@@ -510,7 +522,7 @@ void builder::run_exec(const std::string& exec_path, const std::vector<std::stri
     // etc. for the build), which doesn't apply here.
     std::map<std::string, std::string> env;
     env["BALDR_ENV_WORKING_DIR"] = fs::absolute(m_project_dir).string();
-    env["BALDR_ENV_BUILD_DIR"] = cmake_build_dir(m_build_type);
+    env["BALDR_ENV_BUILD_DIR"] = effective_build_dir_rel();
 
     const auto start = nova::steady_now();
 
