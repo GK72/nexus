@@ -1,6 +1,16 @@
 = Baldr User Guide
 
-== Running `build`/`run` inside a container
+== Running the built target
+
+`baldr run` automatically discovers the built executables. Baldr looks for an
+executable with the same name as the taget.
+
+The discovery mechanism is slightly different depending on the project type.
+
+* CMake projects: recursively looks in the tree under `build/<build_type>`.
+* Make projects: looks directly in `build`. No support for build types.
+
+== Using a container
 
 `-i/--image <image>` on `build` or `run` re-executes the equivalent Baldr
 invocation inside a fresh container of `<image>` instead of running it on
@@ -19,10 +29,6 @@ the host:
 
 The target image must already have the project's toolchain (compilers,
 CMake, etc.) installed — `--image` does not provision one.
-
-This is separate from the raw `baldr docker -i <image> <cmd...>` subcommand,
-which just runs an arbitrary command inside a container without any of the
-above (no bind mounts, no uid mapping).
 
 == Signal handling
 

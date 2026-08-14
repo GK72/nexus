@@ -418,9 +418,10 @@ void builder::build(const std::string& target, bool clean_build) {
 }
 
 /**
- * @brief   Resolve `target`'s executable path, according to
- *          `m_project_type` (an exact `Makefile` path, or the unique
- *          match found by searching the CMake build directory).
+ * @brief   Resolve `target`'s executable path, according to `m_project_type`.
+ *
+ * An exact `Makefile` path in `build` directory, or the unique match found by
+ * searching the CMake build directory).
  *
  * @throws  nova::exception if `target` can't be found or is ambiguous
  *          (CMake projects only).
@@ -429,7 +430,7 @@ void builder::build(const std::string& target, bool clean_build) {
 builder::resolve_executable(const std::string& target) const -> std::string {
     switch (m_project_type) {
         case project_type::make: {
-            return fs::path(m_project_dir) / target;
+            return fs::path(m_project_dir) / "build" / target;
         }
         case project_type::cmake: {
             const auto build_dir = fs::path(m_project_dir) / effective_build_dir_rel();

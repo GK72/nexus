@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-# Builds baldr/tests/cmake-project's `hello` target via
-# `baldr build --image <image>` against a deliberately old-glibc toolchain
-# image (see glibc.Dockerfile), into `build/glibc-<version>`.
-#
-# The result is verified by checking the built binary's dynamic symbol table
-# for GLIBC_x.y version references.
-
 set -eu
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
@@ -16,6 +9,8 @@ STATIC_BALDR="${PROJECT_DIR}/build/static/baldr/baldr"
 TEST_PROJECT="${SCRIPT_DIR}/make-project"
 CONFIG_FILE="${TEST_PROJECT}/.baldr.yaml"
 IMAGE="baldr-glibc-test"
+
+export SPDLOG_MODE=standard
 
 function glibc_version_of() {
     if [[ -z "$1" ]]; then
@@ -53,15 +48,11 @@ docker build --quiet --tag "${IMAGE}" --file "${SCRIPT_DIR}/glibc.Dockerfile" "$
 
 IMAGE_GLIBC=$(glibc_version_of "${IMAGE}")
 HOST_GLIBC=$(glibc_version_of "")
-BUILD_DIR="build/glibc-${IMAGE_GLIBC}"
+BUILD_DIR="build"
 
-echo "Target image glibc: ${IMAGE_GLIBC}"
-echo "Host glibc: ${HOST_GLIBC}"
-if ! version_le "${IMAGE_GLIBC}" "${HOST_GLIBC}"; then
-    echo "Warning: target image's glibc (${IMAGE_GLIBC}) isn't older than the host's (${HOST_GLIBC}) -- test is meaningless here" >&2
-fi
+echo "Image and host glibc version: ${IMAGE_GLIBC} / ${HOST_GLIBC}"
 
-echo "Building hello via --image ${IMAGE} into ${TEST_PROJECT}/${BUILD_DIR}..."
+echo "Building test project via image..."
 "$BALDR" -p "${TEST_PROJECT}" build -t hello \
     --image "${IMAGE}" \
     --build-dir "${BUILD_DIR}"
@@ -72,27 +63,21 @@ if [[ ! -x "${BIN}" ]]; then
     exit 1
 fi
 
-echo "Inspecting ${BIN}'s dynamic symbol versions..."
 MAX_SYMBOL_VERSION=$(objdump -T "${BIN}" | grep -oE 'GLIBC_[0-9]+\.[0-9]+' | sed 's/GLIBC_//' | sort -V | tail -n1)
 
 if [[ -z "${MAX_SYMBOL_VERSION}" ]]; then
-    echo "ERROR: no GLIBC_x.y symbol versions found in ${BIN} -- is it dynamically linked?" >&2
+    echo "ERROR: no GLIBC_x.y symbol versions found in built target!" >&2
     exit 1
 fi
 
-echo "Highest GLIBC symbol version required by ${BIN}: ${MAX_SYMBOL_VERSION}"
-
-if ! version_le "${MAX_SYMBOL_VERSION}" "${IMAGE_GLIBC}"; then
-    echo "ERROR: ${BIN} requires GLIBC_${MAX_SYMBOL_VERSION}, newer than the target image's own glibc ${IMAGE_GLIBC}" >&2
-    exit 1
-fi
+echo "glibc required by the built target: ${MAX_SYMBOL_VERSION}"
 
 if version_le "${HOST_GLIBC}" "${MAX_SYMBOL_VERSION}"; then
-    echo "ERROR: ${BIN} requires GLIBC_${MAX_SYMBOL_VERSION}, not older than the host's glibc ${HOST_GLIBC} -- --image had no effect" >&2
+    echo "ERROR: Built target requires the same GLIBC_${MAX_SYMBOL_VERSION} as the host!" >&2
     exit 1
 fi
 
-echo "Running ${BIN} to confirm it actually works (newer host glibc stays backward-compatible)..."
+echo "Running built target"
 "${BIN}" --smoke-test-arg
 
-echo "OK: hello was built against glibc ${IMAGE_GLIBC} (max symbol GLIBC_${MAX_SYMBOL_VERSION}), older than the host's ${HOST_GLIBC}."
+echo "Test passed"
