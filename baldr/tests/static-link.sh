@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-#
-# Part of Baldr.
-#
-# Builds baldr statically (BALDR_STATIC_LINK=ON, dogfooded via baldr itself
-# into build/static) and verifies the result actually has no dynamic
-# dependencies: `ldd` must reject it, and it must still run inside a bare
-# Alpine container that has no glibc/libstdc++ installed at all.
 
 set -euo pipefail
 

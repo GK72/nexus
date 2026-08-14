@@ -36,6 +36,14 @@ namespace baldr {
         }
     }
 
+    if (doc.contains("docker.mount-baldr")) {
+        result.docker_mount_baldr = doc.lookup<bool>("docker.mount-baldr");
+    }
+
+    if (doc.contains("docker.baldr-path")) {
+        result.docker_baldr_path = doc.lookup<std::string>("docker.baldr-path");
+    }
+
     return result;
 }
 

@@ -23,9 +23,12 @@
 
 #include <fmt/format.h>
 
+#include <unistd.h>
+
 #include <algorithm>
 #include <csignal>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <optional>
@@ -91,7 +94,7 @@ namespace {
         ("exec,x", po::value<std::string>(), "Arbitrary executable (script or binary) to run instead of a built target (for 'run')")
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first (not with -x/--exec)")
         ("debug", po::bool_switch()->default_value(false), "For 'run': launch the target under the configured debugger (default: 'gdb --args')")
-        ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker')")
+        ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker'; for 'build'/'run', re-executes inside a container of this image)")
     ;
     return desc;
 }
@@ -113,10 +116,25 @@ void print_help(std::ostream& out, const po::options_description& desc) {
     out << "  default 'build_type', 'cmake.definitions' and 'cmake.env'; CLI flags always\n";
     out << "  take precedence over config values.\n";
     out << "\n";
+    out << "  '-i/--image <image>' on 'build'/'run' re-executes the equivalent baldr\n";
+    out << "  invocation inside a fresh container of <image>: the project directory is\n";
+    out << "  bind-mounted to /workspace, baldr's own binary is bind-mounted in (unless\n";
+    out << "  'docker.mount-baldr: false' in .baldr.yaml), and the container process runs\n";
+    out << "  as the host's uid:gid. The target image must already have the project's\n";
+    out << "  toolchain installed.\n";
+    out << "\n";
     out << "Commands:\n";
     out << "  build      Configure (if needed) and build the project\n";
     out << "  run        Run a built target (-t/--target) or an arbitrary executable (-x/--exec)\n";
     out << "  docker     Run a command inside a container: baldr docker -i <image> <cmd...>\n";
+}
+
+/**
+ * @brief   Resolve the path of the currently running `baldr` binary, for
+ *          bind-mounting it into a `--image` container.
+ */
+[[nodiscard]] auto self_exe_path() -> std::filesystem::path {
+    return std::filesystem::read_symlink("/proc/self/exe");
 }
 
 enum class command_type {
@@ -280,6 +298,110 @@ struct options {
     return result;
 }
 
+/**
+ * @brief   Build the argv for the container-side `baldr`.
+ *
+ * Re-exec of `opts` (a `build`/`run` invocation), replaying every flag that
+ * affects the container-local build/run except `-i/--image` itself and
+ * `-p/--project` (rewritten to the bind-mounted `/workspace`).
+ *
+ * TODO(refact): Reflection to "serialize" `options` into arguments.
+ *
+ * @param   baldr_path  Container-side path to invoke (the bind-mounted
+ *                      binary's mount point, or a bare name if the image is
+ *                      expected to already provide its own `baldr`).
+ */
+[[nodiscard]] auto build_container_argv(const options& opts, const std::string& baldr_path) -> std::vector<std::string> {
+    std::vector<std::string> argv{
+        baldr_path,
+        opts.command == command_type::build ? "build" : "run",
+        "-p", "/workspace"
+    };
+
+    if (opts.build_type_explicit) {
+        argv.emplace_back("-b");
+        argv.push_back(opts.build_type);
+    }
+    if (opts.build_dir) {
+        argv.emplace_back("--build-dir");
+        argv.push_back(*opts.build_dir);
+    }
+    if (opts.clean_build) {
+        argv.emplace_back("--clean");
+    }
+    for (const auto& [key, value] : opts.cmake_defines) {
+        argv.emplace_back("-D");
+        argv.push_back(fmt::format("{}={}", key, value));
+    }
+
+    if (opts.target) {
+        argv.emplace_back("-t");
+        argv.push_back(*opts.target);
+    } else if (opts.exec) {
+        argv.emplace_back("-x");
+        argv.push_back(*opts.exec);
+    }
+
+    if (opts.command == command_type::run) {
+        if (opts.build_before_run) {
+            argv.emplace_back("--build");
+        }
+        if (opts.debug) {
+            argv.emplace_back("--debug");
+        }
+    }
+
+    if (not opts.forwarded_args.empty()) {
+        argv.emplace_back("--");
+        argv.insert(argv.end(), opts.forwarded_args.begin(), opts.forwarded_args.end());
+    }
+
+    return argv;
+}
+
+/**
+ * @brief   Run Baldr in a container.
+ *
+ * The resolved project directory is mounted to `/workspace`, baldr's own binary
+ * is mounted in unless disabled via `cfg.docker_mount_baldr`, and the container
+ * process runs as the host's uid:gid.
+ */
+[[nodiscard]] auto run_in_container(const options& opts, const baldr::config& cfg) -> int {
+    std::vector<baldr::bind_mount> mounts;
+
+    mounts.push_back({
+        .host = std::filesystem::absolute(opts.project_dir).string(),
+        .container = "/workspace",
+        .read_only = false,
+    });
+
+    auto baldr_path = std::string{ "baldr" };
+    if (cfg.docker_mount_baldr) {
+        const auto host_path = cfg.docker_baldr_path.has_value()
+            ? std::filesystem::path{ *cfg.docker_baldr_path }
+            : self_exe_path();
+
+        baldr_path = "/usr/local/bin/baldr";
+        mounts.push_back({
+            .host = host_path.string(),
+            .container = baldr_path,
+            .read_only = true
+        });
+    }
+
+    const auto user = fmt::format("{}:{}", getuid(), getgid());
+    const auto argv = build_container_argv(opts, baldr_path);
+
+    return baldr::docker_run(
+        *opts.image,
+        argv,
+        baldr::container_config {
+            mounts,
+            user
+        }
+    );
+}
+
 } // namespace
 
 /**
@@ -329,10 +451,15 @@ auto entrypoint(auto args) -> int {
                     merged_cfg.cmake_defines[key] = value;
                 }
 
+                if (options->image) {
+                    result = run_in_container(*options, merged_cfg);
+                    break;
+                }
+
                 auto builder = baldr::builder{ options->project_dir, merged_cfg, options->build_dir };
 
                 if (options->command == command_type::build) {
-                    builder.build(*options->target, options->clean_build);
+                    builder.build(options->target.value_or(""), options->clean_build);
                 } else if (options->exec) {
                     builder.run_exec(*options->exec, options->forwarded_args, options->debug);
                 } else {
@@ -344,7 +471,7 @@ auto entrypoint(auto args) -> int {
                 break;
             }
             case command_type::docker: {
-                result = baldr::docker_run(*options->image, options->docker_args);
+                result = baldr::docker_run(*options->image, options->docker_args, {});
                 break;
             }
         }

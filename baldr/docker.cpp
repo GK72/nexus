@@ -93,14 +93,33 @@ void docker_client::pull_image(std::string_view image) {
     nova::log::info("Pull response: {}", response.dump());
 }
 
-std::string docker_client::create_container(std::string_view image, const std::vector<std::string>& cmd) {
-    const nlohmann::json body = {
+std::string docker_client::create_container(
+    std::string_view image,
+    const std::vector<std::string>& cmd,
+    const container_config& cfg
+) {
+    std::vector<std::string> binds;
+    binds.reserve(cfg.mounts.size());
+    for (const auto& mount : cfg.mounts) {
+        binds.push_back(fmt::format("{}:{}{}", mount.host, mount.container, mount.read_only ? ":ro" : ""));
+    }
+
+    nlohmann::json host_config = { { "AutoRemove", true } };
+    if (not binds.empty()) {
+        host_config["Binds"] = binds;
+    }
+
+    nlohmann::json body = {
         { "Image", image },
         { "Cmd", cmd },
         { "AttachStdout", true },
         { "AttachStderr", true },
-        { "HostConfig", { { "AutoRemove", true } } },
+        { "HostConfig", host_config },
     };
+
+    if (cfg.user.has_value()) {
+        body["User"] = *cfg.user;
+    }
 
     const auto response = request_json("POST", api_prefix() + "/containers/create", body);
     if (not response.contains("Id")) {
@@ -176,15 +195,22 @@ void docker_client::stream_logs(const std::string& id) {
     }
 }
 
-int docker_run(std::string_view image, const std::vector<std::string>& cmd) {
+int docker_run(
+    std::string_view image,
+    const std::vector<std::string>& cmd,
+    const container_config& cfg
+) {
     docker_client client;
 
     if (not client.ping()) {
         throw nova::exception("Docker daemon is not reachable.");
     }
 
-    client.pull_image(image);
-    const auto id = client.create_container(image, cmd);
+    if (cfg.force_pull) {
+        client.pull_image(image);
+    }
+
+    const auto id = client.create_container(image, cmd, cfg);
     client.start_container(id);
     client.stream_logs(id);
 

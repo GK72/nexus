@@ -1,5 +1,29 @@
 = Baldr User Guide
 
+== Running `build`/`run` inside a container
+
+`-i/--image <image>` on `build` or `run` re-executes the equivalent Baldr
+invocation inside a fresh container of `<image>` instead of running it on
+the host:
+
+* The resolved project directory is mounted to `/workspace` inside the
+  container, and the container-side invocation uses `--project /workspace`.
+* Baldr's own binary is mounted in (read-only, to `/usr/local/bin/baldr`) and
+  used as the container-side `baldr`, so the image doesn't need to bundle its
+  own copy. Set `docker.mount-baldr: false` in `.baldr.yaml` if the image
+  already provides one; `docker.baldr-path` overrides the host path that gets
+  mounted (default: the running `baldr` binary itself, via `/proc/self/exe`).
+* The container process runs as the host's `uid:gid`, so files written into
+  the mounted project directory (build output, generated files) end up
+  owned by the same user as on the host.
+
+The target image must already have the project's toolchain (compilers,
+CMake, etc.) installed — `--image` does not provision one.
+
+This is separate from the raw `baldr docker -i <image> <cmd...>` subcommand,
+which just runs an arbitrary command inside a container without any of the
+above (no bind mounts, no uid mapping).
+
 == Signal handling
 
 Baldr has a special signal handling for interrupts (`SIGINT`).

@@ -15,11 +15,28 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace baldr {
+
+/**
+ * @brief   A single host-directory-into-container bind mount.
+ */
+struct bind_mount {
+    std::string host;
+    std::string container;
+    bool read_only = false;
+};
+
+struct container_config {
+    std::vector<bind_mount> mounts;
+    std::optional<std::string> user;
+    bool auto_remove = true;
+    bool force_pull = false;
+};
 
 /**
  * @brief   Minimal HTTP/1.1 client speaking to the Docker Engine API over
@@ -47,11 +64,20 @@ public:
     /**
      * @brief   Create a container running `cmd` inside `image`.
      *
+     * @param   mounts  Host directories to bind-mount into the container.
+     * @param   user    If set, run the container's process as this
+     *                  `uid[:gid]` (Docker Engine API `HostConfig.User`)
+     *                  instead of the image's default user.
+     *
      * @return  The created container's ID.
      *
      * @throws  nova::exception if the daemon didn't return a container ID.
      */
-    [[nodiscard]] std::string create_container(std::string_view image, const std::vector<std::string>& cmd);
+    [[nodiscard]] std::string create_container(
+        std::string_view image,
+        const std::vector<std::string>& cmd,
+        const container_config& cfg
+    );
 
     /**
      * @brief   Start the container identified by `id`.
@@ -98,9 +124,17 @@ private:
  *          stream its output via `nova::log::info`, and return its exit
  *          code.
  *
+ * @param   mounts  Host directories to bind-mount into the container.
+ * @param   user    If set, run the container's process as this
+ *                  `uid[:gid]` instead of the image's default user.
+ *
  * @throws  nova::exception if the daemon is unreachable or container
  *          creation fails.
  */
-[[nodiscard]] int docker_run(std::string_view image, const std::vector<std::string>& cmd);
+[[nodiscard]] int docker_run(
+    std::string_view image,
+    const std::vector<std::string>& cmd,
+    const container_config& cfg
+);
 
 } // namespace baldr

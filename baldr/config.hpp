@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,9 @@ struct config {
     std::string build_type = "Debug";
     std::map<std::string, std::string> cmake_defines;
     std::map<std::string, std::string> env;
+
+    bool docker_mount_baldr = true;
+    std::optional<std::string> docker_baldr_path;
 };
 
 /**

@@ -47,6 +47,8 @@ TEST(config, MissingFileReturnsDefaults) {
     EXPECT_EQ(res.build_type, "Debug");
     EXPECT_TRUE(res.cmake_defines.empty());
     EXPECT_TRUE(res.env.empty());
+    EXPECT_TRUE(res.docker_mount_baldr);
+    EXPECT_FALSE(res.docker_baldr_path.has_value());
 }
 
 TEST(config, ProjectLocalFileIsLoaded) {
