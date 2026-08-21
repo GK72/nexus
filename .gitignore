@@ -15,6 +15,8 @@ env/btop/
 env/git/
 env/mimeapps.list
 env/pulse/
+env/dolphinrc/
+env/session/
 
 # Caches
 __pycache__/
