@@ -1,5 +1,6 @@
 #include <baldr/docker.hpp>
 
+#include <iostream>
 #include <libnxs/rlog.hpp>
 #include <libnova/error.hpp>
 #include <libnova/log.hpp>
@@ -141,7 +142,7 @@ int docker_client::wait_container(const std::string& id) {
     return response["StatusCode"].get<int>();
 }
 
-void docker_client::stream_logs(const std::string& id) {
+void docker_client::stream_logs(const std::string& id, bool log_raw) {
     const auto path = fmt::format("{}/containers/{}/logs?stdout=1&stderr=1&follow=1", api_prefix(), id);
 
     http::request<http::empty_body> req{ http::verb::get, path, 11 };
@@ -187,7 +188,12 @@ void docker_client::stream_logs(const std::string& id) {
             if (content.ends_with('\n')) {
                 content.remove_suffix(1);
             }
-            nova::log::info("{}", content);
+
+            if (log_raw) {
+                std::cerr << ' ' << content << '\n';
+            } else {
+                nova::log::info("{}", content);
+            }
 
             offset += 8 + size;
         }
@@ -212,7 +218,12 @@ int docker_run(
 
     const auto id = client.create_container(image, cmd, cfg);
     client.start_container(id);
-    client.stream_logs(id);
+
+    if (cmd[0].contains("baldr")) {
+        client.stream_logs(id, true);
+    } else {
+        client.stream_logs(id, false);
+    }
 
     const int status = client.wait_container(id);
     if (status == 0) {

@@ -1,6 +1,7 @@
 #include <libnxs/rlog.hpp>
 
 #include <libnova/log.hpp>
+#include <libnova/utils.hpp>
 
 #include <spdlog/sinks/ansicolor_sink.h>
 #include <spdlog/spdlog.h>
@@ -27,15 +28,14 @@ namespace {
  * - scrollog (alias: rlog)
  */
 auto resolve_mode() -> mode {
-    if (const char* env = std::getenv(LogModeEnvVariableName); env != nullptr) {
-        std::string value = env;
-        if (value == "standard") {
+    if (auto mode = nova::getenv(EnvLogMode); mode.has_value()) {
+        if (*mode == "standard") {
             return mode::standard;
         }
-        if (value == "scrollog" or value == "rlog") {
+        if (*mode == "scrollog" or *mode == "rlog") {
             return mode::progress;
         }
-        nova::log::warn("Invalid {} value '{}', falling back to 'standard'", LogModeEnvVariableName, value);
+        nova::log::warn("Invalid {} value '{}', falling back to 'standard'", EnvLogMode, *mode);
         return mode::standard;
     }
 
@@ -51,20 +51,20 @@ auto resolve_mode() -> mode {
  *          environment variable, if set to a valid positive integer.
  */
 auto resolve_window_size() -> std::optional<std::size_t> {
-    const char* env = std::getenv(WindowSizeEnvVariableName);
-    if (env == nullptr) {
+    auto window_size = nova::getenv(EnvWindowSize);
+    if (not window_size.has_value()) {
         return std::nullopt;
     }
 
     try {
-        const int value = std::stoi(env);
+        const int value = std::stoi(*window_size);
         if (value <= 0) {
-            nova::log::warn("Invalid {} value '{}', ignoring", WindowSizeEnvVariableName, env);
+            nova::log::warn("Invalid {} value '{}', ignoring", EnvWindowSize, *window_size);
             return std::nullopt;
         }
         return static_cast<std::size_t>(value);
     } catch (const std::exception&) {
-        nova::log::warn("Invalid {} value '{}', ignoring", WindowSizeEnvVariableName, env);
+        nova::log::warn("Invalid {} value '{}', ignoring", EnvWindowSize, *window_size);
         return std::nullopt;
     }
 }

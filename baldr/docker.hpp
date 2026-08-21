@@ -92,10 +92,11 @@ public:
     [[nodiscard]] int wait_container(const std::string& id);
 
     /**
-     * @brief   Stream the container's combined stdout/stderr, forwarding
-     *          each line to `nova::log::info`.
+     * @brief   Stream the container's combined stdout/stderr.
+     *
+     * Forwards each line to `nova::log::info` if not `log_raw`.
      */
-    void stream_logs(const std::string& id);
+    void stream_logs(const std::string& id, bool log_raw);
 
 private:
     /**

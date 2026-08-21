@@ -31,8 +31,8 @@
 
 namespace nxs::rlog {
 
-static constexpr auto LogModeEnvVariableName = "SPDLOG_MODE";
-static constexpr auto WindowSizeEnvVariableName = "RLOG_WINDOW_SIZE";
+static constexpr auto EnvLogMode = "SPDLOG_MODE";
+static constexpr auto EnvWindowSize = "RLOG_WINDOW_SIZE";
 
 enum class mode {
     standard, ///< Plain, appendable log lines.
