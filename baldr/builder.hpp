@@ -119,11 +119,14 @@ private:
     std::vector<std::string> m_debugger_args;
     project_type m_project_type { project_type::make };
 
+    void discover_project_type();
+
     [[nodiscard]] auto resolve_conan_provider() const -> std::optional<std::string>;
     [[nodiscard]] auto effective_build_dir_rel() const -> std::string;
-    [[nodiscard]] auto discover_project_type(const std::string& target = "", bool clean_build = false) -> std::vector<std::string>;
+    [[nodiscard]] auto handle_project(const std::string& target = "", bool clean_build = false) -> std::vector<std::string>;
     [[nodiscard]] auto resolve_executable(const std::string& target) const -> std::string;
     [[nodiscard]] auto handle_makefile_project(bool clean_build) const -> std::vector<std::string>;
+    [[nodiscard]] auto handle_cmake_project(const std::string& target, bool clean_build) const -> std::vector<std::string>;
 
     void configure_cmake(
         const std::filesystem::path& build_dir,

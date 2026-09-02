@@ -271,6 +271,34 @@ builder::handle_makefile_project(bool clean_build) const -> std::vector<std::str
     return { "make" };
 }
 
+[[nodiscard]] auto
+builder::handle_cmake_project(const std::string& target, bool clean_build) const -> std::vector<std::string> {
+    nova::log::debug("Discovered CMake project in `{}`", m_project_dir);
+
+    auto build_dir_rel = effective_build_dir_rel();
+    auto build_dir = fs::path(m_project_dir) / build_dir_rel;
+
+    if (clean_build && fs::exists(build_dir)) {
+        nova::log::debug("Deleting build directory `{}`...", build_dir.string());
+        fs::remove_all(build_dir);
+    }
+
+    auto conan_provider = resolve_conan_provider();
+    auto resolved_defines = serialize_defines(m_cmake_defines, m_cmake_env, conan_provider);
+
+    if (needs_cmake_configure(build_dir, resolved_defines)) {
+        configure_cmake(build_dir, build_dir_rel, resolved_defines, conan_provider);
+    }
+
+    link_compile_commands(m_project_dir, m_build_type, build_dir);
+
+    if (target.empty()) {
+        return { "cmake", "--build", build_dir_rel };
+    }
+
+    return { "cmake", "--build", build_dir_rel, "--target", target };
+}
+
 /**
  * @brief   Run `cmake`'s configure step for `build_dir_rel`, then
  *          record `resolved_defines` in the marker file.
@@ -370,44 +398,28 @@ builder::effective_build_dir_rel() const -> std::string {
     return m_build_dir_override.value_or(cmake_build_dir(m_build_type));
 }
 
-[[nodiscard]] auto
-builder::discover_project_type(const std::string& target, bool clean_build) -> std::vector<std::string> {
-    if (not fs::exists(fs::path(m_project_dir) / "CMakeLists.txt")) {
+void builder::discover_project_type() {
+    if (fs::exists(fs::path(m_project_dir) / "CMakeLists.txt")) {
+        m_project_type = project_type::cmake;
+    } else {
         m_project_type = project_type::make;
-        return handle_makefile_project(clean_build);
     }
+}
 
-    nova::log::debug("Discovered CMake project in `{}`", m_project_dir);
-    m_project_type = project_type::cmake;
-
-    auto build_dir_rel = effective_build_dir_rel();
-    auto build_dir = fs::path(m_project_dir) / build_dir_rel;
-
-    if (clean_build && fs::exists(build_dir)) {
-        nova::log::debug("Deleting build directory `{}`...", build_dir.string());
-        fs::remove_all(build_dir);
+[[nodiscard]] auto
+builder::handle_project(const std::string& target, bool clean_build) -> std::vector<std::string> {
+    switch (m_project_type) {
+        case project_type::make:        return handle_makefile_project(clean_build);
+        case project_type::cmake:       return handle_cmake_project(target, clean_build);
     }
-
-    auto conan_provider = resolve_conan_provider();
-    auto resolved_defines = serialize_defines(m_cmake_defines, m_cmake_env, conan_provider);
-
-    if (needs_cmake_configure(build_dir, resolved_defines)) {
-        configure_cmake(build_dir, build_dir_rel, resolved_defines, conan_provider);
-    }
-
-    link_compile_commands(m_project_dir, m_build_type, build_dir);
-
-    if (target.empty()) {
-        return { "cmake", "--build", build_dir_rel };
-    }
-
-    return { "cmake", "--build", build_dir_rel, "--target", target };
+    std::unreachable();
 }
 
 void builder::build(const std::string& target, bool clean_build) {
     nova::log::debug("Building in `{}`...", m_project_dir);
+    discover_project_type();
 
-    auto status = run_streamed(discover_project_type(target, clean_build), m_project_dir, m_cmake_env);
+    auto status = run_streamed(handle_project(target, clean_build), m_project_dir, m_cmake_env);
     if (status.success()) {
         nxs::rlog::success("Build successful.");
     } else if (status.interrupted()) {
@@ -478,6 +490,7 @@ builder::resolve_executable(const std::string& target) const -> std::string {
 }
 
 void builder::run(const std::string& target, const std::vector<std::string>& forwarded_args, bool debug) {
+    discover_project_type();
     auto exe_path = resolve_executable(target);
 
     if (debug) {
