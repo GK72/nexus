@@ -248,12 +248,12 @@ scheduling gap.
   from `signal_handler::handle()` or `dispatch()`. This is the one place in
   the class where the normal C++ rulebook doesn't apply.
 * `watch()`/`unwatch()` are static and signal-number-keyed rather than tied
-  to a `signal_guard` instance on purpose — call sites like
-  `builder.cpp`'s `run_streamed()` don't need a guard threaded through
-  their signature at all, and if no `signal_guard` ever installed
-  `signal_handler::handle()` for that signal (e.g. in a unit test), the
-  calls are simply inert rather than throwing. Don't reintroduce a
-  reference-threaded API for convenience; it was tried and undone.
+  to a `signal_guard` instance on purpose — call sites like `run_streamed()`
+  don't need a guard threaded through their signature at all, and if no
+  `signal_guard` ever installed `signal_handler::handle()` for that signal
+  (e.g. in a unit test), the calls are simply inert rather than throwing. Don't
+  reintroduce a reference-threaded API for convenience; it was tried and
+  undone.
 * Prefer `scoped_watch` over raw `watch()`/`unwatch()` calls. An exception
   escaping between the two (e.g. from output processing) must not leave a
   stale PID registered — once a child is reaped, its PID can be recycled by

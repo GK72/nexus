@@ -8,6 +8,7 @@
  * @date        2026-07-12
  */
 
+#include <baldr/batch.hpp>
 #include <baldr/builder.hpp>
 #include <baldr/config.hpp>
 #include <baldr/docker.hpp>
@@ -95,6 +96,9 @@ namespace {
         ("build", po::bool_switch()->default_value(false), "For 'run': build the project first (not with -x/--exec)")
         ("debug", po::bool_switch()->default_value(false), "For 'run': launch the target under the configured debugger (default: 'gdb --args')")
         ("image,i", po::value<std::string>(), "Docker image to use (required for 'docker'; for 'build'/'run', re-executes inside a container of this image)")
+        ("stage", po::value<std::string>(), "For 'batch': run a single named stage (mutually exclusive with --scenario)")
+        ("scenario", po::value<std::string>(), "For 'batch': run a named scenario, a sequence of stages (mutually exclusive with --stage)")
+        ("param,P", po::value<std::vector<std::string>>()->composing(), "For 'batch' --stage: stage parameter KEY=VALUE, repeatable")
     ;
     return desc;
 }
@@ -127,6 +131,7 @@ void print_help(std::ostream& out, const po::options_description& desc) {
     out << "  build      Configure (if needed) and build the project\n";
     out << "  run        Run a built target (-t/--target) or an arbitrary executable (-x/--exec)\n";
     out << "  docker     Run a command inside a container: baldr docker -i <image> <cmd...>\n";
+    out << "  batch      Run a '.baldr.yaml' batch stage (--stage) or scenario (--scenario)\n";
 }
 
 /**
@@ -141,6 +146,7 @@ enum class command_type {
     build,
     run,
     docker,
+    batch,
 };
 
 /**
@@ -166,6 +172,9 @@ struct options {
     std::optional<std::string> image;
     std::vector<std::string> docker_args;
     std::vector<std::string> forwarded_args;
+    std::optional<std::string> stage;
+    std::optional<std::string> scenario;
+    std::map<std::string, std::string> params;
 };
 
 /**
@@ -197,7 +206,7 @@ struct options {
     // are positional-only, not real `--command`/`--args` flags.
     po::options_description positional_desc("Positional arguments");
     positional_desc.add_options()
-        ("command", po::value<std::string>(), "Command to run: 'build', 'run', 'docker'")
+        ("command", po::value<std::string>(), "Command to run: 'build', 'run', 'docker', 'batch'")
         ("args", po::value<std::vector<std::string>>()->multitoken(), "For 'docker': the container command")
     ;
 
@@ -261,6 +270,24 @@ struct options {
         result.docker_args = vm["args"].as<std::vector<std::string>>();
     }
 
+    if (vm.contains("stage")) {
+        result.stage = vm["stage"].as<std::string>();
+    }
+
+    if (vm.contains("scenario")) {
+        result.scenario = vm["scenario"].as<std::string>();
+    }
+
+    if (vm.contains("param")) {
+        for (const auto& param: vm["param"].as<std::vector<std::string>>()) {
+            auto eq_pos = param.find('=');
+            if (eq_pos == std::string::npos) {
+                throw nova::exception("Invalid -P/--param value '{}' (expected KEY=VALUE)", param);
+            }
+            result.params[param.substr(0, eq_pos)] = param.substr(eq_pos + 1);
+        }
+    }
+
     if (not vm.contains("command")) {
         print_help(std::cerr, desc);
         throw nova::exception("No command given");
@@ -286,6 +313,17 @@ struct options {
         }
         if (result.docker_args.empty()) {
             throw nova::exception("'docker' requires a command to run inside the container");
+        }
+    } else if (cmd == "batch") {
+        result.command = command_type::batch;
+        if (not result.stage and not result.scenario) {
+            throw nova::exception("'batch' requires --stage <name> or --scenario <name>");
+        }
+        if (result.stage and result.scenario) {
+            throw nova::exception("'batch' accepts either --stage or --scenario, not both");
+        }
+        if (result.scenario and not result.params.empty()) {
+            throw nova::exception("-P/--param only applies to 'batch --stage'");
         }
     } else {
         throw nova::exception("Unknown command: {}", cmd);
@@ -472,6 +510,20 @@ auto entrypoint(auto args) -> int {
             }
             case command_type::docker: {
                 result = baldr::docker_run(*options->image, options->docker_args, {});
+                break;
+            }
+            case command_type::batch: {
+                auto cfg = baldr::load(options->project_dir);
+                if (not cfg) {
+                    throw nova::exception("Failed to load .baldr.yaml: {}", cfg.error().message);
+                }
+
+                auto runner = baldr::batch_runner{ options->project_dir, cfg->batch };
+                if (options->stage) {
+                    runner.run_stage(*options->stage, options->params);
+                } else {
+                    runner.run_scenario(*options->scenario);
+                }
                 break;
             }
         }

@@ -4,6 +4,8 @@ add_library(builder
     builder.cpp
     docker.cpp
     config.cpp
+    exec.cpp
+    batch.cpp
 )
 
 target_link_libraries(builder PUBLIC nxs Boost::headers)

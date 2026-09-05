@@ -13,6 +13,7 @@
  * SPDLOG_MODE environment variable can be used to configure the behaviour:
  * - standard
  * - scrollog (alias: rlog)
+ * - plain
  */
 
 #pragma once
@@ -35,8 +36,9 @@ static constexpr auto EnvLogMode = "SPDLOG_MODE";
 static constexpr auto EnvWindowSize = "RLOG_WINDOW_SIZE";
 
 enum class mode {
-    standard, ///< Plain, appendable log lines.
-    progress  ///< In-place, overwritable log lines presented in a rolling window.
+    standard, ///< Timestamped, appendable log lines.
+    progress, ///< In-place, overwritable log lines presented in a rolling window.
+    plain     ///< Appendable log lines with no timestamp/name/level prefix, just the message.
 };
 
 /**
@@ -148,6 +150,17 @@ private:
  * window can be configured via the `RLOG_WINDOW_SIZE` environment variable
  * (a positive integer); invalid or missing values fall back to the
  * `window` default.
+ *
+ * `mode::plain` exists for processes whose own stdout/stderr is being
+ * captured and re-logged by a *parent* process that already attaches its
+ * own timestamp/name/level prefix (e.g. a nested `baldr` invocation whose
+ * output `baldr batch`/`build`/`run` streams line-by-line through their own
+ * logger) — without it, the child's self-attached prefix and the parent's
+ * re-logging prefix would both show up, once per line. It is never
+ * auto-resolved by `isatty()`; a caller that wants it must either pass
+ * `mode::plain` explicitly or set `SPDLOG_MODE=plain` in the child's
+ * environment (which is exactly what `baldr::run_streamed()`, in
+ * `baldr/exec.cpp`, does for every process it spawns).
  *
  * @param   m       The logging mode to initialize with, or `std::nullopt` to
  *                  auto-resolve it.

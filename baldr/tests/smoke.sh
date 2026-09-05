@@ -14,3 +14,6 @@ $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -- --f
 $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -b Release -D BALDR_TEST_DEFINE=1
 $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -b Release -D BALDR_TEST_DEFINE=2
 $BALDR -p "${PROJECT_DIR}/baldr/tests/cmake-project" run -t hello --build -b Release -DBALDR_TEST_DEFINE=3
+
+$BALDR -p "${PROJECT_DIR}/baldr/tests/batch-project" batch --scenario dev
+$BALDR -p "${PROJECT_DIR}/baldr/tests/batch-project" batch --stage install --param build_type=Release

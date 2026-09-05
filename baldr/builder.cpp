@@ -1,5 +1,6 @@
 #include <baldr/builder.hpp>
 #include <baldr/command.hpp>
+#include <baldr/exec.hpp>
 #include <baldr/signal.hpp>
 
 #include <libnxs/line_reader.hpp>
@@ -60,37 +61,6 @@ constexpr std::array<std::string_view, 4> KnownBuildTypes = {
     auto lower = build_type;
     std::ranges::transform(lower, lower.begin(), [](unsigned char c) { return std::tolower(c); });
     return lower;
-}
-
-/**
- * @brief   Run `cmd` inside `working_directory`, streaming its combined
- *          stdout/stderr output via `nova::log::info`.
- *
- * Registers the spawned child with `signal_handler::watch()` for `SIGINT`
- * for the duration of the run (see `baldr/signal.hpp`), so repeated Ctrl-C
- * still takes it down even if it's ignoring/outliving the signal itself.
- *
- * @return  The command's detailed outcome (see `baldr::command::exit_status`),
- *          so callers can tell a `SIGINT` interruption apart from an actual
- *          failure.
- */
-[[nodiscard]] auto run_streamed(
-        const std::vector<std::string>& args,
-        const std::string& working_directory,
-        const std::map<std::string, std::string>& env = {}
-) -> baldr::command::exit_status {
-    auto cmd = baldr::command{ args, env, working_directory };
-    cmd.run();
-    auto watch = baldr::signal_handler::scoped_watch{ SIGINT, cmd.pid() };
-
-    nxs::line_reader lines([](std::string& line) { nova::log::info("{}", line); });
-    std::string chunk;
-    while (chunk = cmd.poll(), not chunk.empty()) {
-        lines.feed(chunk);
-    }
-    lines.feed_eof();
-
-    return cmd.wait();
 }
 
 /**

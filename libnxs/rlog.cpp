@@ -26,6 +26,7 @@ namespace {
  * SPDLOG_MODE:
  * - standard
  * - scrollog (alias: rlog)
+ * - plain
  */
 auto resolve_mode() -> mode {
     if (auto mode = nova::getenv(EnvLogMode); mode.has_value()) {
@@ -34,6 +35,9 @@ auto resolve_mode() -> mode {
         }
         if (*mode == "scrollog" or *mode == "rlog") {
             return mode::progress;
+        }
+        if (*mode == "plain") {
+            return mode::plain;
         }
         nova::log::warn("Invalid {} value '{}', falling back to 'standard'", EnvLogMode, *mode);
         return mode::standard;
@@ -166,7 +170,11 @@ void init(const std::string& name, std::optional<mode> m) {
         spdlog::set_default_logger(spdlog::create<spdlog::sinks::ansicolor_stderr_sink_mt>(name));
     }
 
-    spdlog::default_logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%f %z] [%n @%t] %^[%l]%$ %v");
+    spdlog::default_logger()->set_pattern(
+        resolved == mode::plain
+            ? "%v"
+            : "[%Y-%m-%d %H:%M:%S.%f %z] [%n @%t] %^[%l]%$ %v"
+    );
 }
 
 void success(const std::string& msg, const std::string& logger_name) {

@@ -30,6 +30,53 @@ the host:
 The target image must already have the project's toolchain (compilers,
 CMake, etc.) installed — `--image` does not provision one.
 
+== Batch stages and scenarios
+
+`baldr batch` runs shell commands declared in `.baldr.yaml`'s `batch:`
+section, so common multi-step workflows (clean, build, install, ...) don't
+need to live in ad-hoc shell scripts.
+
+[source,yaml]
+----
+batch:
+  env:
+    ARTIFACT_DIR: .tmp
+    REPORT_DIR: ${ARTIFACT_DIR}/reports
+    INSTALL_DIR: ${ARTIFACT_DIR}/install
+
+  stages:
+    clean:
+      cmd: "./scripts/clean.sh"
+    install:
+      parameters:                     # Exposed to `cmd` as env vars.
+        - build_type
+      cmd: "baldr build -t baldr $build_type -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR"
+
+  scenarios:
+    dev:
+      - clean
+      - install @build-type=Debug     # `-` is normalized to `_`
+----
+
+Each stage's `cmd` runs via `/bin/sh -c`, with `batch.env` plus the stage's
+parameter values exposed as environment variables.
+
+Run a single stage directly, supplying any declared parameters with
+repeatable `-P/--param KEY=VALUE`:
+
+[source,shell]
+----
+baldr batch --stage install --param build_type=Release
+----
+
+Or run a whole scenario — its steps run in order, stopping at the first
+failing stage:
+
+[source,shell]
+----
+baldr batch --scenario dev
+----
+
 == Signal handling
 
 Baldr has a special signal handling for interrupts (`SIGINT`).

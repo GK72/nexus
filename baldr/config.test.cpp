@@ -2,7 +2,10 @@
 
 #include <baldr/config.hpp>
 
+#include <libnova/error.hpp>
+
 #include <string_view>
+#include <tuple>
 
 using namespace std::string_view_literals;
 
@@ -82,6 +85,74 @@ TEST(config, ConfigMerging) {
     EXPECT_EQ(res->env.at("GLOBAL_ENV"), "global");
     EXPECT_EQ(res->env.at("CUSTOM_ENV"), "something else");
     EXPECT_EQ(res->env.at("LOCAL_ENV"), "local");
+}
+
+constexpr auto batch_config = R"yaml(
+batch:
+  env:
+    ARTIFACT_DIR: .tmp
+    REPORT_DIR: ${ARTIFACT_DIR}/reports
+
+  stages:
+    clean:
+      cmd: "./scripts/clean.sh"
+    install:
+      parameters:
+        - build_type
+      cmd: "baldr build -t baldr $build_type -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR"
+
+  scenarios:
+    dev:
+      - clean
+      - install @build-type=Debug
+)yaml"sv;
+
+TEST(config, BatchEnvInterpolation) {
+    const auto res = baldr::load(batch_config, baldr::config{});
+    ASSERT_TRUE(res.has_value());
+    EXPECT_EQ(res->batch.env.at("ARTIFACT_DIR"), ".tmp");
+    EXPECT_EQ(res->batch.env.at("REPORT_DIR"), ".tmp/reports");
+}
+
+TEST(config, BatchStagesParsed) {
+    const auto res = baldr::load(batch_config, baldr::config{});
+    ASSERT_TRUE(res.has_value());
+    ASSERT_TRUE(res->batch.stages.contains("clean"));
+    EXPECT_EQ(res->batch.stages.at("clean").cmd, "./scripts/clean.sh");
+    EXPECT_TRUE(res->batch.stages.at("clean").parameters.empty());
+
+    ASSERT_TRUE(res->batch.stages.contains("install"));
+    EXPECT_EQ(res->batch.stages.at("install").parameters, (std::vector<std::string>{ "build_type" }));
+}
+
+TEST(config, BatchScenariosParsed) {
+    const auto res = baldr::load(batch_config, baldr::config{});
+    ASSERT_TRUE(res.has_value());
+    ASSERT_TRUE(res->batch.scenarios.contains("dev"));
+
+    const auto& steps = res->batch.scenarios.at("dev");
+    ASSERT_EQ(steps.size(), 2);
+    EXPECT_EQ(steps[0].stage, "clean");
+    EXPECT_TRUE(steps[0].overrides.empty());
+    EXPECT_EQ(steps[1].stage, "install");
+    EXPECT_EQ(steps[1].overrides.at("build_type"), "Debug");
+}
+
+TEST(config, ParseStepNormalizesHyphenToUnderscore) {
+    const auto step = baldr::parse_step("install @build-type=Release");
+    EXPECT_EQ(step.stage, "install");
+    EXPECT_EQ(step.overrides.at("build_type"), "Release");
+}
+
+TEST(config, ParseStepNoOverrides) {
+    const auto step = baldr::parse_step("clean");
+    EXPECT_EQ(step.stage, "clean");
+    EXPECT_TRUE(step.overrides.empty());
+}
+
+TEST(config, ParseStepInvalidTokenThrows) {
+    EXPECT_THROW(std::ignore = baldr::parse_step("install build-type=Release"), nova::exception);
+    EXPECT_THROW(std::ignore = baldr::parse_step("install @build-type"), nova::exception);
 }
 
 } // namespace

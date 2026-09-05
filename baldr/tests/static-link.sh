@@ -26,7 +26,7 @@ trap 'rm -rf "${CONTEXT_DIR}"' EXIT
 cp "${SCRIPT_DIR}/alpine.Dockerfile" "${CONTEXT_DIR}/"
 cp "${STATIC_BIN}" "${CONTEXT_DIR}/baldr"
 
-docker build -f "${CONTEXT_DIR}/alpine.Dockerfile" -t baldr-static-test "${CONTEXT_DIR}"
+docker build -f "${CONTEXT_DIR}/alpine.Dockerfile" -t baldr-static-test "${CONTEXT_DIR}" --progress=plain
 docker run --rm baldr-static-test --version
 
 echo "OK: static build runs with zero runtime libraries present."
