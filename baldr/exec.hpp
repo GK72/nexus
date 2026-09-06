@@ -11,9 +11,8 @@
 
 #pragma once
 
-#include <baldr/command.hpp>
+#include <libnxs/command.hpp>
 
-#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -42,6 +41,6 @@ namespace baldr {
     const std::vector<std::string>& args,
     const std::string& working_directory,
     const std::map<std::string, std::string>& env = {}
-) -> command::exit_status;
+) -> nxs::command::exit_status;
 
 } // namespace baldr

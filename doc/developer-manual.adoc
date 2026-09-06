@@ -1,4 +1,4 @@
-= Baldr Developer's Manual
+= Developer's Manual
 
 == Child process output: `command::pty`
 

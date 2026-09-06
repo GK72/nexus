@@ -44,6 +44,3 @@ target_compile_definitions(baldr PRIVATE
 )
 
 install(TARGETS baldr COMPONENT baldr)
-
-add_executable(example-command command.ex.cpp)
-target_link_libraries(example-command PRIVATE builder)

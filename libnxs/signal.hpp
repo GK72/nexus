@@ -1,5 +1,5 @@
 /**
- * Part of Baldr
+ * Part of Nexus
  *
  * RAII signal-handler installer (`signal_guard`) and a reusable
  * count-then-escalate handler policy (`signal_handler`) that can be
@@ -25,7 +25,7 @@
 
 #include <sys/types.h>
 
-namespace baldr {
+namespace nxs {
 
 /**
  * @brief   RAII installer for a signal handler, with no opinion on what the
@@ -40,9 +40,7 @@ namespace baldr {
  *
  * `handler` itself must be async-signal-safe (see `signal-safety(7)`): no
  * allocation, no locks, no exceptions, no non-reentrant libc calls. See
- * `signal_handler` for a ready-made handler that stays inside those bounds,
- * and `doc/baldr/developer-manual.adoc` for the rationale behind the
- * `SA_RESTART`/`SA_RESETHAND` choices.
+ * `signal_handler` for a ready-made handler that stays inside those bounds.
  */
 class signal_guard {
 public:
@@ -109,10 +107,10 @@ private:
 
 /**
  * @brief   A closed set of actions safe to fire from inside a signal
- *          handler — deliberately not an arbitrary callback.
+ *          handler
  *
- * See `doc/baldr/developer-manual.adoc` ("closed, not a callback") for why.
- * Every member here is on the async-signal-safe list.
+ * Deliberately not an arbitrary callback ensuring signal safety.
+ *
  */
 enum class escalation_action : std::uint8_t {
     none,       ///< No escalation configured / disarmed.
@@ -127,9 +125,7 @@ enum class escalation_action : std::uint8_t {
  *
  * All state is static and keyed by signal number, not tied to a
  * `signal_guard` instance — if nothing ever installed `handle` for a given
- * signal, calls like `watch()`/`triggered()` are simply inert. See
- * `doc/baldr/developer-manual.adoc` for why that's the design, and why this
- * is a separate type from `signal_guard` at all.
+ * signal, calls like `watch()`/`triggered()` are simply inert.
  */
 class signal_handler {
 public:
@@ -200,9 +196,7 @@ public:
      *          ignoring/outliving the signal still gets taken down instead
      *          of being abandoned as an orphan.
      *
-     * Prefer `scoped_watch` over calling this directly — see
-     * `doc/baldr/developer-manual.adoc` ("Pitfalls") for why a stale `pid`
-     * left registered is dangerous.
+     * Prefer `scoped_watch` over calling this directly.
      */
     static void watch(int signum, pid_t pid, int force_kill_after = ForceKillAfter) {
         escalate(signum, escalation_action::kill_pid, force_kill_after, pid);
@@ -269,4 +263,4 @@ private:
     }
 };
 
-} // namespace baldr
+} // namespace nxs

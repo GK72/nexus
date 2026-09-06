@@ -12,9 +12,9 @@
 #include <baldr/builder.hpp>
 #include <baldr/config.hpp>
 #include <baldr/docker.hpp>
-#include <baldr/signal.hpp>
 
 #include <libnxs/rlog.hpp>
+#include <libnxs/signal.hpp>
 
 #include <libnova/error.hpp>
 #include <libnova/log.hpp>
@@ -469,7 +469,7 @@ auto entrypoint(auto args) -> int {
     // See doc/baldr/user-guide.adoc for what this covers, and
     // doc/baldr/developer-manual.adoc for why signal_guard/signal_handler
     // are separate types.
-    auto sigint = baldr::signal_guard{ SIGINT, &baldr::signal_handler::handle };
+    auto sigint = nxs::signal_guard{ SIGINT, &nxs::signal_handler::handle };
 
     int result = EXIT_SUCCESS;
     try {
@@ -528,13 +528,13 @@ auto entrypoint(auto args) -> int {
             }
         }
     } catch (const nova::exception& ex) {
-        if (not baldr::signal_handler::triggered(SIGINT)) {
+        if (not nxs::signal_handler::triggered(SIGINT)) {
             nxs::rlog::failure(ex.what());
         }
         result = EXIT_FAILURE;
     }
 
-    if (baldr::signal_handler::triggered(SIGINT)) {
+    if (nxs::signal_handler::triggered(SIGINT)) {
         sigint.reraise_default();
     }
 

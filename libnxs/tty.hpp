@@ -18,14 +18,14 @@
 
 namespace nxs::tty {
 
-#ifdef BALDR_TUI_DEBUG
+#ifdef NXS_TUI_DEBUG
 namespace detail {
     void tui_debug_impl(const std::string& msg);
 } // namespace detail
 
 /**
  * @brief   Append a formatted debug message to the TUI debug log, when
- *          `BALDR_TUI_DEBUG` is enabled.
+ *          `NXS_TUI_DEBUG` is enabled.
  */
 template <typename ...Args>
 inline void tui_debug(fmt::format_string<Args...> fmt, Args &&...args) {
@@ -33,7 +33,7 @@ inline void tui_debug(fmt::format_string<Args...> fmt, Args &&...args) {
 }
 #else
 /**
- * @brief   No-op stand-in for `tui_debug()` when `BALDR_TUI_DEBUG` is
+ * @brief   No-op stand-in for `tui_debug()` when `NXS_TUI_DEBUG` is
  *          disabled.
  */
 template <typename ...Args>

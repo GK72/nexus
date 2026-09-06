@@ -1,7 +1,7 @@
 /**
- * Part of Baldr.
+ * Part of Nexus.
  *
- * Example application demonstrating `baldr::command`
+ * Example application demonstrating `nxs::command`
  *
  * @author      Gábor Krisztián Girhiny
  * @coauthor    Claude Sonnet 5 (Junie)
@@ -11,7 +11,7 @@
  * line-by-line via `nxs::line_reader`.
  */
 
-#include <baldr/command.hpp>
+#include <libnxs/command.hpp>
 #include <libnxs/line_reader.hpp>
 #include <libnova/log.hpp>
 
@@ -27,7 +27,7 @@ int main() {
         "for i in 1 2 3 4 5; do echo \"Step $i/5...\"; sleep 0.3; done"
     };
 
-    auto cmd = baldr::command{ args };
+    auto cmd = nxs::command{ args };
     cmd.run();
 
     auto logger = [](std::string& line) { nova::log::info("{}", line); };

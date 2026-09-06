@@ -1,6 +1,7 @@
 file(GLOB_RECURSE NXS_HEADER_FILES "*.hpp")
 
 add_library(nxs
+    command.cpp
     tty.cpp
     rlog.cpp
 )
@@ -32,3 +33,6 @@ install(TARGETS nxs
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+add_executable(example-command command.ex.cpp)
+target_link_libraries(example-command PRIVATE nxs)

@@ -1,10 +1,11 @@
 #include <baldr/builder.hpp>
-#include <baldr/command.hpp>
 #include <baldr/exec.hpp>
-#include <baldr/signal.hpp>
 
+#include <libnxs/command.hpp>
 #include <libnxs/line_reader.hpp>
 #include <libnxs/rlog.hpp>
+#include <libnxs/signal.hpp>
+
 #include <libnova/error.hpp>
 #include <libnova/log.hpp>
 #include <libnova/utils.hpp>
@@ -471,9 +472,9 @@ void builder::run(const std::string& target, const std::vector<std::string>& for
 
     auto argv = build_argv(exe_path, forwarded_args, debug);
 
-    auto cmd = command{ argv, m_cmake_env, m_project_dir, /*interactive=*/true };
+    auto cmd = nxs::command{ argv, m_cmake_env, m_project_dir, /*interactive=*/true };
     cmd.run();
-    auto watch = signal_handler::scoped_watch{ SIGINT, cmd.pid() };
+    auto watch = nxs::signal_handler::scoped_watch{ SIGINT, cmd.pid() };
 
     if (auto status = cmd.wait(); not status.success()) {
         if (status.interrupted()) {
@@ -510,11 +511,11 @@ void builder::run_exec(const std::string& exec_path, const std::vector<std::stri
 
     const auto start = nova::steady_now();
 
-    command::exit_status status = [&] {
+    nxs::command::exit_status status = [&] {
         if (debug) {
-            auto cmd = command{ argv, env, m_project_dir, /*interactive=*/true };
+            auto cmd = nxs::command{ argv, env, m_project_dir, /*interactive=*/true };
             cmd.run();
-            auto watch = signal_handler::scoped_watch{ SIGINT, cmd.pid() };
+            auto watch = nxs::signal_handler::scoped_watch{ SIGINT, cmd.pid() };
             return cmd.wait();
         }
         return run_streamed(argv, m_project_dir, env);

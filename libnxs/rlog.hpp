@@ -153,14 +153,7 @@ private:
  *
  * `mode::plain` exists for processes whose own stdout/stderr is being
  * captured and re-logged by a *parent* process that already attaches its
- * own timestamp/name/level prefix (e.g. a nested `baldr` invocation whose
- * output `baldr batch`/`build`/`run` streams line-by-line through their own
- * logger) — without it, the child's self-attached prefix and the parent's
- * re-logging prefix would both show up, once per line. It is never
- * auto-resolved by `isatty()`; a caller that wants it must either pass
- * `mode::plain` explicitly or set `SPDLOG_MODE=plain` in the child's
- * environment (which is exactly what `baldr::run_streamed()`, in
- * `baldr/exec.cpp`, does for every process it spawns).
+ * own timestamp/name/level prefix
  *
  * @param   m       The logging mode to initialize with, or `std::nullopt` to
  *                  auto-resolve it.
