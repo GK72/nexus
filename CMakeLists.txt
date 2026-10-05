@@ -30,6 +30,11 @@ add_subdirectory(baldr)
 add_subdirectory(btx)
 add_subdirectory(msg-gen)
 
+option(NEXUS_DGM "Build DGM, the diagram-as-code tool (experimental)" OFF)
+if(NEXUS_DGM)
+    add_subdirectory(dgm)
+endif()
+
 if(BUILD_TESTING)
     # Root tests if any
 endif()

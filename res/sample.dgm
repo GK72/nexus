@@ -1,0 +1,20 @@
+// DGM sample: every way to position a box.
+//
+//   at X,Y               absolute top-left corner
+//   right-of|left-of|above|below <id> [gap N]
+//   (nothing)            follows the previous box in a row
+
+box user   "User"          at 0,0
+box web    "Web App"                              // flows right of 'user'
+box api    "API Gateway"   right-of web gap 80
+box auth   "Auth"          above api gap 50
+box admin  "Admin Console" left-of auth gap 80
+box db     "Database"      below api gap 50       size 140x60
+box cache  "Cache"         right-of db gap 60     size 90x40
+
+arrow user  -> web   "HTTPS"
+arrow web   -> api
+arrow api   -> auth  "verify"
+arrow admin -> auth
+arrow api   -> db    "SQL"
+arrow api   -> cache "read-through"
