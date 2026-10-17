@@ -1,5 +1,4 @@
 return {
-    { 'nvim-treesitter/playground' },
     { 'junegunn/fzf', build = 'fzf#install()' },
 
     { 'simrat39/rust-tools.nvim' },
