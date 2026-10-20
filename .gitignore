@@ -10,14 +10,6 @@ imgui.ini
 target*/
 Cargo.lock
 
-env/BraveSoftware/
-env/btop/
-env/git/
-env/mimeapps.list
-env/pulse/
-env/dolphinrc/
-env/session/
-
 # Caches
 __pycache__/
 .cache/
@@ -38,4 +30,3 @@ lazy-lock.json
 .junie/memory/
 
 .tmp/
-env/go

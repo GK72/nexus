@@ -9,8 +9,9 @@ fi
 
 ln -sf ~/repos/nexus.git/master ~/nxs
 
+mkdir -p ~/.config
 stow home -d ~/nxs/env -t ~/
-stow vim -d ~/nxs/env -t ~/
+stow config -d ~/nxs/env -t ~/.config
 sudo cp \
     ~/nxs/env/tmux/tmux.json \
     /usr/lib/python3.9/site-packages/powerline/config_files/themes/tmux/default.json

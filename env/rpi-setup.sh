@@ -56,7 +56,9 @@ sudo pacman -Sy \
     ${lsps[@]}
 
 ln -sf ~/repos/nexus.git/master ~/nxs
+mkdir -p ~/.config
 stow home -d ~/nxs/env -t ~/
+stow config -d ~/nxs/env -t ~/.config
 
 curl -fLo \
     ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
