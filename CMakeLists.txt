@@ -23,6 +23,7 @@ include(cmake/test.cmake)
 set(NEXUS_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}")
 
 add_subdirectory(libbtx)
+add_subdirectory(libfold)
 add_subdirectory(liblexy)
 add_subdirectory(libnxs)
 
