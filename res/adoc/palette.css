@@ -1,0 +1,112 @@
+/*
+ * Part of Nexus Library
+ *
+ * The colors of the pages, derived in OKLCH from the seeds of the tokens (`tokens.css`): the hue
+ * and chroma of the neutrals, the common lightness of the accents, the angle and chroma of each
+ * hue. Every color below is a formula; change a seed and the palette and both themes follow.
+ *
+ * A hue may leave the common lightness with `--<hue>-l` and `--<hue>-tint-l` (yellow is brighter).
+ * A color outside sRGB is mapped into it by the browser.
+ */
+
+:root {
+  --n-h: var(--neutral-h);
+  --n-c: var(--neutral-c);
+
+  /* The fixed palette: base (fills, strokes, charts) and tint (dark-theme text, code colors) */
+  --pal-grey: oklch(0.45 calc(var(--n-c) * 1.25) var(--n-h));
+  --pal-grey-tint: oklch(0.72 var(--n-c) var(--n-h));
+  --pal-red: oklch(var(--red-l, var(--accent-l)) var(--red-c) var(--red-h));
+  --pal-red-tint: oklch(var(--red-tint-l, var(--tint-l)) calc(var(--red-c) * var(--tint-c)) var(--red-h));
+  --pal-orange: oklch(var(--orange-l, var(--accent-l)) var(--orange-c) var(--orange-h));
+  --pal-orange-tint: oklch(var(--orange-tint-l, var(--tint-l)) calc(var(--orange-c) * var(--tint-c)) var(--orange-h));
+  --pal-yellow: oklch(var(--yellow-l, var(--accent-l)) var(--yellow-c) var(--yellow-h));
+  --pal-yellow-tint: oklch(var(--yellow-tint-l, var(--tint-l)) calc(var(--yellow-c) * var(--tint-c)) var(--yellow-h));
+  --pal-green: oklch(var(--green-l, var(--accent-l)) var(--green-c) var(--green-h));
+  --pal-green-tint: oklch(var(--green-tint-l, var(--tint-l)) calc(var(--green-c) * var(--tint-c)) var(--green-h));
+  --pal-teal: oklch(var(--teal-l, var(--accent-l)) var(--teal-c) var(--teal-h));
+  --pal-teal-tint: oklch(var(--teal-tint-l, var(--tint-l)) calc(var(--teal-c) * var(--tint-c)) var(--teal-h));
+  --pal-blue: oklch(var(--blue-l, var(--accent-l)) var(--blue-c) var(--blue-h));
+  --pal-blue-tint: oklch(var(--blue-tint-l, var(--tint-l)) calc(var(--blue-c) * var(--tint-c)) var(--blue-h));
+  --pal-purple: oklch(var(--purple-l, var(--accent-l)) var(--purple-c) var(--purple-h));
+  --pal-purple-tint: oklch(var(--purple-tint-l, var(--tint-l)) calc(var(--purple-c) * var(--tint-c)) var(--purple-h));
+
+  /* Light theme: neutrals at fixed lightness steps */
+  --bg: oklch(0.975 calc(var(--n-c) * 0.25) var(--n-h));
+  --surface: oklch(1 0 0);
+  --ink: oklch(0.24 calc(var(--n-c) * 1.6) var(--n-h));
+  --muted: oklch(0.5 calc(var(--n-c) * 1.25) var(--n-h));
+  --rule: oklch(0.885 calc(var(--n-c) * 0.8) var(--n-h));
+  --grid: oklch(0.94 calc(var(--n-c) * 0.6) var(--n-h));
+
+  /* Accents as text on the light page: the hue at the text lightness */
+  --red: oklch(var(--text-l) var(--red-c) var(--red-h));
+  --orange: oklch(var(--text-l) var(--orange-c) var(--orange-h));
+  --yellow: oklch(var(--text-l) var(--yellow-c) var(--yellow-h));
+  --green: oklch(var(--text-l) var(--green-c) var(--green-h));
+  --teal: oklch(var(--text-l) var(--teal-c) var(--teal-h));
+  --blue: oklch(var(--text-l) var(--blue-c) var(--blue-h));
+  --purple: oklch(var(--text-l) var(--purple-c) var(--purple-h));
+
+  /* Roles */
+  --link: var(--blue);
+  --accent: var(--pal-teal);
+  --highlight: var(--pal-yellow);
+  --series-1: oklch(calc(var(--accent-l) - 0.08) var(--blue-c) var(--blue-h));
+  --series-2: oklch(calc(var(--accent-l) - 0.08) var(--orange-c) var(--orange-h));
+  --series-3: oklch(calc(var(--accent-l) - 0.08) var(--green-c) var(--green-h));
+
+  /* Code blocks: dark in both themes, the tints as syntax colors */
+  --code-bg: oklch(0.22 calc(var(--n-c) * 1.3) var(--n-h));
+  --code-fg: oklch(0.91 calc(var(--n-c) * 0.8) var(--n-h));
+  --code-comment: var(--pal-grey-tint);
+  --code-keyword: var(--pal-blue-tint);
+  --code-type: var(--pal-red-tint);
+  --code-number: var(--pal-green-tint);
+  --code-string: var(--pal-yellow-tint);
+  --code-preproc: var(--pal-purple-tint);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(0.18 var(--n-c) var(--n-h));
+    --surface: oklch(0.215 calc(var(--n-c) * 1.15) var(--n-h));
+    --ink: oklch(0.935 calc(var(--n-c) * 0.4) var(--n-h));
+    --muted: oklch(0.72 var(--n-c) var(--n-h));
+    --rule: oklch(0.32 calc(var(--n-c) * 1.4) var(--n-h));
+    --grid: oklch(0.255 calc(var(--n-c) * 1.25) var(--n-h));
+    --red: var(--pal-red-tint);
+    --orange: var(--pal-orange-tint);
+    --yellow: var(--pal-yellow-tint);
+    --green: var(--pal-green-tint);
+    --teal: var(--pal-teal-tint);
+    --blue: var(--pal-blue-tint);
+    --purple: var(--pal-purple-tint);
+    --series-1: oklch(calc(var(--accent-l) - 0.04) var(--blue-c) var(--blue-h));
+    --series-2: oklch(calc(var(--accent-l) - 0.04) var(--orange-c) var(--orange-h));
+    --series-3: oklch(calc(var(--accent-l) - 0.04) var(--green-c) var(--green-h));
+    --code-bg: oklch(0.15 var(--n-c) var(--n-h));
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: oklch(0.18 var(--n-c) var(--n-h));
+  --surface: oklch(0.215 calc(var(--n-c) * 1.15) var(--n-h));
+  --ink: oklch(0.935 calc(var(--n-c) * 0.4) var(--n-h));
+  --muted: oklch(0.72 var(--n-c) var(--n-h));
+  --rule: oklch(0.32 calc(var(--n-c) * 1.4) var(--n-h));
+  --grid: oklch(0.255 calc(var(--n-c) * 1.25) var(--n-h));
+  --red: var(--pal-red-tint);
+  --orange: var(--pal-orange-tint);
+  --yellow: var(--pal-yellow-tint);
+  --green: var(--pal-green-tint);
+  --teal: var(--pal-teal-tint);
+  --blue: var(--pal-blue-tint);
+  --purple: var(--pal-purple-tint);
+  --series-1: oklch(calc(var(--accent-l) - 0.04) var(--blue-c) var(--blue-h));
+  --series-2: oklch(calc(var(--accent-l) - 0.04) var(--orange-c) var(--orange-h));
+  --series-3: oklch(calc(var(--accent-l) - 0.04) var(--green-c) var(--green-h));
+  --code-bg: oklch(0.15 var(--n-c) var(--n-h));
+  color-scheme: dark;
+}

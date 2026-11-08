@@ -1,0 +1,109 @@
+/*
+ * Part of Nexus Library
+ *
+ * The Color and Font Studio (`studio.rb`). Colors and spacing from the theme tokens, with
+ * fallbacks for themes that lack the spacing ones.
+ */
+
+.studio {
+  --sx-gap: var(--gap, 0.6rem);
+  --sx-pad: var(--pad, 0.4rem);
+  --sx-r: var(--radius, 4px);
+  --sx-ok: var(--green, #2e9e52);
+  --sx-warn: var(--orange, #ca6800);
+  display: grid; gap: var(--sx-gap); margin-bottom: var(--sx-gap); font-size: 0.9rem;
+}
+.studio * { box-sizing: border-box; }
+.studio code { font-family: var(--font-mono); font-size: 0.85em; }
+
+/* ---------------------------------------------------------------- bar, export */
+
+.sx-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sx-pad);
+  padding: var(--sx-pad); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--sx-r);
+}
+.sx-title { font-family: var(--font-display); font-size: 1rem; margin-right: auto; padding-left: 0.2rem; }
+.studio button, .studio select, .studio input[type=text], .studio input[type=number] {
+  margin: 0; height: auto; font: inherit; font-size: 0.82rem; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--rule); border-radius: var(--sx-r); box-shadow: none;
+}
+.studio button { padding: 0.15rem 0.55rem; cursor: pointer; }
+.studio button:hover { border-color: var(--muted); }
+.studio button.done { color: var(--sx-ok); border-color: var(--sx-ok); }
+.studio :is(button, select, input):focus-visible { outline: 2px solid var(--accent, var(--link)); outline-offset: 1px; }
+.sx-seg { display: inline-flex; }
+.sx-seg button { border-radius: 0; margin-left: -1px; }
+.sx-seg button:first-child { border-radius: var(--sx-r) 0 0 var(--sx-r); margin-left: 0; }
+.sx-seg button:last-child { border-radius: 0 var(--sx-r) var(--sx-r) 0; }
+.sx-seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); position: relative; }
+.sx-export { display: grid; gap: var(--sx-pad); }
+.sx-export[hidden] { display: none; }
+.sx-code {
+  width: 100%; margin: 0; padding: var(--sx-pad); resize: vertical;
+  font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.4;
+  background: var(--code-bg); color: var(--code-fg, var(--ink)); border: 0; border-radius: var(--sx-r);
+}
+
+/* --------------------------------------------------------------------- cards */
+
+.sx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: var(--sx-gap); }
+.sx-wide { grid-column: 1 / -1; }
+.sx-card {
+  min-width: 0; padding: var(--sx-pad) calc(var(--sx-pad) * 2) calc(var(--sx-pad) * 2);
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--sx-r);
+}
+#content .sx-card h4 { margin: 0.1rem 0 0.3rem; font-size: 0.95rem; }
+.sx-hint { margin: 0 0 var(--sx-pad); color: var(--muted); font-size: 0.8rem; line-height: 1.35; }
+.sx-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; margin-bottom: var(--sx-pad); }
+.sx-presets { gap: 0.25rem; }
+.sx-label { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.sx-label small { text-transform: none; letter-spacing: 0; }
+
+.sx-ranges { display: grid; gap: 0.15rem 1rem; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); margin-bottom: var(--sx-pad); }
+.sx-range { display: grid; grid-template-columns: 8.5rem 1fr 3.6rem; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--muted); }
+.sx-range input { width: 100%; margin: 0; accent-color: var(--accent, var(--link)); }
+.sx-range output { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink); text-align: right; }
+
+/* --------------------------------------------------------------------- tables */
+
+#content table.sx-table, table.sx-table {
+  width: 100%; margin: 0; border: 0; border-radius: 0; border-collapse: collapse; background: none; font-size: 0.8rem;
+}
+table.sx-table th, table.sx-table td {
+  padding: 0.15rem 0.35rem; border: 0; border-bottom: 1px solid var(--grid); background: none;
+  white-space: nowrap; text-align: left; font-weight: 500; line-height: 1.3; color: var(--ink);
+}
+table.sx-table thead th { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; color: var(--muted); text-transform: none; letter-spacing: 0; }
+table.sx-table td.pass { color: var(--sx-ok); }
+table.sx-table td.large { color: var(--sx-warn); }
+table.sx-table td.fail { color: var(--muted); }
+.studio .sx-hues input { width: 5.4em; padding: 0.05rem 0.25rem; font-family: var(--font-mono); font-size: 0.75rem; }
+.sx-sw {
+  display: inline-block; width: 2.2rem; height: 1rem; border-radius: var(--sx-r); vertical-align: middle;
+  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.35);
+}
+
+/* Contrast: text colors on their backgrounds; a sample in the colors, the ratio after it */
+.sx-contrast { display: grid; grid-template-columns: 3fr 2fr; gap: var(--sx-gap); align-items: start; }
+@media (max-width: 760px) { .sx-contrast { grid-template-columns: 1fr; } }
+.sx-contrast td + td { font-family: var(--font-mono); }
+.sx-sample { display: inline-block; width: 2.2em; margin-right: 0.35rem; text-align: center; border-radius: var(--sx-r); font-family: var(--font-display); font-weight: 700; }
+
+/* ----------------------------------------------------------------------- fonts */
+
+.sx-fonts { display: grid; gap: var(--sx-pad); }
+.sx-font { display: grid; grid-template-columns: 7rem minmax(0, 14rem); align-items: center; gap: 0.2rem 0.5rem; }
+.studio .sx-font select { padding: 0.1rem 0.3rem; min-width: 0; }
+.sx-fsample { grid-column: 1 / -1; border-bottom: 1px solid var(--grid); padding-bottom: 0.3rem; color: var(--ink); }
+.sx-fsample-display { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; line-height: 1.15; }
+.sx-fsample-body { font-family: var(--font-body); font-size: 1rem; }
+.sx-fsample-mono { font-family: var(--font-mono); font-size: 0.9rem; }
+
+/* Specimen: headings as divs (no anchors, no ToC entries), sized like the page's */
+.sx-spec { --sx-s: var(--scale, 1.2); }
+.sx-spec .sx-h { font-family: var(--font-display); font-weight: 700; line-height: 1.15; color: var(--ink); margin: 0 0 calc(var(--sx-gap) * 0.6); letter-spacing: -0.01em; }
+.sx-spec .sx-h1 { font-size: calc(var(--sx-s) * var(--sx-s) * var(--sx-s) * var(--sx-s) * 1rem); }
+.sx-spec .sx-h2 { font-size: calc(var(--sx-s) * var(--sx-s) * var(--sx-s) * 1rem); }
+.sx-spec .sx-h3 { font-size: calc(var(--sx-s) * var(--sx-s) * 1rem); }
+.sx-spec .sx-h4 { font-size: calc(var(--sx-s) * 1rem); }
+.sx-spec > :last-child { margin-bottom: 0; }

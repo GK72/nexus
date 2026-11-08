@@ -1,0 +1,151 @@
+// Part of Nexus Library
+//
+// The elements of a page, rendered with the style level of the including document
+// (`specimen-plain.adoc`, `specimen-compact.adoc`, `specimen-full.adoc`).
+
+Compare: link:specimen-plain.html[Plain] · link:specimen-compact.html[Compact] ·
+link:specimen-full.html[Full] · back to link:style.html[the style guide].
+
+== Headings
+
+[discrete]
+=== Subsection heading
+
+[discrete]
+==== Minor heading
+
+[discrete]
+===== Smallest heading
+
+== Text
+
+[.lead]
+A lead paragraph opens a chapter in a slightly larger size.
+
+Body text with *bold*, _italic_, `inline code`, a link to
+link:style.html[the style guide], #highlighted text#, a key combination
+kbd:[Ctrl+Shift+P], a menu:File[Save] path and a footnote.footnote:[Footnotes sit at the end.]
+A second paragraph follows close to the first: the pages are made for reading many facts at
+once, so the blocks sit tight and the line height stays near 1.45.
+
+== Lists
+
+* Unordered item
+** Nested item
+* Second item
+
+//-
+
+. Ordered item
+. Second ordered item
+
+//-
+
+* [x] Done
+* [ ] Open
+
+Term:: Description of the term.
+Another term:: Its description.
+
+== Code
+
+.A source block with callouts
+[source,cpp]
+----
+#include <cstdint>
+
+// Clears the target to the page color
+constexpr std::uint32_t page = 0x0e1217ff; // <1>
+auto frame = renderer.begin("main", 1.0f); // <2>
+----
+<1> Numbers, strings, keywords, types and comments take the code colors.
+<2> Callout markers stay legible on the dark block.
+
+....
+literal block: text kept as written
+....
+
+== Tables
+
+[cols="2,1m,3",options="header,footer"]
+.A titled table
+|===
+| Name | Value | Use
+
+| Page | #0e1217 | Background of the dark theme
+| Teal | #00a8a2 | Accent: ToC markers, quotes, focus
+| Footer | | A footer row
+|===
+
+[cols="1,1,1,1",options=header,stripes=even]
+.Striped and dense
+|===
+| Level | Code | Tables | Roles
+
+| plain | surface | rules | –
+| compact | dark | framed | –
+| full | dark | framed | all
+|===
+
+== Admonitions
+
+NOTE: A note adds context.
+
+TIP: A tip suggests a better way.
+
+IMPORTANT: Important text must not be skipped.
+
+WARNING: A warning names a risk.
+
+CAUTION: A caution names a mistake that is easy to make.
+
+== Blocks
+
+.Sidebar
+****
+A sidebar holds an aside next to the main text.
+****
+
+.Example
+====
+An example block frames a worked example.
+====
+
+.Collapsible block
+[%collapsible]
+====
+Hidden until opened.
+====
+
+[quote, Nexus, Style guide]
+____
+A quote block, with its attribution below.
+____
+
+== Custom roles
+
+Accent text works at every level; the legend, the notes and the points need the full level.
+
+Accent text: [.red]#red#, [.orange]#orange#, [.yellow]#yellow#, [.green]#green#, [.teal]#teal#,
+[.blue]#blue#, [.purple]#purple#. Links out end with an icon: https://asciidoctor.org[Asciidoctor].
+
+[.legend]
+[.blue]#Requests# [.orange]#Retries# [.green]#Successes#
+
+[.note]
+A `[.note]` paragraph: small print under a table or figure.
+
+[.unused]
+An `[.unused]` paragraph: a feature without a caller yet.
+
+[.points]
+Tight:: Blocks sit close; the page holds more.
+Even:: One gap everywhere, from one token.
+Quiet:: Hue marks roles, it does not decorate.
+
+== Icons
+
+Admonitions and links out use them at the full level; `+i:name[]+` puts one in the text at every
+level:
+i:note[] note, i:tip[] tip, i:important[] important, i:warning[] warning, i:caution[] caution,
+i:external[] external, i:chevron[] chevron, i:copy[] copy, i:swap[] swap, i:unused[] unused.

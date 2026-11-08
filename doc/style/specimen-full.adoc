@@ -1,0 +1,11 @@
+// Part of Nexus Library
+//
+// The style specimen with the full style level.
+
+= Style Specimen: Full
+:toc: left
+:toclevels: 1
+:experimental:
+:theme-style: full
+
+include::specimen-body.adoc[]

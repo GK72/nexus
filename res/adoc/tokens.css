@@ -1,0 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap");
+
+/*
+ * Part of Nexus Library
+ *
+ * Nexus design tokens: the seeds of the colors, the fonts and the spacing. `palette.css` derives
+ * every color from the seeds in OKLCH; the styles of `styles/` read the colors and these. The
+ * Color and Font Studio (`studio::color[]`, `studio::font[]`) export a file in this format.
+ */
+
+:root {
+  /* Neutrals: OKLCH hue and chroma of the greys of both themes */
+  --neutral-h: 255;
+  --neutral-c: 0.012;
+
+  /* Accents: one lightness for the bases (fills, strokes, charts), one for the tints (text in the
+     dark theme, code), which keep a part of the chroma, and one for text on the light page */
+  --accent-l: 0.66;
+  --tint-l: 0.81;
+  --tint-c: 0.7;
+  --text-l: 0.52;
+
+  /* Hues: angle and chroma; `-l`, `-tint-l` for a hue off the common lightness */
+  --red-h: 25;  --red-c: 0.19;
+  --orange-h: 55;  --orange-c: 0.16;
+  --yellow-h: 92;  --yellow-c: 0.16;  --yellow-l: 0.86;  --yellow-tint-l: 0.93;
+  --green-h: 150;  --green-c: 0.15;
+  --teal-h: 190;  --teal-c: 0.114;
+  --blue-h: 250;  --blue-c: 0.15;
+  --purple-h: 300;  --purple-c: 0.15;
+
+  /* Type and spacing */
+  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter Tight", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Source Code Pro", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --text: 15px;
+  --leading: 1.45;
+  --scale: 1.2;
+  --gap: 0.6rem;
+  --pad: 0.4rem;
+  --radius: 3px;
+  --measure: 58rem;
+}

@@ -40,15 +40,19 @@ module Adoc
     Model = Struct.new(:name, :inputs, :script)
 
     @models = {}
-    # Pages with a block, and the models they use. Not attributes: Asciidoctor resets the attributes
-    # of the body before the conversion, where the docinfo is written.
-    @used = ObjectSpace::WeakMap.new
 
     class << self
-      attr_reader :models, :used
+      attr_reader :models
 
       def model(name, inputs:, script:)
         @models[name] = Model.new(name, inputs, script)
+      end
+
+      # The models a page uses, kept on the document: not in its attributes, which Asciidoctor
+      # resets before the conversion, where the docinfo is written (an ObjectSpace::WeakMap lost
+      # its keys on large pages)
+      def used(document)
+        document.instance_variable_get(:@nx_models) || document.instance_variable_set(:@nx_models, [])
       end
     end
 
@@ -112,7 +116,8 @@ module Adoc
         raise ArgumentError, "interactive: unknown model `#{target}` (registered: #{Interactive.models.keys.join(', ')})"
 
       doc = parent.document
-      (Interactive.used[doc] ||= []) << model unless Interactive.used[doc]&.include?(model)
+      used = Interactive.used(doc)
+      used << model unless used.include?(model)
       create_pass_block(parent, Interactive.figure(parent, Interactive.html(model, attrs), attrs['title']), {}, subs: nil)
     end
   end
@@ -122,7 +127,8 @@ module Adoc
     use_dsl
 
     def process(document)
-      models = Interactive.used[document] or return
+      models = Interactive.used(document)
+      return if models.empty?
 
       if config[:location] == :head
         "<style>\n#{File.read(File.join(Interactive::DIR, 'interactive.css'))}</style>"

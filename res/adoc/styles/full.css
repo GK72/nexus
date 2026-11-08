@@ -1,0 +1,104 @@
+/*
+ * Part of Nexus Library
+ *
+ * Full: the third style level, over `compact.css`. Icons for the admonitions and the links out,
+ * the custom roles (legends, notes, key points, side-by-side pairs) and the figure cards with inline SVG classes.
+ *
+ * Accents are named by hue, not by what they show: `[.green]#text#` (plain.css), SVG `t-*`, `st-*`, `fill-*`.
+ */
+
+/* --------------------------------------------------------------------- Icons */
+
+/* The `--icon-<name>` masks come from `res/adoc/icons/` (tools/asciidoc/icons.rb), with `i:<name>[]` */
+
+/* Admonitions: each kind has its own shape and hue, so it reads without color too */
+.admonitionblock.note { --icon: var(--icon-note); }
+.admonitionblock.tip { --icon: var(--icon-tip); }
+.admonitionblock.important { --icon: var(--icon-important); }
+.admonitionblock.warning { --icon: var(--icon-warning); }
+.admonitionblock.caution { --icon: var(--icon-caution); }
+.admonitionblock > table td.icon { width: 6.5rem; text-align: left; }
+.admonitionblock td.icon .title { display: inline-flex; align-items: center; gap: 0.4em; }
+.admonitionblock td.icon .title::before {
+  content: ""; flex: none; width: 1rem; height: 1rem;
+  background: var(--hue); mask: var(--icon) center / contain no-repeat;
+}
+
+/* Links out of the page end with the external icon */
+#content a[href^="http"]:not(:has(img))::after {
+  content: ""; display: inline-block; width: 0.7em; height: 0.7em; margin-left: 0.15em; vertical-align: 0.05em;
+  background: currentColor; mask: var(--icon-external) center / contain no-repeat;
+}
+
+/* Collapsible blocks open with a chevron instead of the default triangle */
+details > summary:first-of-type { display: block; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: ""; display: inline-block; width: 0.85em; height: 0.85em; margin-right: 0.35em; vertical-align: -0.08em;
+  background: currentColor; mask: var(--icon-chevron) center / contain no-repeat; transition: transform 0.12s;
+}
+details[open] > summary::before { transform: rotate(90deg); }
+
+/* Section numbers in mono, muted */
+h2 > .sectnum, h3 > .sectnum { color: var(--muted); font-family: var(--font-mono); font-weight: 500; font-size: 0.8em; }
+
+/* -------------------------------------------------------------- Custom roles */
+
+/* `[.legend]` paragraph: a color square before each entry, the text stays ink */
+.paragraph.legend p { display: flex; flex-wrap: wrap; gap: 0.2rem 1.2rem; font-size: 0.9rem; }
+.paragraph.legend p > span { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink); }
+.paragraph.legend p > span::before { content: ""; width: 0.75rem; height: 0.75rem; border-radius: 2px; background: var(--hue); }
+
+/* `[.note]` paragraph: small print under a table or figure */
+.paragraph.note {
+  background: color-mix(in srgb, var(--blue) 6%, var(--surface));
+  border-left: 2px solid var(--blue); border-radius: var(--radius);
+  padding: var(--pad) calc(var(--pad) * 2);
+}
+.paragraph.note p { color: var(--muted); font-size: 0.88rem; }
+
+/* `[.unused]` paragraph: a feature that exists but has no caller yet */
+.paragraph.unused { border: 1px dashed var(--rule); border-radius: var(--radius); padding: var(--pad) calc(var(--pad) * 2); }
+.paragraph.unused p { color: var(--muted); font-size: 0.88rem; }
+.paragraph.unused p::before { content: "Unused · "; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* `[.points]` description list: short takeaways side by side, each term above its text */
+.dlist.points dl { display: grid; grid-template-rows: auto auto; grid-auto-flow: column; grid-auto-columns: 1fr; column-gap: 1rem; }
+.dlist.points dt { border-top: 2px solid var(--accent); padding-top: var(--pad); margin: 0; font-family: var(--font-display); color: var(--ink); }
+.dlist.points dd { margin: 0.1rem 0 0; color: var(--muted); font-size: 0.92rem; }
+@media (max-width: 640px) { .dlist.points dl { display: block; } .dlist.points dd { margin-bottom: var(--gap); } }
+
+/* `[.pair]` open block: two blocks side by side, stacked on narrow screens */
+.openblock.pair > .content { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; align-items: start; }
+@media (max-width: 900px) { .openblock.pair > .content { display: block; } }
+
+/* ------------------------------------------------------------------- Figures */
+
+/* `role=figure` blocks (inline SVG, interactive blocks): a card that scrolls sideways when narrow */
+.imageblock.figure { display: grid; gap: 0.3rem; }
+.imageblock.figure > .content {
+  overflow-x: auto; text-align: left;
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: calc(var(--pad) * 2);
+}
+.imageblock.figure > .title { margin: 0; max-width: 72ch; }
+
+svg.fig { display: block; width: 100%; height: auto; min-width: 640px; }
+svg.fig text { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); }
+svg.fig .t-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+svg.fig .t-muted { fill: var(--muted); }
+svg.fig .box { fill: var(--bg); stroke: var(--rule); }
+svg.fig .st-ink { stroke: var(--ink); fill: none; }
+svg.fig .st-muted { stroke: var(--muted); fill: none; }
+svg.fig .st-grid { stroke: var(--grid); fill: none; }
+svg.fig .fill-ink { fill: var(--ink); }
+svg.fig .fill-muted { fill: var(--muted); }
+svg.fig :is(.t-red, .st-red, .fill-red) { --c: var(--red); }
+svg.fig :is(.t-orange, .st-orange, .fill-orange) { --c: var(--orange); }
+svg.fig :is(.t-green, .st-green, .fill-green) { --c: var(--green); }
+svg.fig :is(.t-teal, .st-teal, .fill-teal) { --c: var(--teal); }
+svg.fig :is(.t-blue, .st-blue, .fill-blue) { --c: var(--blue); }
+svg.fig :is(.t-purple, .st-purple, .fill-purple) { --c: var(--purple); }
+svg.fig :is(.t-red, .t-orange, .t-green, .t-teal, .t-blue, .t-purple) { fill: var(--c); }
+svg.fig :is(.st-red, .st-orange, .st-green, .st-teal, .st-blue, .st-purple) { stroke: var(--c); fill: none; }
+svg.fig :is(.fill-red, .fill-orange, .fill-green, .fill-teal, .fill-blue, .fill-purple) { fill: var(--c); }

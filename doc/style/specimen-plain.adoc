@@ -1,0 +1,11 @@
+// Part of Nexus Library
+//
+// The style specimen with the plain style level.
+
+= Style Specimen: Plain
+:toc: left
+:toclevels: 1
+:experimental:
+:theme-style: plain
+
+include::specimen-body.adoc[]

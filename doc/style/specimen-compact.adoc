@@ -1,0 +1,11 @@
+// Part of Nexus Library
+//
+// The style specimen with the compact style level.
+
+= Style Specimen: Compact
+:toc: left
+:toclevels: 1
+:experimental:
+:theme-style: compact
+
+include::specimen-body.adoc[]

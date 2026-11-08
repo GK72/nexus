@@ -1,0 +1,89 @@
+/*
+ * Part of Nexus Library
+ *
+ * Compact: the second style level, over `plain.css`. Structure through surfaces and hue: dark code
+ * blocks with syntax colors, framed tables with a small-caps header, admonitions with a colored
+ * bar, the ToC on a surface with accent markers.
+ */
+
+/* --------------------------------------------------------------------- Code */
+
+:not(pre):not([class^=L]) > code {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 0 0.25em;
+}
+.literalblock pre, .listingblock > .content > pre, .listingblock > .content > pre.rouge,
+pre.rouge, pre.rouge .w, .literalblock.output pre {
+  background: var(--code-bg); color: var(--code-fg);
+}
+.literalblock pre, .listingblock > .content > pre { border: 0; border-radius: var(--radius); }
+.listingblock code[data-lang]::before { color: var(--code-comment); font-size: 0.75rem; top: 0.3rem; right: 0.5rem; }
+
+/* Rouge tokens take the code colors of the dark block */
+pre.rouge { --tk-comment: var(--code-comment); --tk-keyword: var(--code-keyword); --tk-type: var(--code-type);
+  --tk-string: var(--code-string); --tk-number: var(--code-number); --tk-preproc: var(--code-preproc); --tk-fg: var(--code-fg); }
+.conum[data-value] { background: var(--ink); color: var(--bg) !important; }
+.conum[data-value] * { color: var(--bg) !important; }
+pre .conum[data-value] { background: var(--code-fg); color: var(--code-bg) !important; }
+pre .conum[data-value] * { color: var(--code-bg) !important; }
+.colist td { padding: 0 var(--pad) 0.15em 0; }
+
+/* ------------------------------------------------------------------- Tables */
+
+table.tableblock {
+  background: var(--surface); border: 1px solid var(--rule) !important; border-radius: var(--radius);
+  border-collapse: separate; border-spacing: 0; overflow: hidden;
+}
+table.tableblock thead th {
+  background: color-mix(in srgb, var(--ink) 4%, var(--surface));
+  font-family: var(--font-mono); font-weight: 500; font-size: 0.72rem;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+}
+table.stripes-even > * > tr:nth-of-type(even), table.stripes-odd > * > tr:nth-of-type(odd),
+table.stripes-all > * > tr, table.stripes-hover > * > tr:hover {
+  background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+}
+.tableblock .monospaced, td.tableblock > p > code:only-child { border: 0; background: none; padding: 0; }
+
+/* -------------------------------------------------------------- Boxed blocks */
+
+.sidebarblock, .exampleblock > .content, #content #toc {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+}
+
+/* Admonitions: the label in its hue, a bar of the same hue before the text */
+.admonitionblock { --hue: var(--muted); }
+.admonitionblock.note { --hue: var(--blue); }
+.admonitionblock.tip { --hue: var(--green); }
+.admonitionblock.important { --hue: var(--purple); }
+.admonitionblock.warning { --hue: var(--orange); }
+.admonitionblock.caution { --hue: var(--red); }
+.admonitionblock > table { background: color-mix(in srgb, var(--hue) 6%, var(--surface)); border-radius: var(--radius); }
+.admonitionblock > table td.icon { padding: var(--pad); vertical-align: top; }
+.admonitionblock > table td.icon .title { color: var(--hue); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; }
+.admonitionblock > table td.content { border-left: 2px solid var(--hue); padding: var(--pad) calc(var(--pad) * 2); }
+
+/* Quotes: the accent marks the quote, the text stays ink */
+.quoteblock blockquote, .verseblock pre { border-left: 2px solid var(--accent); padding-left: calc(var(--pad) * 2); }
+.quoteblock blockquote::before { display: none; }
+.quoteblock .attribution, .verseblock .attribution { padding-left: calc(var(--pad) * 2 + 2px); }
+.quoteblock .attribution cite, .verseblock .attribution cite { color: var(--muted); }
+
+/* Collapsible blocks */
+details > summary:first-of-type { color: var(--muted); cursor: pointer; }
+details > summary:hover { color: var(--ink); }
+
+/* Keys and menus */
+kbd {
+  background: var(--surface); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: var(--radius);
+  color: var(--ink); box-shadow: none; font-size: 0.8em; padding: 0 0.35em;
+}
+.keyseq, .menuseq, .menuref { color: var(--ink); }
+
+/* ----------------------------------------------------------------------- ToC */
+
+#toc.toc2 { background: var(--surface); }
+#toc > ul > li > a { border-left: 2px solid var(--accent); padding-left: 6px; font-weight: 500; }
+#toc.toc2 ul ul { border-left: 1px solid var(--rule); margin-left: 3px; padding-left: 9px; }
+
+#footer { background: var(--surface); }

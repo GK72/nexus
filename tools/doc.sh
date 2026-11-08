@@ -28,9 +28,17 @@ Options:
   --                        end of the options, the rest are files
 
 Environment:
-  ADOC_CSS   theme stylesheet (default: res/adoc/theme.css of Nexus)
-  ADOC_ROOT  project root: the default output is under it, extensions may resolve paths
-             against it (default: the git root of the working directory)
+  ADOC_STYLE   style level: plain, compact or full (default: full; the :theme-style: of a
+               document wins)
+  ADOC_SIZE    base size: small (15px), normal (16px) or large (17px); default: the
+               tokens' --text (the :theme-size: of a document wins)
+  ADOC_TOKENS  tokens of the theme (default: res/adoc/tokens.css of Nexus), e.g. a file
+               exported from the Color or Font Studio
+  ADOC_CSS     a stylesheet of the project, instead of the tokens and the style levels
+  ADOC_ICONS   directories of project icons (NAME.svg, separated by ':'), over the icons
+               of Nexus (res/adoc/icons/); used by i:NAME[] and as --icon-NAME in CSS
+  ADOC_ROOT    project root: the default output is under it, extensions may resolve paths
+               against it (default: the git root of the working directory)
 EOF
 }
 
@@ -137,9 +145,20 @@ main() {
 
     ADOC_ROOT="${ADOC_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
     export ADOC_ROOT
-    if [[ -n "${ADOC_CSS:-}" ]]; then
-        ADOC_CSS="$(realpath "${ADOC_CSS}")"
-        export ADOC_CSS
+    local var
+    for var in ADOC_CSS ADOC_TOKENS; do
+        if [[ -n "${!var:-}" ]]; then
+            export "${var}=$(realpath "${!var}")"
+        fi
+    done
+    if [[ -n "${ADOC_ICONS:-}" ]]; then
+        local dir dirs=()
+        IFS=: read -ra dirs <<< "${ADOC_ICONS}"
+        for dir in "${dirs[@]}"; do
+            [[ -d "${dir}" ]] || die "ADOC_ICONS: no such directory: ${dir}"
+        done
+        ADOC_ICONS="$(for dir in "${dirs[@]}"; do realpath "${dir}"; done | paste -sd:)"
+        export ADOC_ICONS
     fi
     out_dir="${out_dir:-${ADOC_ROOT}/build/doc}"
 

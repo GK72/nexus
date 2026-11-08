@@ -1,0 +1,78 @@
+// Part of Nexus Library
+//
+// The Nexus style: tokens, fonts and the style levels of the pages, with the Color and Font
+// Studio. Renders on its own: tools/doc.sh doc/style/style.adoc doc/style/specimen-*.adoc
+
+= Nexus Style
+ifeval::["{docname}" == "style"]
+:toc: left
+:toclevels: 1
+:sectnums:
+endif::[]
+
+The look of the pages that `tools/doc.sh` renders: tight on purpose, with small gaps, small
+padding and rules before boxes, so a page holds a lot. The specimens show every element at each
+level: link:specimen-plain.html[plain], link:specimen-compact.html[compact],
+link:specimen-full.html[full].
+
+== Tokens
+
+`res/adoc/tokens.css` holds a few numbers; everything else derives from them.
+
+Colors:: OKLCH seeds. The neutrals take one hue and chroma (`--neutral-h`, `--neutral-c`), the
+accents one lightness for the bases (`--accent-l`), the tints (`--tint-l`, `--tint-c`) and the
+light-theme text (`--text-l`), and each hue its angle and chroma (`--red-h`, `--red-c`, …).
+`res/adoc/palette.css` derives the palette and both themes from them with CSS `oklch()`.
+Type:: `--font-display` Archivo, `--font-body` Inter Tight, `--font-mono` Source Code Pro;
+`--text` 15 px, `--leading` 1.45, headings a `--scale` of 1.2 apart.
+Spacing:: `--gap` 0.6 rem between blocks, `--pad` 0.4 rem inside cells and boxes, `--radius`,
+`--measure`. All in rem, so `--text` scales the page.
+
+`ADOC_TOKENS=FILE` replaces the tokens, e.g. with a file exported from a studio. `ADOC_CSS`
+replaces the whole theme with a stylesheet of the project, as Freyja does with Bifrost.
+
+== Levels
+
+Each level builds on the one before. A document picks one with `:theme-style:`, a run with
+`ADOC_STYLE`; the base size with `:theme-size:` or `ADOC_SIZE` (`small` 15 px, `normal` 16 px,
+`large` 17 px).
+
+[cols="1,6",options=header]
+|===
+| Level | Adds
+
+| link:specimen-plain.html[plain] | Colors, fonts, the tight rhythm, accent text, syntax colors;
+  tables with horizontal rules only, code between two lines.
+| link:specimen-compact.html[compact] | Dark code blocks, framed tables with a small-caps header,
+  boxed sidebars, admonitions with a colored bar, ToC markers.
+| link:specimen-full.html[full] | Admonition and link icons, legends, notes, key points,
+  side-by-side pairs, figure cards. The default.
+|===
+
+[source,shell]
+----
+ADOC_STYLE=compact ADOC_SIZE=normal tools/doc.sh doc/developer-manual.adoc
+----
+
+== Icons
+
+One SVG per icon in `res/adoc/icons/`, on a 16×16 grid in black strokes, embedded in the page as
+CSS masks (`--icon-<name>`), so they take the color of their context. `+i:name[]+` puts one in the
+text, `+i:name[label="..."]+` one that is read out. A new file is a new icon; `ADOC_ICONS=DIR`
+adds a project's own or replaces one of Nexus.
+
+ifdef::backend-html5[]
+== Studios
+
+The studios edit the tokens of this page: every change restyles it, in both themes. Edits stay in
+this browser until _Reset_; _Export tokens_ gives the file for `ADOC_TOKENS` or
+`res/adoc/tokens.css`. Any page can hold them with `studio::color[]` and `studio::font[]`.
+
+=== Color Studio
+
+studio::color[]
+
+=== Font Studio
+
+studio::font[]
+endif::[]

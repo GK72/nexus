@@ -29,7 +29,14 @@ the extensions are inlined, only the fonts come from the web.
 | `-o`, `--out DIR` | Output directory; default: `build/doc` of the project root.
 | `-r`, `--require FILE.rb` | An extra extension, for every document of the run. Repeatable.
 | `-a`, `--attribute NAME=VALUE` | A document attribute, over the one in the document. Repeatable.
-| `ADOC_CSS` | The theme stylesheet; default: `res/adoc/theme.css` of Nexus.
+| `ADOC_STYLE` | The style level, `plain`, `compact` or `full` (default); the `:theme-style:`
+attribute of a document wins. See link:style.html[Nexus Style].
+| `ADOC_SIZE` | The base size, `small` (15 px), `normal` (16 px) or `large` (17 px); default:
+`--text` of the tokens. The `:theme-size:` attribute of a document wins.
+| `ADOC_TOKENS` | The tokens of the theme; default: `res/adoc/tokens.css` of Nexus.
+| `ADOC_CSS` | A stylesheet of the project, instead of the tokens and the levels.
+| `ADOC_ICONS` | Directories of project icons, separated by `:`. Each `NAME.svg` adds the icon
+`+i:NAME[]+` and the CSS mask `--icon-NAME`, or replaces the Nexus icon of that name.
 | `ADOC_ROOT` | The project root, which extensions resolve paths against; default: the git root
 of the working directory.
 |===
@@ -169,7 +176,7 @@ Some rules that kept the plugins simple:
   `tools/doc.sh`.
 * *Mark the documents that need assets.* A docinfo processor runs for every document; inline the
   styles and scripts only where a block is used. The attributes of the body are reset before the
-  conversion, so keep the mark outside them (Nexus uses an `ObjectSpace::WeakMap` keyed by the
+  conversion, so keep the mark outside them (Nexus sets an instance variable on the
   document).
 * *Safe mode stays on.* `tools/doc.sh` renders in `safe` mode, which allows includes and inline
   content from the document tree, but not writing outside it.
