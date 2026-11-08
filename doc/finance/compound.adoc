@@ -1,0 +1,5 @@
+= Interest, Month by Month
+:figure-caption: Figure
+
+.Balance by month. Each month the salary pays the expenses and the deposit; what is left is cash, which earns nothing and pays the loan. The columns are the savings (starting balance and deposits) with the interest they earn (a twelfth of the yearly rate each month), and the loan still owed below zero. The line is savings plus cash, with the loan payments; "In today's money" divides it by the inflation since the start. Duplicate a panel to compare variants on the same scale.
+interactive::compound[salary=1000000,raise=5,expenses=500000,loan-rate=11,term=7,years=7,unit=HUF]
