@@ -1,0 +1,9 @@
+// Part of Nexus Library
+//
+// Part of the NCI book (`nci.adoc`): the developer guide, its chapters as pages.
+
+= Developer Guide
+
+For those who change NCI or nci-test.
+
+include::dg-architecture.adoc[leveloffset=+1]

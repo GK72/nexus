@@ -1,0 +1,12 @@
+// Part of Nexus Library
+//
+// Part of the NCI book (`nci.adoc`): the user guide, its chapters as pages.
+
+= User Guide
+
+For those who run a pipeline, write one for their project, or write the tests it runs.
+
+include::ug-running.adoc[leveloffset=+1]
+include::ug-pipeline.adoc[leveloffset=+1]
+include::ug-tests.adoc[leveloffset=+1]
+include::ug-conventions.adoc[leveloffset=+1]

@@ -1,0 +1,77 @@
+// Part of Nexus Library
+//
+// Page of the NCI book (`nci.adoc`): the conventions for the scripts a pipeline runs. Renders
+// alone too.
+
+= Conventions
+ifeval::["{docname}" == "ug-conventions"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+The pipeline is the only orchestrator; the scripts it runs are leaves. A failure then points at one
+script, with its output in one log, instead of at a script that wraps a script that keeps its own
+log somewhere else.
+
+.Wrapped scripts hide the failure; leaves report it.
+[fig,leaves,880x230]
+....
+aria: Before: the stage runs tests/run.sh, which runs seven scripts, one of which builds with its
+aria: own log in another directory, so the stage log says only "Build failed". After: the pipeline
+aria: declares the build and one stage per test script; each failure has its own line and log.
+
+row 20 h=54
+  stage  @20  w=160 stage :red         | function-test
+  runsh  @250 w=160 tests/run.sh       | runs 7 scripts
+  btx    @480 w=160 tests/btx.sh       | builds by itself
+  blog   @730 w=130 build.log :red     | its own run id
+
+row 140 h=70
+  pipe   @20  w=160 pipeline :green    | declares stages
+  build  @250 w=160 build              | its own log
+  tests  @520 w=200 function-test/* :green | one stage per script | one log each
+
+stage -> runsh
+runsh -> btx
+btx   -> blog
+pipe  -> build
+build -> tests : needed by
+....
+
+The rules, and the reason for each:
+
+. *A stage does one thing and writes to stdout and stderr.* No log files of its own, no run ids,
+  no "check build.log": NCI captures, times and reports. A third-party tool that insists on its own
+  log is `nci::attach`-ed.
+. *Dependencies are declared, not run.* A test does not build what it tests; its stage says
+  `--needs build`. A script that calls its siblings is a group of stages instead (`nci::stages`).
+. *Inputs and outputs come from the environment, with defaults for running by hand.* The tools
+  under test (`+BTX_TOOL=${BTX_TOOL:-build/debug/btx/btx-tool}+`), so that the same tests run
+  against a release or installed build; the output directory (`NCI_STAGE_DIR`, `NCI_ARTIFACTS`,
+  else under `build/`), so that the files of a run stay with its logs.
+. *Scripts run from anywhere.* Paths are relative to the script or to the repository root, never to
+  the current directory.
+. *Tests are hermetic.* They set what they depend on, a log level for example, instead of
+  inheriting it from the caller's shell. In Nexus, a developer's `SPDLOG_LEVEL=debug` once failed
+  the descriptor test, which checks the trace log.
+. *Tests print TAP*, with nci-test or anything else that does. NCI counts the cases and fails the
+  stage on `not ok`, whatever its exit code.
+. *A stage that may fail says so* with `--allow-failure`, not with `|| true`: the result stays
+  visible as a warning, and `--strict` enforces it.
+. *Every stage declares its paths* when it can, so that `--changed` can leave it out.
+
+== Layout
+
+The layout of Nexus, as an example for other projects:
+
+[source,text]
+----
+ci/pipeline.sh              the pipeline
+tools/ci/nci.sh             the runner (a copy in ci/lib/ in other projects)
+tools/ci/nci-test.sh        the test library
+tests/common.sh             the shared setup of the tests
+tests/function/*.sh         one script per tool or feature: one stage each
+tests/data/                 inputs of the tests
+.shellcheckrc               source-path=SCRIPTDIR: sourced files relative to their script
+----

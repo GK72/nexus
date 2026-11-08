@@ -1,0 +1,152 @@
+// Part of Nexus Library
+//
+// Page of the NCI book (`nci.adoc`): writing a pipeline script, declaring stages, the helpers
+// inside a stage. Renders alone too.
+
+= Writing a Pipeline
+ifeval::["{docname}" == "ug-pipeline"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+A pipeline script sources NCI, names the project, declares its stages in order and calls
+`nci::main` with its arguments. Stage commands are plain commands, scripts of the project or
+functions defined in the pipeline script:
+
+[source,bash]
+----
+#!/usr/bin/env bash
+# shellcheck source=../tools/ci/nci.sh
+source "$(dirname "$(realpath "$0")")/../tools/ci/nci.sh"
+
+CPP_PATHS='CMakeLists.txt *.cmake cmake/ conanfile.txt src/'
+
+unit_test() {
+    local out="${NCI_STAGE_DIR}/ctest.txt"
+    ctest --test-dir build/debug --output-on-failure | tee "${out}"
+    nci::note "$(grep -Eo '[0-9]+% tests passed.*' "${out}")"
+}
+
+nci::init myproject
+nci::stage  lint          --paths 'ci/ tests/'                      -- shellcheck ci/*.sh
+nci::stage  headers       --paths '*.cpp *.hpp' --allow-failure     -- tools/check-headers.sh
+nci::stage  build         --paths "${CPP_PATHS}"                    -- baldr -p . -b Debug build
+nci::stage  unit-test     --paths "${CPP_PATHS}" --needs build      -- unit_test
+nci::stages function-test --paths "${CPP_PATHS}" --needs build      -- tests/function/*.sh
+nci::main "$@"
+----
+
+`nci::init` changes to the root of the repository, so the paths and globs of the declarations, and
+the commands of the stages, are relative to it whatever directory the script was started from. The
+stages run in the declared order; `--needs` only adds stages to a selection and blocks a stage whose
+need failed, it does not reorder.
+
+[[_declaring_stages]]
+== Declaring stages
+
+`nci::stage NAME [OPTION...] -- COMMAND [ARG...]` declares one stage. The `--` separates the
+options from the command; the arguments of the command are kept as given, quoting included.
+
+.Options of a stage.
+[cols="2,5",options=header]
+|===
+| Option | Meaning
+
+| `--paths 'GLOB...'` | The files the stage depends on, for `--changed`. Whitespace-separated
+shell globs relative to the root, where `+*+` also matches `/`; a pattern ending in `/` matches
+everything below that directory. A stage without paths always runs under `--changed`.
+| `--needs 'STAGE...'` | The stages it depends on, or groups; they must be declared before it.
+Selecting the stage selects them too, and the stage is blocked when one of them fails.
+| `--allow-failure` | A failure is a warning: the pipeline passes and the stages that need it
+still run (see link:ug-running.html#_warnings[Warnings]).
+| `--errors REGEX` | The extended regex of the error lines in its failure report, instead of
+the default one.
+|===
+
+Declaration errors stop the script before anything runs, with exit code 2: an unknown option, a
+missing command, a stage declared twice, a need not declared before.
+
+=== Groups
+
+`nci::stages GROUP [OPTION...] -- FILE...` declares one stage per file: `GROUP/<file name without
+extension>`, running the file. Each stage gets the group's paths plus its own file, so a change to
+one test script selects that test only under `--changed`. A glob is the usual way to give the files;
+a new script needs no edit to the pipeline.
+
+A group name works wherever a stage name does: `--only function-test`, `--skip function-test`,
+`--needs function-test` (all of them), `--from function-test` (the first of them).
+
+== Inside a stage
+
+A stage runs in a subshell of the pipeline script, with `set -euo pipefail`, in the root of the
+project (the workspace in a clean run), with stdin from `/dev/null`. The first failing command ends
+it. Its stdout and stderr go to its log. It can tell NCI more with these functions:
+
+.Functions for stages.
+[cols="2,5",options=header]
+|===
+| Function | Effect
+
+| `nci::note TEXT` | A note for its console line and the summary, e.g. "42 tests passed". Notes
+add up, separated by `;`.
+| `nci::skip [REASON]` | Ends the stage as skipped, not failed; the reason is its note.
+| `nci::step NAME COMMAND [ARG...]` | Runs the command as a timed step, in a subshell with
+`set -euo pipefail`; returns its exit code, so a failed step ends the stage. A failure report
+names the step and shows its output only; the timings go to `summary.json`.
+| `nci::attach FILE...` | Keeps log files that a tool writes on its own: copied into the run
+after the stage, their tail shown in a failure report.
+|===
+
+[source,bash]
+----
+lint_shell() {
+    command -v shellcheck >/dev/null || nci::skip "shellcheck not installed"
+    shellcheck ci/*.sh
+}
+
+package() {
+    nci::step configure cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+    nci::step build     cmake --build build/release
+    nci::step pack      cpack --config build/release/CPackConfig.cmake
+}
+
+docs() {
+    tools/render-docs.sh --out "${NCI_ARTIFACTS}/site" --log site.log
+    nci::attach site.log
+    nci::note "$(find "${NCI_ARTIFACTS}/site" -name '*.html' | wc -l) pages"
+}
+----
+
+A step runs in a subshell: variables it sets are gone after it. Use steps for the parts of a
+stage that are worth timing and naming, not for every command.
+
+=== TAP
+
+A stage that prints TAP, lines `ok N ...` and `not ok N ...` as nci-test does, needs nothing more:
+NCI counts them into the note (`14/14 passed`, `1/2 passed, 1 skipped`), and a `not ok` fails the
+stage even when its exit code is 0.
+
+=== Environment
+
+.The environment of a stage.
+[cols="2,5",options=header]
+|===
+| Variable | Value
+
+| `NCI_ROOT` | Where the stage runs: the repository, or the workspace in a clean run.
+| `NCI_SOURCE` | The repository, also in a clean run.
+| `NCI_WORKSPACE` | The workspace of a clean run.
+| `NCI_RUN_ID` | The id of the run, its start time: `20261108-181104`.
+| `NCI_RUN_DIR` | The directory of the run.
+| `NCI_ARTIFACTS` | A directory for what is worth keeping from the run.
+| `NCI_STAGE_NAME` | The name of the stage.
+| `NCI_STAGE_DIR` | The scratch space of the stage, inside the run.
+| `NCI_STAGE_LOG` | The log of the stage.
+|===
+
+== Sharing NCI
+
+For now, a project copies `nci.sh` (and `nci-test.sh` for its tests) into its `ci/lib/`; the
+versions are in `NCI_VERSION` and `TAP_VERSION`. How the copies are kept in sync with Nexus is not
+settled yet.

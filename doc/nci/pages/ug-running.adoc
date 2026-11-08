@@ -1,0 +1,275 @@
+// Part of Nexus Library
+//
+// Page of the NCI book (`nci.adoc`): running a pipeline, its options, what it prints and keeps.
+// Renders alone too.
+
+= Running a Pipeline
+ifeval::["{docname}" == "ug-running"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+A pipeline is a script of the project, `ci/pipeline.sh` by convention, that declares its stages and
+hands over to NCI. Run without options, it runs every stage in order and stops at the first failure.
+Each stage writes its output to a log file of the run; the console gets one line per stage and a
+summary at the end.
+
+.A run: the console gets one line per stage, the run directory everything else.
+[fig,run,880x230]
+....
+aria: The pipeline script declares stages and calls NCI. NCI selects the stages to run from the
+aria: options, runs each in a subshell, writes its output to a log file of the run and one line
+aria: to the console, then writes the summary to the console and to summary.json.
+
+row 20 h=70
+  script  @20  w=180 ci/pipeline.sh :blue  | declares stages | calls nci::main
+  select  @260 w=180 selection             | options, changes | needs
+  run     @500 w=180 stages :orange        | one by one | in subshells
+  console @730 w=130 console :green        | one line | per stage
+
+row 150 h=54
+  logs    @500 w=180 run directory         | logs, summary.json
+  summary @730 w=130 summary :green        | at the end
+
+script -> select : stages
+select -> run    : order
+run    -> console
+run    -> logs   : output
+console -> summary
+....
+
+[source,bash]
+----
+ci/pipeline.sh                          # everything
+ci/pipeline.sh --changed                # what the changes since master affect
+ci/pipeline.sh --only function-test     # a stage or a group, and what it needs
+ci/pipeline.sh --clean                  # on a fresh clone of HEAD in /tmp/workspace/<project>
+ci/pipeline.sh --list                   # what would run, and why, without running it
+----
+
+== The console
+
+A run prints a header, a line per stage while it runs (with a spinner and the elapsed seconds on a
+terminal), and the summary:
+
+[source,text]
+----
+nexus pipeline, all stages, 12 of 12 stages, run 20261108-181104
+  [ 1/12] lint-shell ..................... ok          1.1s
+  [ 2/12] file-headers ................... warn        0.0s
+         302 │ 293 error(s), 0 warning(s) in 71 file(s)
+      exit code 1, log: build/ci/20261108-181104/logs/02-file-headers.log
+  [ 4/12] build .......................... ok         12.3s
+  [ 5/12] unit-test ...................... ok          0.1s  100% tests passed out of 55
+  [ 7/12] function-test/btx .............. ok          0.1s  14/14 passed
+  ...
+Summary nexus, run 20261108-181104, 18.0s
+  ...
+Pipeline passed with 1 warning(s)
+----
+
+The text after the time is the stage's note: what it reported with `nci::note`, or the counts of
+its TAP output (see link:ug-tests.html[Test Library]).
+
+.The results of a stage.
+[cols="1,4",options=header]
+|===
+| Result | Meaning
+
+| `ok` | The stage exited with 0.
+| `FAIL` | It exited with another code, or printed a TAP `not ok`. The pipeline fails and stops,
+unless `--keep-going`.
+| `warn` | It failed, but is allowed to (`--allow-failure` or `--warn`). The pipeline goes on and
+passes; the stages that need it still run.
+| `skipped` | It ended itself with `nci::skip`, e.g. for a missing tool.
+| `blocked` | A stage it needs failed, so it did not run.
+| `interrupted` | kbd:[Ctrl+C] or `SIGTERM` arrived while it ran.
+| `-` | Not selected, or not reached after a failure; the summary says which.
+|===
+
+The exit code of the pipeline is 0 when it passed (with or without warnings), 1 when a stage
+failed, 130 when it was interrupted and 2 for a usage error.
+
+== Reading a failure
+
+A failed stage prints, under its line, what is needed to see why without opening the log:
+
+[source,text]
+----
+  [2/6] build ........... FAIL        3.2s
+      in step compile
+      errors:
+          30 │ foo.cpp:3:1: error: expected ';'
+      last lines:
+          68 │ compiling unit 55
+          ...
+          73 │ compiling unit 60
+      exit code 1, log: build/ci/20261108-181126/logs/02-build.log
+      rerun: ci/pipeline.sh --only build -v
+----
+
+[.points]
+Step:: When the stage has steps (`nci::step`), the one that failed; the rest of the report covers
+its output only.
+Errors:: The lines that look like errors, with their line numbers in the log: compiler and tool
+errors, gtest and ctest failures, TAP `not ok`, `Assertion`, `fatal`, `Traceback`, `Bail out!`.
+At most 10 (`NCI_ERROR_LINES`); shown only when the output is longer than the tail. A stage can
+bring its own pattern (`--errors`, see link:ug-pipeline.html#_declaring_stages[Declaring stages]).
+Last lines:: The tail of the output, 20 lines (`NCI_TAIL`).
+Attachments:: The tail of each log file the stage attached with `nci::attach`.
+Rerun:: The command that runs this stage again (and what it needs), with its output streamed.
+
+A warning prints the last 5 lines only (`NCI_WARN_TAIL`): it is known and allowed, the summary line
+of the tool is usually enough.
+
+Every log starts with a header of what ran, so that a log read on its own still tells its story:
+
+[source,text]
+----
+#> nci stage   function-test/descriptor
+#> command     tests/function/descriptor.sh
+#> directory   /home/gkpro/repos/nexus
+#> run         nexus 20261108-181028 (all stages)
+#> commit      3f8698b Feat: Tmux workspace launcher
+#> started     2026-11-08 18:10:29
+#> rerun       ci/pipeline.sh --only function-test/descriptor -v
+#>
+...
+#> finished    exit code 1 after 0.0s
+----
+
+== Partial pipelines
+
+Most changes touch a part of the project. The selection options pick the stages to run; `--list`
+shows the result and the reason for each stage without running anything:
+
+[source,text]
+----
+$ ci/pipeline.sh --list --changed
+nexus pipeline, changed since master (3 files)
+
+#   stage                    run  reason                             paths
+1   lint-shell               no   no changes                         ci/ tools/ci/ tests/
+3   tools-test               no   no changes                         tools/*.py
+4   build                    no   no changes                         CMakeLists.txt CMakeUserPresets.json *…
+12  docs                     yes  changed: doc/nci/nci.adoc (+2)     doc/ res/adoc/ tools/doc.sh tools/doc…
+----
+
+.Selection options.
+[cols="2,5",options=header]
+|===
+| Option | Selects
+
+| `-o, --only STAGE,...` | These stages, and the stages they need.
+| `-c, --changed` | The stages whose paths match a file changed since the merge base with the
+base branch: committed, staged, unstaged and untracked files (committed only in a clean run). A
+stage without paths always runs.
+| `-b, --base REF` | The base of `--changed`. Default: `$NCI_BASE`, then `origin/$GITHUB_BASE_REF`,
+`master`, `main`, `origin/HEAD`, the first that exists.
+| `-s, --skip STAGE,...` | Leaves these out, even when needed by another stage.
+| `-f, --from STAGE` | Leaves out every stage before this one: resuming a failed run.
+| `-l, --list` | Runs nothing; prints the stages, whether each would run and why, and its paths.
+|===
+
+A group name stands for all of its stages wherever a stage is expected: `--only function-test` is
+every `function-test/...` stage. The options combine in a fixed order, explained in
+link:dg-architecture.html#_selection[Selection]: the base set (all, `--only` or `--changed`), then
+the needs, then `--skip`, then `--from`.
+
+== Warnings
+
+A stage that is declared with `--allow-failure` turns a failure into a warning: a check the project
+does not pass yet, like file headers waiting for a migration. Two options change it for one run:
+
+[.points]
+`-w, --warn STAGE,...`:: A failure of these stages is a warning too.
+`--strict`:: The declared ones fail the pipeline again; for the CI server, or to see what is left.
+`--warn` still applies.
+
+== Clean runs
+
+A run in place uses the working tree as it is: uncommitted changes, build directories, untracked
+files. `-C, --clean` runs on a fresh clone of the committed HEAD instead, the way a CI server sees
+the project:
+
+[.points]
+Checkout:: A `checkout` stage runs first, and every other stage needs it. It wipes the workspace
+(`$NCI_WORKSPACE`, default `/tmp/workspace/<project>`) and clones HEAD into it. The clone shares
+the objects of the repository (`git clone --shared`), so it takes well under a second; submodules
+come from their local checkouts, without the network.
+Stages:: The stages run in the workspace: commands and scripts are the committed ones. The stage
+definitions are those of the pipeline script that was started, so an edited pipeline can be tried
+on a clean tree without committing it.
+Runs:: Logs and summaries stay in the repository's runs directory, next to the runs in place.
+Resuming:: `--skip checkout` or `--from` reuses the existing workspace without cloning again; the
+rerun command of a failed stage in a clean run does that.
+Safety:: NCI refuses a workspace that is `/`, the home directory, the repository or one of its
+parents, and an existing directory that is not a Git checkout.
+
+The header of a clean run says which commit runs and how many local changes are left out:
+`workspace /tmp/workspace/nexus, HEAD 3f8698b, 4 uncommitted/untracked file(s) not included`.
+
+== Other options
+
+.Execution options.
+[cols="2,5",options=header]
+|===
+| Option | Effect
+
+| `-k, --keep-going` | Runs the remaining stages after a failure; the stages that need a failed one
+are blocked.
+| `-v, --verbose` | Streams the output of the stages to the console too (it still goes to the logs).
+| `-h, --help` | The options of the pipeline.
+|===
+
+kbd:[Ctrl+C] stops the running stage, marks it interrupted, prints the summary and exits with 130.
+
+== The run directory
+
+Each run gets a directory, `build/ci/<run id>/` (`NCI_RUNS_DIR` for another place), with the run
+id the start time. `build/ci/latest` links to the newest; the last 20 runs are kept
+(`NCI_KEEP_RUNS`).
+
+.The files of a run.
+[cols="2,5",options=header]
+|===
+| Path | Holds
+
+| `logs/<NN>-<stage>.log` | The output of each stage, after its header; `/` in a stage name becomes
+`_`.
+| `stages/<stage>/` | The scratch space of each stage (`NCI_STAGE_DIR`): its notes, steps, the test
+cases of nci-test.
+| `artifacts/` | What the stages keep (`NCI_ARTIFACTS`), e.g. the documentation site.
+| `attachments/<stage>/` | The log files the stage attached.
+| `summary.json` | Project, run id, commit, selection, root, status, total seconds and, per stage,
+its status, seconds, log, notes and steps.
+|===
+
+== CI servers
+
+NCI is CI-agnostic: a server runs the pipeline script like a developer does. Under GitHub Actions
+(`GITHUB_ACTIONS=true`) it adds what the web view shows best: the full log of a failed stage in a
+folded group, an error or warning annotation per failed stage, and the summary as a table in the
+job summary (`GITHUB_STEP_SUMMARY`). `--changed` takes the base of a pull request from
+`GITHUB_BASE_REF`.
+
+== Environment
+
+.Environment variables of a run.
+[cols="2,1,4",options=header]
+|===
+| Variable | Default | Meaning
+
+| `NCI_RUNS_DIR` | `<root>/build/ci` | Where the runs go.
+| `NCI_KEEP_RUNS` | 20 | Runs kept.
+| `NCI_BASE` | | The base of `--changed`.
+| `NCI_WORKSPACE` | `/tmp/workspace/<project>` | The workspace of a clean run.
+| `NCI_VERBOSE` | 0 | 1 is `--verbose`.
+| `NCI_TAIL` | 20 | Log lines shown for a failure.
+| `NCI_WARN_TAIL` | 5 | Log lines shown for a warning and an attachment.
+| `NCI_ERROR_LINES` | 10 | Error lines shown for a failure.
+| `NCI_ERRORS` | see link:dg-architecture.html#_failure_report[Failure report] | The extended
+regex of an error line.
+| `NO_COLOR` | | Set: no colors. Colors are off anyway when the output is not a terminal.
+|===

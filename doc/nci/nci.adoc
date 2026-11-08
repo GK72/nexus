@@ -1,0 +1,26 @@
+// Part of Nexus Library
+//
+// The NCI book: the CI pipeline runner `tools/ci/nci.sh` and its test library
+// `tools/ci/nci-test.sh`, for users and for those who change them.
+//   tools/doc.sh doc/nci
+
+= NCI: CI Pipelines in Bash
+:doctype: book
+:toc: left
+:toclevels: 2
+:sectnums:
+:experimental:
+
+NCI runs a project's CI pipeline from a short Bash script: stages with their output in log files,
+one line per stage on the console, timing, warnings, a summary, partial and clean runs. Its test
+library, nci-test, gives shell test scripts TAP output that NCI understands. Both are single files
+that a project sources, with nothing to install but Bash and Git.
+
+The user guide covers running and writing pipelines, the test library and the conventions for the
+scripts a pipeline runs; the developer guide covers how NCI works inside. Each chapter is also a
+page of its own: link:ug-running.html[Running a Pipeline], link:ug-pipeline.html[Writing a
+Pipeline], link:ug-tests.html[Test Library], link:ug-conventions.html[Conventions],
+link:dg-architecture.html[Architecture].
+
+include::pages/user-guide.adoc[leveloffset=+1]
+include::pages/developer-guide.adoc[leveloffset=+1]

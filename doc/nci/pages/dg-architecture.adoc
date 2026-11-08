@@ -1,0 +1,315 @@
+// Part of Nexus Library
+//
+// Page of the NCI book (`nci.adoc`): how NCI and nci-test work inside. Renders alone too.
+
+= Architecture
+ifeval::["{docname}" == "dg-architecture"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+NCI is one Bash file, `tools/ci/nci.sh`, sourced by the pipeline script; nci-test is another,
+`tools/ci/nci-test.sh`, sourced by test scripts. Neither runs anything when sourced: they define
+functions and a few variables, guarded against a second source by their version variable. Public
+functions are `nci::*` and `tap::*`; internal ones start with an underscore (`+nci::_select+`).
+
+== Two phases
+
+A pipeline script runs in two phases. The declarations run at its top level: `nci::init` finds the
+root and changes to it, each `nci::stage` appends a stage to the registry. Then `nci::main` takes
+over and never returns: it parses the options, selects, runs, reports and exits.
+
+.The phases of a pipeline script.
+[fig,phases,880x200]
+....
+aria: Declaration phase: nci::init and nci::stage fill the registry. Main phase: nci::main parses
+aria: the options, prepends the checkout stage for a clean run, selects the stages, runs them one
+aria: by one, writes the summary, prunes old runs and exits.
+
+row 20 h=54
+  init    @20  w=180 nci::init :blue       | root, cd
+  decl    @240 w=180 nci::stage(s) :blue   | append
+  reg     @460 w=180 registry              | parallel arrays
+  opts    @680 w=180 nci::main             | parse options
+
+row 130 h=54
+  report  @20  w=180 summary :green        | prune, exit
+  loop    @240 w=180 stage loop :orange    | NCI_RESULT
+  select  @460 w=180 selection             | NCI_SELECTED
+  clean   @680 w=180 clean rewrite :muted  | prepend checkout
+
+init   -> decl
+decl   -> reg
+reg    -> opts
+opts   -> clean
+clean  -> select
+select -> loop
+loop   -> report
+....
+
+== Data model
+
+Bash has no arrays of records, so a stage is an index into parallel indexed arrays. The index is the
+declaration order, which is also the run order.
+
+.The registry: one entry per declared stage.
+[cols="2,5",options=header]
+|===
+| Array | Holds
+
+| `NCI_STAGE_NAMES` | The name; groups are only a naming convention, `group/name`.
+| `NCI_STAGE_CMDS` | The command, quoted with `printf '%q '` at declaration and run with `eval`,
+so arguments with spaces survive.
+| `NCI_STAGE_PATHS` | The globs of `--paths`, as one string.
+| `NCI_STAGE_NEEDS` | The needs, expanded at declaration: group names become their stages, so
+the run needs no group logic.
+| `NCI_STAGE_SOFT` | 1 for `--allow-failure`.
+| `NCI_STAGE_ERRORS` | The regex of `--errors`, or empty.
+|===
+
+.The state of a run, by stage index.
+[cols="2,5",options=header]
+|===
+| Array | Holds
+
+| `NCI_SELECTED`, `NCI_REASON` | Whether the stage runs, and why (for `--list` and the summary).
+| `NCI_RESULT`, `NCI_TIME`, `NCI_NOTES` | The result (`ok`, `fail`, `warn`, `skip`, `blocked`,
+`interrupted`), the seconds and the notes.
+| `NCI_LOG`, `NCI_STEPS` | The log file, and the steps as JSON fragments for `summary.json`.
+|===
+
+Options and the run's paths are scalars: `+NCI_SEL_*+` for the selection, `+NCI_OPT_*+` for the
+rest, `NCI_ROOT`, `NCI_RUN_DIR`, and so on.
+
+[[_selection]]
+== Selection
+
+`+nci::_select+` fills `NCI_SELECTED` and `NCI_REASON` in four passes, each over the result of the
+one before:
+
+.The passes of the selection.
+[fig,selection,880x110]
+....
+aria: Four passes: the base set from all stages, --only or --changed; the needs added, walking
+aria: backwards; --skip removing stages; --from removing the stages before it.
+
+row 20 h=70
+  base  @20  w=190 base set :blue  | all, --only | or --changed
+  needs @260 w=170 needs           | walk backwards | add
+  skip  @480 w=170 --skip          | remove
+  from  @700 w=160 --from :green   | drop earlier
+
+base  -> needs
+needs -> skip
+skip  -> from
+....
+
+[.points]
+Base set:: Every stage; or the stages named by `--only` (a group name matches its stages,
+`+nci::_in_list+`); or, for `--changed`, the stages with a path matching a changed file, and the
+stages without paths.
+Needs:: A need is declared before the stage that needs it, so one walk from the last stage to the
+first adds needs of needs too.
+Skip:: After the needs, so that `--skip` wins over a need: `--skip checkout` resumes a clean run in
+the existing workspace although every stage needs `checkout`.
+From:: Last, so that it only cuts: the stages before the first stage of the name (or group) are
+dropped, whatever selected them.
+
+The changed files are `git diff --name-only <merge base>` (committed, staged and unstaged) and
+`git ls-files --others --exclude-standard` (untracked); in a clean run only the committed diff,
+since the workspace has nothing else. A path matches with `+[[ file == pattern ]]+`, where `+*+`
+matches `/` too; a trailing `/` gets a `+*+` appended.
+
+== Running a stage
+
+The stage loop runs the selected stages in order. A stage with a failed, blocked or interrupted
+need is marked `blocked` without running. The others go through `+nci::_run_stage+`:
+
+.A stage: the subshell writes the log, the main shell keeps the console and the results.
+[fig,stage,880x330]
+....
+aria: The main shell writes the log header, starts a spinner in the background and runs the stage
+aria: subshell in the foreground with its output appended to the log. The stage writes notes,
+aria: steps, a skip marker and attachments to its stage directory. After the stage, the main shell
+aria: scans the log for TAP, reads the stage directory, classifies the result and prints the line
+aria: and the failure report.
+
+row 20 h=54
+  main    @20  w=180 main shell :blue       | header, spinner
+  sub     @300 w=200 stage subshell :orange | set -euo pipefail
+  log     @640 w=220 log                    | stdout, stderr
+
+row 140 h=54
+  spin    @20  w=180 spinner :muted         | background, TTY
+  dir     @300 w=200 stage dir              | notes, steps, …
+
+row 250 h=70
+  after   @300 w=200 after the stage        | TAP, steps | attachments
+  result  @560 w=130 result :green          | classify
+  report  @730 w=130 console                | line, report
+
+main   -> sub    : foreground
+main   -> spin
+sub    -> log    : appends
+sub    -> dir    : files
+after  -> dir    : reads
+after  -> log    : scans
+after  -> result
+result -> report
+....
+
+=== Subshell and errexit
+
+The stage runs as `+nci::_exec_stage+`, a function whose body is a subshell: `set -euo pipefail`,
+`cd "$NCI_ROOT"`, `eval` the command, stdin from `/dev/null`. `nci::main` itself runs with
+`set +e` and reads the stage's exit code from `$?`.
+
+Bash ignores `set -e` in a command that is part of an `if`, `while`, `&&` or `||`, and in
+everything that command runs, subshells included, even when they set `-e` again. A stage run as
+`+nci::_exec_stage || rc=$?+` would therefore not stop at its first failing command. The rule
+throughout both files: a subshell that must stop at the first failure is run as a plain command,
+with errexit turned off around it, and its code is read from `$?`.
+
+The places that follow the rule: `+nci::_run_stage+`, `nci::step`, `tap::case` and `tap::run`.
+
+The `+NCI_STAGE_*+` variables reach the stage as assignments in front of the call, not as exports
+inside the subshell, so that they are set for exactly that call.
+
+=== Stage to runner
+
+A subshell cannot set variables of its parent, so a stage talks to NCI through files in its
+directory, `NCI_STAGE_DIR`, which the main shell reads after the stage:
+
+.The files of a stage directory.
+[cols="2,5",options=header]
+|===
+| File | Written by, read for
+
+| `notes` | `nci::note`, a line per note; joined with `;` into `NCI_NOTES`.
+| `skipped` | `nci::skip`, the reason; the result becomes `skip`.
+| `steps` | `nci::step`, a tab-separated line per step: name, exit code, seconds, first line of
+its output in the log. The first failed step names the failure and sets where the report starts.
+| `attachments` | `nci::attach`, a path per line; the files are copied to
+`attachments/<stage>/` of the run.
+|===
+
+`nci::step` finds the first line of its output by counting the lines of the log (`NCI_STAGE_LOG`)
+before it prints its `#> step` marker; the output of a stage goes to the log unbuffered by the
+shell, so the count is exact for the shell's own output and close for buffered tools.
+
+=== Classifying
+
+After the stage, its log is scanned for TAP: `^ok N` and `^not ok N` lines are counted (`# SKIP`
+ones as skipped) into a note, and a `not ok` with exit code 0 turns the code into 1. The footer
+line `#> finished` goes into the log. Then the result, first match wins:
+
+.The result of a stage that ran.
+[cols="2,3",options=header]
+|===
+| Condition | Result
+
+| An interrupt arrived (`NCI_INTERRUPTED`) | `interrupted`
+| Exit code not 0, and `--warn` names it or it is soft without `--strict` (`+nci::_is_soft+`) | `warn`
+| Exit code not 0 | `fail`
+| A `skipped` file | `skip`
+| Otherwise | `ok`
+|===
+
+[[_failure_report]]
+=== Failure report
+
+`+nci::_report LOG FIRST_LINE ERRORS TAIL+` is one awk program over the log: from the first line of
+the failed step (or 1), skipping the `#>` lines of NCI, it collects the lines and the ones matching
+the error regex. When the part is longer than the tail, the first error lines are printed (10,
+`NCI_ERROR_LINES`), then the tail; a short part is printed whole. A warning passes an empty regex:
+the tail only. Attachments go through the same function.
+
+The default error regex, `NCI_ERRORS`, matches whole words: `error`, `Error`, `ERROR`, `FAIL`,
+`FAILED`, `FAILURE`, `Failed`, `fatal`, `Fatal`, `FATAL`, `panic`, `Assertion`, `Traceback`,
+`Bail out!`, and lines starting with `not ok`. Lowercase `failed` is left out: summaries like
+"0 tests failed" would match.
+
+=== Console and interrupts
+
+On a terminal, the line of the running stage is redrawn by a spinner, a background function that
+prints the elapsed seconds every 0.2 s until it is killed; the final line overwrites it. Without a
+terminal the line is printed once and completed after the stage; with `--verbose` the output is
+`tee`-d to the console between the line and the result.
+
+The spinner runs in the background and the stage in the foreground for the sake of kbd:[Ctrl+C]:
+a non-interactive Bash starts background commands with `SIGINT` ignored, so a stage in the
+background could not be interrupted. In the foreground, the terminal's `SIGINT` reaches the stage
+and the processes it started. The main shell traps `INT` and `TERM` with a flag only (traps are
+reset in subshells, so the stage still dies of the signal); after the stage returns, the flag makes
+its result `interrupted`, ends the loop, and the summary is still written. The exit code is then
+130.
+
+== Clean runs
+
+`--clean` changes the run before the selection: it prepends a `checkout` stage to every array of
+the registry and adds `checkout` to the needs of every other stage. Selection, blocking and resuming
+then need nothing special: a failed checkout blocks everything, `--skip checkout` leaves it out.
+
+.A clean run: the stages run in the workspace, the results stay in the repository.
+[fig,clean,880x200]
+....
+aria: The checkout stage clones the repository's HEAD into the workspace, sharing its objects and
+aria: taking the submodules from their local checkouts. The stages run in the workspace; their
+aria: logs and summary go to the runs directory of the repository.
+
+row 20 h=54
+  repo   @20  w=200 repository :blue   | NCI_SOURCE, submodules
+  ws     @400 w=200 workspace :orange  | NCI_ROOT
+
+row 130 h=54
+  stages @400 w=200 stages             | committed files
+  runs   @680 w=180 build/ci :green    | of the repository
+
+repo   -> ws     : clone --shared HEAD
+ws     -> stages
+stages -> runs   : results
+....
+
+The checkout (`+nci::_checkout+`) checks the workspace first (`+nci::_check_workspace+`): not `/`,
+not the home directory, not the repository or a parent of it, and, if it exists, a Git checkout.
+Then it removes the workspace, clones with `--shared --no-checkout`, checks out the commit of the
+repository's HEAD detached, points every submodule with a local checkout at it
+(`+submodule.<name>.url+`) and updates the submodules with `protocol.file.allow=always`.
+`NCI_ROOT` switches to the workspace after the selection, which still works on the repository;
+`NCI_RUNS_DIR` was set from the repository before.
+
+== Summary and runs
+
+The summary goes to the console, to `summary.json` and, under GitHub Actions, to
+`GITHUB_STEP_SUMMARY`. The JSON is written with `printf` and a small escaper
+(`+nci::_json_escape+`), so NCI needs no `jq`. Run ids are timestamps, so sorting the names of the
+run directories sorts them by age: `+nci::_prune_runs+` removes all but the newest
+`NCI_KEEP_RUNS`.
+
+== nci-test
+
+nci-test keeps its state in a few counters (`TAP_COUNT`, `TAP_FAILED`, `TAP_SKIPPED`). Sourcing it
+sets `TAP_ROOT` from the location of the test script (`$0`, not the current directory) and prepares
+`TAP_DIR`: the stage directory when NCI runs the test, else a directory under `build/test-out/`,
+which it empties; a `TAP_DIR` from the environment is never emptied.
+
+`tap::case` gives each case a directory and runs the function in a subshell with errexit, following
+the rule of link:#_subshell_and_errexit[Subshell and errexit], its output to `case.log`. TAP lines
+are the only thing the script prints to its stdout; everything a case prints, including
+the account of `tap::run` and the explanations of the assertions, is in its log, so the diagnostics of a
+failed case are the tail of that log. `tap::run` restores the caller's errexit after the command,
+so it can be used outside a case too.
+
+== Changing NCI
+
+[.points]
+Lint:: Both files and the scripts using them are checked by shellcheck in the `lint-shell` stage of
+Nexus. Deliberate exceptions carry a `disable` comment with the reason.
+Test:: NCI has no automated tests of its own yet. Try a change on a scratch pipeline that exercises
+it (failing, skipped and blocked stages, steps, attachments, TAP, kbd:[Ctrl+C]) and on Nexus's
+pipeline, in place and with `--clean`.
+Versions:: `NCI_VERSION` and `TAP_VERSION` follow semantic versioning; projects copy the files, so
+the version tells which copy they have.
+Documentation:: This book is the reference; the scripts carry a short description and a link
+to it.

@@ -12,11 +12,20 @@ The commits are following the [Conventional Commits](https://www.conventionalcom
 The project uses `baldr` for building.
 
 ```bash
-baldr -p . -b Debug -j 8 -t <target> [--run]
+baldr build -b Debug
+baldr run -b Debug -t <target>
 ```
 
-## End-to-end Testing
+## Pipeline and Tests
+
+The CI pipeline runs locally: lint, file headers, build, unit tests, function tests and the
+documentation. See the nci book, [`doc/nci`](doc/nci/nci.adoc) (`tools/doc.sh doc/nci` renders it).
 
 ```bash
-./tests/btx.sh
+ci/pipeline.sh                      # everything
+ci/pipeline.sh --changed            # what the changes since master affect
+ci/pipeline.sh --only function-test # the function tests (`tests/function/*.sh`), after a build
+ci/pipeline.sh --clean              # on a fresh clone of HEAD in /tmp/workspace/nexus
 ```
+
+A function test also runs alone, against `build/debug` by default: `tests/function/btx.sh`.

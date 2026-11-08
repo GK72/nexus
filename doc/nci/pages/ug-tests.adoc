@@ -1,0 +1,153 @@
+// Part of Nexus Library
+//
+// Page of the NCI book (`nci.adoc`): the test library `tools/ci/nci-test.sh`. Renders alone too.
+
+= Test Library
+ifeval::["{docname}" == "ug-tests"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+nci-test is for function tests written in Bash: run a tool, check its exit status, output and
+files. A test script sources the library, defines its cases as functions and runs them. The script
+prints TAP, which NCI counts and reports; everything else a case prints goes to a file of the case,
+so the TAP stream stays readable and a failure brings its own evidence.
+
+[source,bash]
+----
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "$(realpath "$0")")/../../tools/ci/nci-test.sh"
+
+TOOL="${TOOL:-${TAP_ROOT}/build/debug/tool}"
+tap::require "${TOOL}" "build first: ci/pipeline.sh --only build"
+
+# greets NAME: the tool greets NAME on stdout.
+greets() {
+    tap::run "${TOOL}" hello "$1"
+    tap::expect_status 0
+    tap::expect_stdout "Hello, $1"
+}
+
+tap::case "greets the world" greets world
+tap::case "greets nobody"    greets ""
+tap::skip "greets in Klingon" "not implemented"
+tap::done
+----
+
+[source,text]
+----
+ok 1 - greets the world
+not ok 2 - greets nobody
+#   $ /repo/build/debug/tool hello
+#     exit status 1, stdout 0 bytes, stderr 1 lines
+#   FAIL: exit status 1, expected 0
+#         stderr (last lines):
+#           error: no name given
+#   case log: /repo/build/test-out/greet/02-greets-nobody/case.log
+ok 3 - greets in Klingon # SKIP not implemented
+1..3
+# 1 passed, 1 failed, 1 skipped
+----
+
+== Cases
+
+`tap::case NAME FUNCTION [ARG...]` runs the function with the arguments as one case: in a
+subshell with `set -euo pipefail`, so the first failing assertion or command ends the case and
+nothing it sets leaks into the next. Its output goes to its log, `case.log` in its directory. A
+passing case prints `ok`; a failing one prints `not ok` and the tail of its log as TAP diagnostics
+(15 lines, `TAP_DIAG_LINES`), then the path of the log.
+
+A function with arguments makes a table of cases from one check:
+
+[source,bash]
+----
+# encode BTX HEX: BTX encodes to the bytes HEX.
+encode() {
+    printf '%s' "$1" > "${TAP_CASE_DIR}/input.btx"
+    tap::run "${BTX_TOOL}" encode "${TAP_CASE_DIR}/input.btx" "${TAP_CASE_DIR}/output.bin"
+    tap::expect_status 0
+    tap::expect_hex "${TAP_CASE_DIR}/output.bin" "$2"
+}
+
+tap::case "encode: hex"         encode '\x48\x65\x6c\x6c\x6f'   48656c6c6f
+tap::case "encode: bits"        encode '\b10101010'             aa
+tap::case "encode: bit packing" encode '\b1111____ \b____0000'  f0
+----
+
+.Script-level functions.
+[cols="2,5",options=header]
+|===
+| Function | Effect
+
+| `tap::case NAME FUNCTION [ARG...]` | Runs one case.
+| `tap::skip NAME [REASON]` | A case that is not run: `ok N - NAME # SKIP REASON`.
+| `tap::require FILE [HINT]` | Stops the script with TAP `Bail out!` unless FILE is an executable;
+for the tools under test.
+| `tap::done` | Prints the plan (`1..N`) and a summary comment; exits with 1 if a case failed,
+else 0.
+|===
+
+== Inside a case
+
+A case runs commands with `tap::run`, which never fails: it records what happened for the
+assertions to check. Assertions return non-zero with an explanation on stderr, in the case log.
+
+.Functions inside a case.
+[cols="2,5",options=header]
+|===
+| Function | Effect
+
+| `tap::run COMMAND [ARG...]` | Runs the command with stdin from `/dev/null`. Its stdout, stderr
+and both go to the files `TAP_STDOUT`, `TAP_STDERR` and `TAP_OUTPUT`, its exit status to
+`TAP_STATUS`; the command and a one-line account go to the case log.
+| `tap::expect_status [CODE]` | The last run exited with CODE (default 0); shows the end of its
+stderr otherwise.
+| `tap::expect_fail` | The last run exited with a non-zero status.
+| `tap::expect_eq ACTUAL EXPECTED [WHAT]` | Two strings are equal; shows both otherwise.
+| `tap::expect_stdout TEXT` | The stdout of the last run is TEXT, ignoring trailing whitespace of
+the lines and trailing newlines.
+| `tap::expect_hex FILE HEX` | The bytes of FILE are HEX: lowercase or uppercase, no separators.
+| `tap::expect_contains FILE TEXT...` | FILE contains every TEXT, as fixed strings; lists the
+missing ones otherwise.
+| `tap::expect_match FILE REGEX` | A line of FILE matches the extended regex.
+| `tap::write_hex FILE HEX` | Writes the bytes given as hex, an input for the tool.
+|===
+
+An `if` around an assertion turns off `set -e` inside it; use the assertions as plain commands, or
+end a custom check with `tap::_fail MESSAGE [DETAIL...]` as the last command of a `||` list.
+
+== Directories
+
+[.points]
+`TAP_ROOT`:: The repository of the test script, for the paths of tools and data.
+`TAP_DIR`:: The directory of the cases: `$NCI_STAGE_DIR/cases` under NCI, so the cases stay with the
+run's logs; `<root>/build/test-out/<script name>` when run by hand, emptied first. Set it to keep
+the cases elsewhere (it is not emptied then).
+`TAP_CASE_DIR`:: The directory of the running case, `<NN>-<case name>` in `TAP_DIR`: for its inputs
+and outputs, next to its log and the files of `tap::run`.
+
+== Shared setup
+
+Tests of one project share their setup in a sourced file, `tests/common.sh` in Nexus: the library,
+the tools under test with defaults that the environment can override, the data directory, and what
+the tests need to be hermetic (see link:ug-conventions.html[Conventions]):
+
+[source,bash]
+----
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../tools/ci/nci-test.sh"
+
+# Always trace, whatever the caller has: the descriptor test checks the trace log.
+export SPDLOG_LEVEL=trace
+
+DATA="${TAP_ROOT}/tests/data"
+BUILD="$(realpath -m "${BUILD:-${TAP_ROOT}/build/debug}")"
+BTX_TOOL="${BTX_TOOL:-${BUILD}/btx/btx-tool}"
+
+tap::require "${BTX_TOOL}" "build first: ci/pipeline.sh --only build"
+----
+
+The same tests then run against another build: `BUILD=build/release tests/function/btx.sh`.
+Keep the shared file outside the directory of the test scripts, so that the glob of the pipeline's
+group does not take it for a test.
