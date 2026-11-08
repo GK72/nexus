@@ -111,6 +111,10 @@ code, pre, kbd, .tableblock .monospaced, td.tableblock > p > code { font-family:
 :not(pre):not([class^=L]) > code {
   background: none; color: inherit; padding: 0; font-size: 0.9em; letter-spacing: 0;
 }
+/* The unhighlighted listings match the default stylesheet's `pre:not(.highlight)`, which is more
+   specific than `.content > pre` */
+.listingblock > .content > pre:not(.highlight), .listingblock > .content > pre[class=highlight],
+.listingblock > .content > pre[class^="highlight "],
 .literalblock pre, .listingblock > .content > pre, .listingblock > .content > pre.rouge, pre.rouge {
   background: var(--surface); color: var(--ink);
   border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); border-radius: 0;
@@ -196,3 +200,27 @@ body.toc2 { padding-left: 15rem; }
 #footer-text { color: var(--muted); font-size: 0.85rem; }
 #footnotes hr { width: 6rem; }
 #footnotes .footnote { font-size: 0.85rem; line-height: 1.35; }
+
+/* ------------------------------------------------------------------- Figures */
+
+/* `[fig]` blocks (tools/asciidoc/plugins/figure.rb): roles as classes, `st-*` stroke, `t-*` text,
+   `fill-*` fill, so the figures follow the theme at every level */
+svg.fig { display: block; width: 100%; height: auto; }
+svg.fig text { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); }
+svg.fig .t-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+svg.fig .t-muted { fill: var(--muted); }
+svg.fig .box { fill: var(--bg); stroke: var(--rule); }
+svg.fig .st-ink { stroke: var(--ink); fill: none; }
+svg.fig .st-muted { stroke: var(--muted); fill: none; }
+svg.fig .st-grid { stroke: var(--grid); fill: none; }
+svg.fig .fill-ink { fill: var(--ink); }
+svg.fig .fill-muted { fill: var(--muted); }
+svg.fig :is(.t-red, .st-red, .fill-red) { --c: var(--red); }
+svg.fig :is(.t-orange, .st-orange, .fill-orange) { --c: var(--orange); }
+svg.fig :is(.t-green, .st-green, .fill-green) { --c: var(--green); }
+svg.fig :is(.t-teal, .st-teal, .fill-teal) { --c: var(--teal); }
+svg.fig :is(.t-blue, .st-blue, .fill-blue) { --c: var(--blue); }
+svg.fig :is(.t-purple, .st-purple, .fill-purple) { --c: var(--purple); }
+svg.fig :is(.t-red, .t-orange, .t-green, .t-teal, .t-blue, .t-purple) { fill: var(--c); }
+svg.fig :is(.st-red, .st-orange, .st-green, .st-teal, .st-blue, .st-purple) { stroke: var(--c); fill: none; }
+svg.fig :is(.fill-red, .fill-orange, .fill-green, .fill-teal, .fill-blue, .fill-purple) { fill: var(--c); }

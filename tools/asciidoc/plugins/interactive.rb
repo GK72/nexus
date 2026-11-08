@@ -2,7 +2,7 @@
 
 # Part of Nexus Library
 #
-# Interactive blocks: panels of inputs over a chart that the page redraws on every change,
+# Plugin: `interactive::<model>[]`, panels of inputs over a chart that the page redraws on every change,
 # computed in the browser by a model. "Duplicate" copies a panel with its current values, to
 # compare variants (A, B, ...) on one y scale.
 #
@@ -10,10 +10,10 @@
 #
 # A model registers its inputs and its script (see `interactive/interactive.js` for the script):
 #
-#   Adoc::Interactive.model 'savings', script: File.join(__dir__, 'savings.js'), inputs: [
-#     Adoc::Interactive::Input.new('balance', 'Starting balance', :money, default: 0, step: 10_000),
-#     Adoc::Interactive::Input.new('rate', 'Yearly interest', :percent, default: 5, max: 100, step: 0.1),
-#     Adoc::Interactive::Input.new('real', "In today's money", :check)
+#   Nxs::Interactive.model 'savings', script: File.join(__dir__, 'savings.js'), inputs: [
+#     Nxs::Interactive::Input.new('balance', 'Starting balance', :money, default: 0, step: 10_000),
+#     Nxs::Interactive::Input.new('rate', 'Yearly interest', :percent, default: 5, max: 100, step: 0.1),
+#     Nxs::Interactive::Input.new('real', "In today's money", :check)
 #   ]
 #
 # Input kinds: `money` (labeled with the `unit` of the block), `percent`, `number`, `check`. The
@@ -25,7 +25,7 @@ require 'asciidoctor'
 require 'asciidoctor/extensions'
 require 'cgi'
 
-module Adoc
+module Nxs
   module Interactive
     DIR = File.join(__dir__, 'interactive')
 
@@ -141,7 +141,7 @@ module Adoc
 end
 
 Asciidoctor::Extensions.register do
-  block_macro Adoc::InteractiveMacro
-  docinfo_processor Adoc::InteractiveAssets.new(location: :head)
-  docinfo_processor Adoc::InteractiveAssets.new(location: :footer)
+  block_macro Nxs::InteractiveMacro
+  docinfo_processor Nxs::InteractiveAssets.new(location: :head)
+  docinfo_processor Nxs::InteractiveAssets.new(location: :footer)
 end

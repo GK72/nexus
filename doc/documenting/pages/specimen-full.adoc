@@ -8,4 +8,4 @@
 :experimental:
 :theme-style: full
 
-include::specimen-body.adoc[]
+include::_specimen-body.adoc[]

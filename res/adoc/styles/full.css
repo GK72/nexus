@@ -2,14 +2,15 @@
  * Part of Nexus Library
  *
  * Full: the third style level, over `compact.css`. Icons for the admonitions and the links out,
- * the custom roles (legends, notes, key points, side-by-side pairs) and the figure cards with inline SVG classes.
+ * the custom roles (legends, notes, key points, side-by-side pairs) and the figure cards.
  *
- * Accents are named by hue, not by what they show: `[.green]#text#` (plain.css), SVG `t-*`, `st-*`, `fill-*`.
+ * Accents are named by hue, not by what they show: `[.green]#text#`, SVG `t-*`, `st-*`, `fill-*`
+ * (all in plain.css).
  */
 
 /* --------------------------------------------------------------------- Icons */
 
-/* The `--icon-<name>` masks come from `res/adoc/icons/` (tools/asciidoc/icons.rb), with `i:<name>[]` */
+/* The `--icon-<name>` masks come from `res/adoc/icons/` (tools/asciidoc/lib/icons.rb), with `i:<name>[]` */
 
 /* Admonitions: each kind has its own shape and hue, so it reads without color too */
 .admonitionblock.note { --icon: var(--icon-note); }
@@ -82,23 +83,4 @@ h2 > .sectnum, h3 > .sectnum { color: var(--muted); font-family: var(--font-mono
   padding: calc(var(--pad) * 2);
 }
 .imageblock.figure > .title { margin: 0; max-width: 72ch; }
-
-svg.fig { display: block; width: 100%; height: auto; min-width: 640px; }
-svg.fig text { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); }
-svg.fig .t-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
-svg.fig .t-muted { fill: var(--muted); }
-svg.fig .box { fill: var(--bg); stroke: var(--rule); }
-svg.fig .st-ink { stroke: var(--ink); fill: none; }
-svg.fig .st-muted { stroke: var(--muted); fill: none; }
-svg.fig .st-grid { stroke: var(--grid); fill: none; }
-svg.fig .fill-ink { fill: var(--ink); }
-svg.fig .fill-muted { fill: var(--muted); }
-svg.fig :is(.t-red, .st-red, .fill-red) { --c: var(--red); }
-svg.fig :is(.t-orange, .st-orange, .fill-orange) { --c: var(--orange); }
-svg.fig :is(.t-green, .st-green, .fill-green) { --c: var(--green); }
-svg.fig :is(.t-teal, .st-teal, .fill-teal) { --c: var(--teal); }
-svg.fig :is(.t-blue, .st-blue, .fill-blue) { --c: var(--blue); }
-svg.fig :is(.t-purple, .st-purple, .fill-purple) { --c: var(--purple); }
-svg.fig :is(.t-red, .t-orange, .t-green, .t-teal, .t-blue, .t-purple) { fill: var(--c); }
-svg.fig :is(.st-red, .st-orange, .st-green, .st-teal, .st-blue, .st-purple) { stroke: var(--c); fill: none; }
-svg.fig :is(.fill-red, .fill-orange, .fill-green, .fill-teal, .fill-blue, .fill-purple) { fill: var(--c); }
+svg.fig { min-width: 640px; }

@@ -2,24 +2,17 @@
 
 # Part of Nexus Library
 #
-# The icons of the pages: one SVG per icon, drawn on a 16×16 grid in black strokes. The theme
-# (`theme.rb`) embeds them as CSS masks, `--icon-<name>`, so an icon takes the color of its context
-# and the page stays one file.
-#
-#   i:copy[]                 decorative icon, hidden from screen readers
-#   i:copy[label="Copy"]     icon that stands for a word
+# Library: `Nxs::Icons`, the icons of the pages: one SVG per icon, drawn on a 16×16 grid in black
+# strokes, embedded by the theme as CSS masks, `--icon-<name>`, so an icon takes the color of its
+# context and the page stays one file.
 #
 # The icons are `res/adoc/icons/*.svg`, then those of `$ADOC_ICONS` (directories separated by `:`),
 # where an icon of the same name replaces the earlier one. A new icon needs only its file: the
-# `span.icon.<name>` rules of the macro are generated with the properties.
+# `span.icon.<name>` rules of `i:<name>[]` (`plugins/icons.rb`) are generated with the properties.
 
-require 'asciidoctor'
-require 'asciidoctor/extensions'
-require 'cgi'
-
-module Adoc
+module Nxs
   module Icons
-    DIR = File.expand_path('../../res/adoc/icons', __dir__)
+    DIR = File.expand_path('../../../res/adoc/icons', __dir__)
 
     def self.dirs
       [DIR] + ENV.fetch('ADOC_ICONS', '').split(':').reject(&:empty?)
@@ -57,26 +50,4 @@ module Adoc
       CSS
     end
   end
-
-  # `i:<name>[label="..."]`
-  class IconMacro < Asciidoctor::Extensions::InlineMacroProcessor
-    include Asciidoctor::Logging
-    use_dsl
-    named :i
-    name_positional_attributes 'label'
-
-    def process(parent, target, attrs)
-      unless Icons.files.key?(target)
-        logger.warn "i: unknown icon `#{target}` (icons: #{Icons.files.keys.join(', ')})"
-        return create_inline parent, :quoted, target
-      end
-      label = attrs['label']
-      a11y = label ? %(role="img" aria-label="#{CGI.escapeHTML(label)}") : 'aria-hidden="true"'
-      create_inline parent, :quoted, %(<span class="icon #{target}" #{a11y}></span>)
-    end
-  end
-end
-
-Asciidoctor::Extensions.register do
-  inline_macro Adoc::IconMacro
 end

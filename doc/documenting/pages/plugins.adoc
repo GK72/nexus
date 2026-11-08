@@ -1,0 +1,105 @@
+// Part of Nexus Library
+//
+// Page of the documenting book (`documenting.adoc`): where plugins live and how to write one.
+// Renders alone too.
+
+= Plugins
+ifeval::["{docname}" == "plugins"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+What plain AsciiDoc cannot do comes from Asciidoctor extensions, Ruby files that register
+processors when they are required. There are three places for them, from the narrowest:
+
+Companion of a document:: `FILE.rb` next to `FILE.adoc`. `tools/doc.sh` loads it for that document
+only. Use it for what a single document needs, like the model of its interactive chart.
+
+Project extension:: A file the project passes with `-r`. Use it for what the
+manuals of one project share.
+
+Shared extension:: A file in `tools/asciidoc/plugins/`, loaded by `extensions.rb` for every
+document. Use it for what every project can use; it must not know about any one document or
+project.
+
+Code the plugins share goes to `tools/asciidoc/lib/`: plain Ruby in the `Nxs` module that
+registers nothing, e.g. `Nxs::Source` for project paths, `Nxs::Fig` for SVG figures. Plugins at
+every level may use it; a plugin file only registers its processors. The figure plugin,
+`[fig]`, shows every feature in link:figures.html[Figures].
+
+Start narrow and move a plugin up when a second user appears.
+
+== Writing one
+
+A plugin is a processor class and its registration. The kinds used so far:
+
+[cols="2,3,3",options=header]
+|===
+| Processor | In the document | For
+
+| `BlockMacroProcessor` | `name::target[attrs]` on its own line | Content built from elsewhere:
+tables from headers, boards from sources, charts.
+| `BlockProcessor` | `[name,...]` above a delimited block | Content written in a notation of its
+own.
+| `InlineMacroProcessor` | `name:target[attrs]` in a sentence | A computed value or an icon in the
+text.
+| `DocinfoProcessor` | Nothing | Styles in `<head>`, scripts at the end of `<body>`.
+|===
+
+[source,ruby]
+----
+require 'asciidoctor'
+require 'asciidoctor/extensions'
+
+module Project
+  # `todos::[dirs="src,tools"]`
+  class TodosMacro < Asciidoctor::Extensions::BlockMacroProcessor
+    use_dsl
+    named :todos
+
+    def process(parent, _target, attrs)
+      rows = scan(attrs.fetch('dirs', 'src'))
+      parse_content(parent, table(rows)) # AsciiDoc source, converted like the rest
+      nil
+    end
+  end
+end
+
+Asciidoctor::Extensions.register do
+  block_macro Project::TodosMacro
+end
+----
+
+Some rules that kept the plugins simple:
+
+* *Return AsciiDoc where possible.* `parse_content` with generated AsciiDoc gets the theme, the
+  numbering and the cross-references for free. Raw HTML (`create_pass_block`) is for what AsciiDoc
+  cannot express, like SVG or inputs.
+* *Resolve paths against `ENV['ADOC_ROOT']`*, not against the plugin's own location, so the plugin
+  works for any project.
+* *Fail loudly with the target in the message.* An unknown target raises `ArgumentError`; a
+  questionable input logs a warning through `logger.warn`. Both show up in the output of
+  `tools/doc.sh`.
+* *Mark the documents that need assets.* A docinfo processor runs for every document; inline the
+  styles and scripts only where a block is used. The attributes of the body are reset before the
+  conversion, so keep the mark outside them (Nexus sets an instance variable on the
+  document).
+* *Safe mode stays on.* `tools/doc.sh` renders in `safe` mode, which allows includes and inline
+  content from the document tree, but not writing outside it.
+
+== The plugins of Nexus
+
+[cols="2,3,4",options=header]
+|===
+| Plugin | In the document | Page
+
+| `theme.rb` | `:theme-style:`, `:theme-size:` | link:style.html[Style]
+| `icons.rb` | `+i:name[]+` | link:style.html#_icons[Style, Icons]
+| `figure.rb` | `[fig,name,WxH]` | link:figures.html[Figures]
+| `interactive.rb` | `+interactive::model[]+` | link:interactive.html[Interactive Blocks]
+| `studio.rb` | `+studio::color[]+`, `+studio::font[]+` | link:style.html#_studios[Style, Studios]
+| `demo.rb` | `[demo]` | link:writing.html#_showing_markup[Writing, Showing Markup]
+| `nav.rb` | Nothing: the pages of a book | link:rendering.html#_books[Rendering, Books]
+| `live.rb` | Nothing: `--serve` | link:rendering.html#_serving[Rendering, Serving]
+|===

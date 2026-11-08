@@ -4,7 +4,7 @@
 // over them, a legend, a hover tooltip and a table view. Hover or arrow keys (with focus) pick a
 // column; the tooltip lists every series there, then the extra rows.
 
-window.AdocChart = (() => {
+window.NxsChart = (() => {
   const MINUS = '−';
 
   const esc = (text) =>

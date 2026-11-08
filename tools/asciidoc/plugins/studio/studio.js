@@ -9,7 +9,7 @@
 // theme, so the whole page shows them; they are kept in localStorage for this viewer until "Reset".
 
 (function () {
-  if (window.NxStudio) return;
+  if (window.NxsStudio) return;
 
   // ------------------------------------------------------------------------ colors
 
@@ -257,7 +257,7 @@
     sync();
   }
 
-  window.NxStudio = {
+  window.NxsStudio = {
     color, FONTS, FALLBACK, HUES, SIZES, fontInfo, loadFont,
     init, commit, reset, toolbar, esc, h, copyText, effectiveMode,
     get state() { return state; },

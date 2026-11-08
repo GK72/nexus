@@ -2,7 +2,8 @@
 
 # Part of Nexus Library
 #
-# The Color and Font Studio: tools in the page that edit the theme tokens of the page itself.
+# Plugin: `studio::color[]` and `studio::font[]`, the Color and Font Studio: tools in the page that
+# edit the theme tokens of the page itself.
 #
 #   studio::color[]    the color seeds (OKLCH) of the tokens, with the contrast of every text color
 #   studio::font[]     families, size, leading, scale and spacing
@@ -14,7 +15,7 @@
 require 'asciidoctor'
 require 'asciidoctor/extensions'
 
-module Adoc
+module Nxs
   module Studio
     DIR = File.join(__dir__, 'studio')
     KINDS = %w[color font].freeze
@@ -61,7 +62,7 @@ module Adoc
 end
 
 Asciidoctor::Extensions.register do
-  block_macro Adoc::StudioMacro
-  docinfo_processor Adoc::StudioAssets.new(location: :head)
-  docinfo_processor Adoc::StudioAssets.new(location: :footer)
+  block_macro Nxs::StudioMacro
+  docinfo_processor Nxs::StudioAssets.new(location: :head)
+  docinfo_processor Nxs::StudioAssets.new(location: :footer)
 end

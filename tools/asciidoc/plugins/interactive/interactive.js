@@ -4,14 +4,14 @@
 // redraw on every change. A model turns the values of the inputs into the spec of the chart and
 // a summary:
 //
-//   AdocInteractive.model('name', (params) => ({ chart: { xs, series, ... }, summary: [[label, value]] }));
+//   NxsInteractive.model('name', (params) => ({ chart: { xs, series, ... }, summary: [[label, value]] }));
 //
 // `params` has one entry per input (`-` in names becomes `_`; percents are fractions, checkboxes
 // booleans) and the `unit` of the block. "Duplicate" copies a panel with its current values (A, B,
 // ...); all panels of a block share the y scale. Models register in their own scripts, which come
 // after this one; the blocks start once the page is loaded.
 
-window.AdocInteractive = (() => {
+window.NxsInteractive = (() => {
   const models = {};
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -60,12 +60,12 @@ window.AdocInteractive = (() => {
         panel.classList.toggle('ix-invalid', params === null);
         return params && model(params);
       });
-      const extents = outs.filter(Boolean).map((out) => AdocChart.extent(out.chart));
+      const extents = outs.filter(Boolean).map((out) => NxsChart.extent(out.chart));
       const span = [Math.min(...extents.map((e) => e[0])), Math.max(...extents.map((e) => e[1]))];
       panels().forEach((panel, k) => {
         const out = outs[k];
         if (!out) return;
-        AdocChart.render(panel.querySelector('.ix-chart'), { ...out.chart, yInclude: span });
+        NxsChart.render(panel.querySelector('.ix-chart'), { ...out.chart, yInclude: span });
         showSummary(panel, out.summary);
       });
     };

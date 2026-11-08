@@ -1,0 +1,24 @@
+// Part of Nexus Library
+//
+// The documenting book: how the author's projects write and render their manuals. A spine: the
+// pages are files of their own, each also rendered alone.
+//   tools/doc.sh doc/documenting
+
+= Documenting
+:toc: left
+:toclevels: 2
+:sectnums:
+:experimental:
+
+How projects write their manuals: AsciiDoc pages put together into books, rendered to standalone
+HTML by `tools/doc.sh`, with plugins for what plain AsciiDoc cannot do. Each chapter is also a
+page of its own: link:rendering.html[Rendering], link:writing.html[Writing],
+link:style.html[Style], link:figures.html[Figures], link:interactive.html[Interactive Blocks],
+link:plugins.html[Plugins].
+
+include::pages/rendering.adoc[leveloffset=+1]
+include::pages/writing.adoc[leveloffset=+1]
+include::pages/style.adoc[leveloffset=+1]
+include::pages/figures.adoc[leveloffset=+1]
+include::pages/interactive.adoc[leveloffset=+1]
+include::pages/plugins.adoc[leveloffset=+1]

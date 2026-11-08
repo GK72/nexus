@@ -1,0 +1,50 @@
+// Part of Nexus Library
+//
+// Page of the documenting book (`documenting.adoc`): `interactive::<model>[]`, inputs over a chart
+// computed in the browser. Renders alone too.
+
+= Interactive Blocks
+ifeval::["{docname}" == "interactive"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+browser. The block is generic; a model makes it concrete. Here is a toy one, the line
+`y = a·x + b`:
+
+.The line y = a·x + b. Change a and b, or duplicate the panel to compare.
+interactive::line[a=1,b=2]
+
+"Duplicate" copies a panel with its current values, so variants (A, B, ...) can be compared on the
+same scale. The model takes two files next to the document. The companion, `interactive.rb` for this page,
+registers the inputs and the script of the model:
+
+[source,ruby]
+----
+include::interactive.rb[lines=5..-1]
+----
+
+Input kinds are `:money` (labeled with the `unit` of the block), `:percent` (a fraction in the
+script), `:number` and `:check` (a boolean). The script, `line.js`, turns the values of the
+inputs into the chart and the summary:
+
+[source,javascript]
+----
+include::line.js[lines=3..-1]
+----
+
+Here the chart is a single line over the x values. A chart can also have stacked `series` of
+columns (up to three colors) under the `lines`, and `extras`: rows of the tooltip and the table
+that are not drawn. The document places the block and sets the
+starting values:
+
+[source,asciidoc]
+----
+.The line y = a·x + b. Change a and b, or duplicate the panel to compare.
+interactive::line[a=1,b=2]
+----
+
+A companion belongs to the rendered document. When a page with an interactive block is included
+into a manual, the manual needs the model: pass the companion with `-r`, or make it the manual's
+companion.

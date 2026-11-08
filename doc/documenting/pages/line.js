@@ -1,6 +1,6 @@
-// The `line` model of `documenting.adoc`: y = a·x + b.
+// The `line` model of `interactive.adoc`: y = a·x + b.
 
-AdocInteractive.model('line', ({ a, b }) => {
+NxsInteractive.model('line', ({ a, b }) => {
   const xs = Array.from({ length: 21 }, (_, i) => i - 10);
   return {
     chart: {

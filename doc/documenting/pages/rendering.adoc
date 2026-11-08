@@ -1,0 +1,93 @@
+// Part of Nexus Library
+//
+// Page of the documenting book (`documenting.adoc`): `tools/doc.sh`, its options and variables.
+// Renders alone too.
+
+= Rendering
+ifeval::["{docname}" == "rendering"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+[source,shell]
+----
+tools/doc.sh doc/documenting                        # a book: the spine and its pages
+tools/doc.sh doc/finance/compound.adoc              # a single document
+tools/doc.sh doc/*.adoc                             # documents outside the book layout
+tools/doc.sh --serve doc/documenting                # render, serve, re-render on changes
+tools/doc.sh --shot --dark build/doc/documenting/figures.html   # a screenshot to look at
+tools/doc.sh --help
+----
+
+== Books
+
+A book is a folder with one `.adoc` at its top, the spine, under any name, and a `pages/` folder
+with its pages, their companions, models and images:
+
+[source]
+----
+doc/documenting/
+  documenting.adoc        the spine: settings, introduction, include::pages/...
+  documenting.rb          its companion
+  pages/
+    rendering.adoc        a page; also rendered alone
+    _specimen-body.adoc   a partial (`_`): only included
+----
+
+Given the folder or its spine, `tools/doc.sh` renders the book into `OUT/<spine>/`: the spine as
+`index.html`, every page that is not a partial as `<page>.html`. The pages get navigation that
+stays in view while scrolling: a header bar of breadcrumbs (the book, then the page) and a footer
+bar of the previous and next page, in the order of the spine's includes. Pages of one book link to
+each other with `+link:page.html[]+`, to another book with `+link:../other/page.html[]+`.
+
+Any other `.adoc` renders to `OUT/<name>.html`. Documents that do not follow the layout are passed
+as files, globbed by the shell; two documents that would make the same output file stop the run.
+
+The pages are self-contained: the theme, the scripts of the plugins and the images (as data URIs;
+`-a data-uri!` links them instead) are inlined, only the fonts come from the web.
+
+== Serving
+
+`--serve` renders, serves the output on `+http://127.0.0.1:8000+` (`--serve=PORT` for another
+port) and watches the sources: a changed page re-renders with its spine, a changed spine, partial
+or companion re-renders its book, a change to the theme or the plugins of Nexus re-renders
+everything. The open pages reload themselves, at the same scroll position. Watching uses
+`inotifywait` (inotify-tools); without it, `tools/doc.sh` warns and checks the files every
+`--interval` seconds (0.5).
+
+In Neovim, `:DocServe [PORT]` (or `\p` in an AsciiDoc buffer) serves the buffer's book when the
+file is its spine or one of its pages, the file alone otherwise, and opens the browser on the
+buffer's page; served already, it only opens the page. `:DocStop` (`\q`) stops the server,
+`:DocLog` shows its output. The plugin is `env/config/nvim/lua/nexus/doc.lua`.
+
+== Screenshots
+
+`--shot FILE.html...` writes `FILE.png` beside each page with a headless Chromium-based browser
+(chromium, google-chrome, brave, ...; `ADOC_BROWSER` picks one), `--dark` the dark theme to
+`FILE-dark.png`, `--size WxH` sets the window (1300x2400). For checking a render without opening a
+browser, by hand or by an agent.
+
+== Options and variables
+
+[cols="2,5",options=header]
+|===
+| Option or variable | Effect
+
+| `-o`, `--out DIR` | Output directory; default: `build/doc` of the project root.
+| `-r`, `--require FILE.rb` | An extra extension, for every document of the run. Repeatable.
+| `-a`, `--attribute NAME=VALUE` | A document attribute, over the one in the document. Repeatable.
+| `--serve[=PORT]`, `--interval SEC` | Serve and re-render on changes; see <<_serving>>.
+| `--shot`, `--dark`, `--size WxH` | Screenshots; see <<_screenshots>>.
+| `ADOC_STYLE` | The style level, `plain`, `compact` or `full` (default); the `:theme-style:`
+attribute of a document wins. See link:style.html[Nexus Style].
+| `ADOC_SIZE` | The base size, `small` (15 px), `normal` (16 px) or `large` (17 px); default:
+`--text` of the tokens. The `:theme-size:` attribute of a document wins.
+| `ADOC_TOKENS` | The tokens of the theme; default: `res/adoc/tokens.css` of Nexus.
+| `ADOC_CSS` | A stylesheet of the project, instead of the tokens and the levels.
+| `ADOC_ICONS` | Directories of project icons, separated by `:`. Each `NAME.svg` adds the icon
+`+i:NAME[]+` and the CSS mask `--icon-NAME`, or replaces the Nexus icon of that name.
+| `ADOC_ROOT` | The project root, which extensions resolve paths against; default: the git root
+of the working directory.
+| `ADOC_BROWSER` | The browser of `--shot`.
+|===

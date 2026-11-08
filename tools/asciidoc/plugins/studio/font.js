@@ -5,7 +5,7 @@
 // the export is a tokens file with the font import (see `studio.js`).
 
 (function () {
-  const S = window.NxStudio, { h, esc } = S;
+  const S = window.NxsStudio, { h, esc } = S;
 
   const ROLES = [["display", "Display", "Headings"], ["body", "Body", "Text"], ["mono", "Mono", "Code"]];
   const RANGES = {

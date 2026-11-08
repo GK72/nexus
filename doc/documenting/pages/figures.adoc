@@ -1,0 +1,320 @@
+// Part of Nexus Library
+//
+// Page of the documenting book: the figure plugin (`tools/asciidoc/plugins/figure.rb`), every
+// feature as a demo, its source and the rendered figure. Renders alone too.
+
+= Figures
+ifeval::["{docname}" == "figures"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+A `[fig]` block turns a few lines in the `.adoc` file into an inline SVG figure when the page is
+rendered. Figures sit next to the text they explain, follow the light and dark theme, and keep
+the page one file.
+
+Notation:: `[fig,name,WxH]`: boxes at given positions, arrows between them by name. For data
+flow and structure.
+Ruby:: `[fig,name,WxH,ruby]`: any drawing, with sizes and labels computed from formulas.
+
+`name` prefixes the ids inside the SVG and must be unique on the page. `WxH` is the viewBox, in
+units of the figure; the figure scales to the width of the page. A `.Title` above the block
+becomes the numbered caption; without one, the figure has none. The body goes in a literal
+block (`....`).
+
+== Notation
+
+=== Boxes
+
+[demo]
+--
+.A document from source to output.
+[fig,ex-boxes,880x220]
+....
+# A comment: skipped, like empty lines
+aria: A source file is parsed into a tree and checked; the checker writes HTML, printed to a PDF,
+aria: and reports problems to a log. A legend box stands apart.
+
+row 20 h=54
+  src    @20  w=170 source.adoc         | :blue AsciiDoc
+  parse  @250 w=170 parser              | tree of blocks
+  check  @480 w=170 checker :orange     | :orange warnings
+  html   @710 w=150 HTML :green         | one file
+
+row 130 h=54
+  log    @480 w=170 h=70 log            | to stderr | :red errors stop
+  pdf    @710 w=150 PDF :purple         | for print
+
+box legend @20,130 w=170 h=54 legend :muted | a box outside a row
+
+src   -> parse : read
+parse -> check : tree
+check -> html  : write
+html  -> pdf   : print
+check -> log   : report
+....
+--
+
+[cols="3,5",options=header]
+|===
+| Line | Meaning
+
+| `+aria: <text>+` | What the figure shows, for screen readers. Required; several lines join.
+| `+row <y> h=<h>+` | `y` and height of the indented boxes below it.
+| `+<name> @<x> w=<w> <title> \| <line> \| …+` | A box in the current row; `h=` overrides the
+row's height.
+| `+box <name> @<x>,<y> w=<w> h=<h> <title> …+` | A box outside a row.
+| `+# <text>+` | A comment. Empty lines are skipped too.
+|===
+
+A role after the title colors it (`checker :orange`); a role at the start of a line colors that
+line (`:orange warnings`), other lines are muted. `h=54` fits one line under the title, `h=70`
+two.
+
+=== Arrows
+
+[demo]
+--
+.Arrow variants and anchors.
+[fig,ex-arrows,880x210]
+....
+aria: Arrow variants between boxes a to e: solid, dashed, two-headed, an anchor moved along a side,
+aria: a role color and a label moved off its arrow.
+
+row 20 h=40
+  a @20  w=140 a
+  b @370 w=140 b
+  c @720 w=140 c
+
+row 130 h=40
+  d @20  w=140 d
+  e @550 w=140 e
+
+a -> b : ->
+b --> c : -->
+a <-> d :muted : <-> :muted
+b.bottom-40 -> e : b.bottom-40
+c <--> e :red : <--> :red
+d -> e :teal : moved label @300,198
+....
+--
+
+[cols="3,5",options=header]
+|===
+| Syntax | Meaning
+
+| `+a -> b+`, `+a --> b+` | Solid or dashed arrow.
+| `+a <-> b+`, `+a <--> b+` | Two heads, solid or dashed.
+| `+a -> b : label+` | A label on the arrow.
+| `+a -> b :<role>+` | Arrow and label in the color of the role.
+| `+a.bottom-40 -> b+` | From the bottom side of `a`, 40 units left of its center. Sides are
+`top`, `bottom`, `left`, `right`; the offset is optional.
+| `+a -> b : label @x,y+` | The label moved to `x,y`.
+|===
+
+=== Routing
+
+[demo]
+--
+.Arrows find their sides and share them.
+[fig,ex-routing,880x200]
+....
+aria: A hub sends arrows to three boxes below it, spread along its bottom side in the order of
+aria: their targets, and one arrow to a box beside it, between the facing sides.
+
+row 20 h=40
+  hub  @330 w=220 hub
+  next @700 w=160 beside the hub
+
+row 150 h=40
+  a @20  w=160 left
+  b @360 w=160 below
+  c @700 w=160 right
+
+hub -> a
+hub -> b
+hub -> c
+hub -> next : facing sides
+....
+--
+
+[.points]
+Sides:: An arrow joins the facing sides of two boxes: left and right when the boxes share rows of
+pixels, top and bottom otherwise.
+Spreading:: Arrows on one side of a box spread evenly along it, in the order of the boxes at
+their other end; an arrow with an offset stays where it is put.
+Labels:: Above an arrow between left and right sides; beside one between top and bottom, on the
+side it leans to, or on the right when it is nearly vertical.
+
+== Ruby
+
+The body is Ruby with the figure as `f`; `f.label =` sets the aria label. Variables keep the
+sizes and the labels tied to the formulas they show. Points are `[x, y]`; every method also takes
+`attrs:` for extra SVG attributes.
+
+=== Primitives
+
+A figure without a title, so without a caption:
+
+[demo]
+--
+[fig,ex-primitives,880x200,ruby]
+....
+f.label = 'Drawing primitives: rectangles, a line, arrows with heads at the end, the start and both ' \
+          'ends, a curved path, circles, and text with its anchors, a title, a weight and a rotation.'
+
+f.rect(20, 20, 120, 60, role: :blue)
+f.rect(160, 20, 120, 60, role: :teal, rx: 8, dash: '5 4', stroke: 2)
+f.line([300, 20], [400, 80], role: :muted)
+f.arrow([420, 30], [540, 30])
+f.arrow([420, 55], [540, 55], head: :start, role: :orange)
+f.arrow([420, 80], [540, 80], head: :both, role: :red, dash: '5 4')
+f.path('M 560 80 C 600 0, 680 0, 720 80', role: :purple, head: :end)
+f.circle([760, 50], 8, role: :green)
+f.circle([800, 50], 8, role: :muted)
+
+[[80, 'rect'], [220, 'rect rx dash'], [350, 'line'], [480, 'arrow'], [640, 'path'], [780, 'circle']].each do |x, name|
+  f.text([x, 108], name, role: :muted, anchor: 'middle', size: 11)
+end
+
+[[20, 'start'], [300, 'middle'], [540, 'end']].each do |x, anchor|
+  f.circle([x, 160], 2.5, role: :red)
+  f.text([x, 160], "anchor: #{anchor}", anchor: anchor)
+end
+f.text([580, 160], 'Title', title: true)
+f.text([650, 160], 'weight 700, size 14', weight: 700, size: 14, role: :blue)
+f.text([868, 190], 'rotate -90', rotate: -90, size: 11, role: :muted)
+....
+--
+
+[cols="4,5",options=header]
+|===
+| Method | Draws
+
+| `+rect(x, y, w, h, role:, stroke:, dash:, rx:, fill:)+` | Rectangle outline; `fill:` takes a
+`grid`.
+| `+line(from, to, role:, stroke:, dash:)+` | Line.
+| `+arrow(from, to, role:, stroke:, dash:, head:)+` | Line with heads at `:end`, `:start` or
+`:both`.
+| `+path(d, role:, stroke:, dash:, head:)+` | Path in SVG `d` syntax, e.g., a curve.
+| `+circle(at, r, role:)+` | Filled circle.
+| `+text(at, str, role:, size:, anchor:, weight:, rotate:, title:)+` | Text; `anchor:` is
+`start`, `middle` or `end`, `title:` the heading font.
+|===
+
+=== Grid and Brackets
+
+[demo]
+--
+.One world unit at three zoom levels.
+[fig,ex-grid,880x170,ruby]
+....
+f.label = 'A grid of world units at a zoom of 24, 48 and 96 pixels per unit, with the size of a unit marked.'
+
+x = 60
+[24, 48, 96].each do |zoom|
+  f.rect(x, 30, 4 * zoom, zoom, role: :green, fill: f.grid(zoom, origin: [x, 30]))
+  f.bracket([x, 30 + zoom + 12], [x + zoom, 30 + zoom + 12], label: "#{zoom} px", role: :muted, side: :below)
+  f.text([x, 20], "zoom = #{zoom}", role: :green, size: 11)
+  x += (4 * zoom) + 50
+end
+f.bracket([45, 30], [45, 54], label: '1 unit', role: :muted, side: :left)
+....
+--
+
+`grid(cell, origin:)` returns a pattern aligned to `origin`, for `rect(fill:)`.
+`bracket(from, to, label:, role:, side:)` draws a dimension line with end ticks; `side:` is
+`:above` or `:below` for a horizontal one, `:left` or `:right` for a vertical one.
+
+=== From a Formula
+
+[demo]
+--
+.A wave drawn from its formula.
+[fig,ex-formula,680x210,ruby]
+....
+period = 240
+amp = 50
+x0 = 80
+y0 = 100
+f.label = "A sine wave of period #{period} and amplitude #{amp}, with both marked."
+
+f.arrow([x0 - 20, y0], [x0 + (2 * period) + 30, y0], role: :muted, stroke: 1)
+f.arrow([x0, y0 + amp + 20], [x0, y0 - amp - 30], role: :muted, stroke: 1)
+f.text([x0 + (2 * period) + 36, y0 + 4], 'x', role: :muted)
+f.text([x0 - 8, y0 - amp - 34], 'y', role: :muted)
+
+points = (0..(2 * period)).step(4).map { |x| [x0 + x, y0 - (amp * Math.sin(2 * Math::PI * x / period))] }
+f.path("M #{points.map { |px, py| "#{px.round(1)} #{py.round(1)}" }.join(' L ')}", role: :blue, stroke: 2)
+
+f.bracket([x0, y0 + amp + 40], [x0 + period, y0 + amp + 40], label: "period #{period}", role: :orange, side: :below)
+f.bracket([x0 - 30, y0 - amp], [x0 - 30, y0], label: "amp #{amp}", role: :green, side: :left)
+....
+--
+
+=== Nodes and Raw Markup
+
+[demo]
+--
+.Nodes, raw markup and extra attributes.
+[fig,ex-composites,800x160,ruby]
+....
+f.label = 'Two nodes, one with colored lines, joined by a dashed polyline written as raw SVG; ' \
+          'below, a bar filled with a theme color at half opacity.'
+
+f.comment('the two ends')
+f.node(20, 20, 220, 70, 'renderer', 'draws batches', [:green, 'on the GPU'], title_role: :blue)
+f.node(560, 20, 220, 70, 'window', [:orange, 'presents'])
+f.raw('<polyline points="240,55 360,55 400,35 440,55 560,55" class="st-muted" stroke-width="1.5" stroke-dasharray="3 3"/>')
+f.text([400, 80], 'raw polyline', role: :muted, anchor: 'middle', size: 11)
+
+f.rect(20, 110, 760, 30, role: :purple, fill: 'var(--pal-purple)', attrs: { opacity: 0.5 })
+f.text([400, 130], "fill: 'var(--pal-purple)', attrs: { opacity: 0.5 }", anchor: 'middle')
+....
+--
+
+`node(x, y, w, h, title, *lines, title_role:)` is the box of the notation; a line is a string
+(muted) or `[role, string]`. `raw(markup)` adds any SVG markup, `comment(str)` an SVG comment.
+
+=== Roles
+
+[demo]
+--
+.The roles.
+[fig,ex-roles,880x100,ruby]
+....
+roles = Nxs::Fig::ROLES
+f.label = "The roles of the figures: #{roles.keys.join(', ')}; each as a stroke, a fill and a text."
+
+roles.each_with_index do |(role, (_stroke, _text, fill)), i|
+  x = 20 + (i * 95)
+  f.line([x, 20], [x + 70, 20], role: role, stroke: 3)
+  f.circle([x + 35, 46], 9, role: role) if fill
+  f.text([x + 35, 84], role.to_s, role: role, anchor: 'middle')
+end
+....
+--
+
+Colors are roles, never values, so figures follow the theme: a role maps to the `+st-*+` (stroke),
+`+t-*+` (text) and `+fill-*+` classes of the theme. `grid` is a stroke only, `ink` has no text class
+as text is ink anyway. A new role needs its classes in the theme and an entry in
+`Nxs::Fig::ROLES`.
+
+== Errors
+
+A notation error stops the render and names the place:
+`+<file>:<line>: fig <name>: <message>+`, e.g. an unknown box, a box without `w=`, a missing
+`aria:` line. A Ruby figure without `f.label` stops it too.
+
+[.points]
+Own scope:: The Ruby of one figure runs in its own scope; its variables are not visible to
+another.
+Theme first:: A literal color does not follow the theme; use a role, or a theme variable as in
+`fill: 'var(--pal-purple)'`.
+
+== Reference
+
+`tools/asciidoc/plugins/figure.rb`:: The `[fig]` block.
+`tools/asciidoc/lib/fig_dsl.rb`:: `Nxs::FigDsl`, the notation, compiled to builder calls.
+`tools/asciidoc/lib/fig.rb`:: `Nxs::Fig`, the SVG builder behind both forms.

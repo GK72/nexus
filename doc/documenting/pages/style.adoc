@@ -1,7 +1,8 @@
 // Part of Nexus Library
 //
-// The Nexus style: tokens, fonts and the style levels of the pages, with the Color and Font
-// Studio. Renders on its own: tools/doc.sh doc/style/style.adoc doc/style/specimen-*.adoc
+// Page of the documenting book (`documenting.adoc`): the tokens, fonts, style levels and icons of
+// the pages. Rendered alone, it also holds the Color and Font Studio.
+//   tools/doc.sh doc/documenting (or pages/style.adoc and pages/specimen-*.adoc alone)
 
 = Nexus Style
 ifeval::["{docname}" == "style"]
@@ -11,8 +12,8 @@ ifeval::["{docname}" == "style"]
 endif::[]
 
 The look of the pages that `tools/doc.sh` renders: tight on purpose, with small gaps, small
-padding and rules before boxes, so a page holds a lot. The specimens show every element at each
-level: link:specimen-plain.html[plain], link:specimen-compact.html[compact],
+padding and rules before boxes. The specimens show every element at each level:
+link:specimen-plain.html[plain], link:specimen-compact.html[compact],
 link:specimen-full.html[full].
 
 == Tokens
@@ -61,9 +62,13 @@ CSS masks (`--icon-<name>`), so they take the color of their context. `+i:name[]
 text, `+i:name[label="..."]+` one that is read out. A new file is a new icon; `ADOC_ICONS=DIR`
 adds a project's own or replaces one of Nexus.
 
-ifdef::backend-html5[]
 == Studios
 
+ifeval::["{docname}" != "style"]
+The Color and Font Studio edit the tokens of a page live and export a new tokens file; they live
+on the standalone page, link:style.html#_studios[Style].
+endif::[]
+ifeval::["{docname}" == "style"]
 The studios edit the tokens of this page: every change restyles it, in both themes. Edits stay in
 this browser until _Reset_; _Export tokens_ gives the file for `ADOC_TOKENS` or
 `res/adoc/tokens.css`. Any page can hold them with `studio::color[]` and `studio::font[]`.

@@ -1,4 +1,4 @@
-// Model of `compound.adoc`, for the interactive block of `tools/asciidoc/interactive.rb` (inputs in
+// Model of `compound.adoc`, for the interactive block of `tools/asciidoc/plugins/interactive.rb` (inputs in
 // `compound.rb`).
 
 (() => {
@@ -14,7 +14,7 @@
   // earns nothing and pays the loan, a monthly annuity. The columns are the savings with the loan
   // still owed below zero; the line is everything with the loan: savings + cash, in today's money
   // (divided by the inflation since the start, compounded monthly) when `real` is checked.
-  AdocInteractive.model('compound', ({ balance, rate, inflation = 0, salary = 0, raise = 0, expenses = 0, deposit = 0, loan = 0, loan_rate = 0, term = 0, years, real = false, unit }) => {
+  NxsInteractive.model('compound', ({ balance, rate, inflation = 0, salary = 0, raise = 0, expenses = 0, deposit = 0, loan = 0, loan_rate = 0, term = 0, years, real = false, unit }) => {
     const months = Math.max(1, Math.round(years * 12));
     const periods = Math.round(term * 12);
     const loanMonthly = loan_rate / 12;
@@ -67,7 +67,7 @@
       rows.paid.push(paid);
       rows.paidOut.push(paidOut);
     }
-    const money = new AdocChart.Format('money', { unit });
+    const money = new NxsChart.Format('money', { unit });
     const series = [
       { name: 'Savings: balance and deposits', values: rows.deposits, slot: 1 },
       { name: 'Interest earned', values: rows.earned, slot: 2 },

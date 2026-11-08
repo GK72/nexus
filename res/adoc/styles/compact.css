@@ -12,6 +12,10 @@
   background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
   padding: 0 0.25em;
 }
+/* The unhighlighted listings match the default stylesheet's `pre:not(.highlight)`, which is more
+   specific than `.content > pre` */
+.listingblock > .content > pre:not(.highlight), .listingblock > .content > pre[class=highlight],
+.listingblock > .content > pre[class^="highlight "],
 .literalblock pre, .listingblock > .content > pre, .listingblock > .content > pre.rouge,
 pre.rouge, pre.rouge .w, .literalblock.output pre {
   background: var(--code-bg); color: var(--code-fg);

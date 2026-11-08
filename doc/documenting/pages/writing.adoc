@@ -1,0 +1,116 @@
+// Part of Nexus Library
+//
+// Page of the documenting book (`documenting.adoc`): books of pages, showing markup, practices.
+// Renders alone too.
+
+= Writing
+ifeval::["{docname}" == "writing"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+== Books and pages
+
+A project has a few manuals, one per audience: a user guide for those who use the code, a developer
+manual for those who change it.
+
+=== The manual is a spine
+
+The manual's folder holds one `.adoc`, the spine, and a `pages/` folder with everything else
+(see link:rendering.html#_books[Books]). The spine holds the settings of the book, a short
+introduction, links to the other manuals and the includes of its pages. It does not hold the
+content itself:
+
+[source,asciidoc]
+----
+= Project Manual
+:doctype: book
+:toc: left
+:toclevels: 2
+:experimental:
+:sectnums:
+
+A short introduction.
+
+\include::pages/user-guide.adoc[leveloffset=+1]
+\include::pages/dev-guide.adoc[leveloffset=+1]
+\include::pages/appendix.adoc[leveloffset=+1]
+----
+
+`doctype: book` lets the level-1 sections (parts and chapters) carry the structure, `sectnums`
+numbers them for references in reviews and discussions, `toc: left` keeps the outline beside the
+text, and `experimental` turns on `kbd:[...]` and the other UI macros.
+
+=== One page per topic
+
+When multiple topics or concepts are described in one section, it can be further split into
+subpages. In this case a page is a file with a single topic and its own level-0 title, as if it
+were a document of its own. The include shifts it into place with `leveloffset=+1`, so a page never
+needs to know how deep it sits. A page that includes pages, a part like the user guide, sits in
+`pages/` with them; the reading order of the navigation follows the includes, depth first.
+
+[source,asciidoc]
+----
+= User Guide
+
+\include::ug-module1.adoc[leveloffset=+1]
+\include::ug-module2.adoc[leveloffset=+1]
+\include::ug-moduleN.adoc[leveloffset=+1]
+----
+
+The file names tell the part: `ug-` for the user guide, `dg-` for the developer guide. A file
+that is only included, never read alone (the examples of a page, a shared fragment), is a partial:
+its name starts with `_`, and it gets no page of its own.
+
+=== Pages that also render alone
+
+Some pages are useful on their own, a palette or a style specimen for example. A page renders
+standalone when it brings the settings the spine would give, only when it is the document itself:
+
+[source,asciidoc]
+----
+= Color Palette
+\ifeval::["{docname}" == "palette"]
+:toc: left
+:toclevels: 2
+\endif::[]
+----
+
+Content that only makes sense in the browser (an interactive page) goes between
+`ifdef::backend-html5[]` and `endif::[]`.
+
+== Showing markup
+
+A `[demo]` block shows AsciiDoc twice from one copy: as its source, then rendered. For pages that
+teach markup, like the figure examples (link:figures.html[Figures]):
+
+[source,asciidoc]
+....
+[demo]
+--
+A *bold* word and a `+monospace+` one.
+--
+....
+
+renders as:
+
+[demo]
+--
+A *bold* word and a `+monospace+` one.
+--
+
+The block is an open block (`--`); when the example holds an open block itself, it is an example
+block (`====`). Titles and attributes go inside, onto the example.
+
+== Practices
+
+* *Prose first, then the reference.* A chapter explains the idea in a few paragraphs before the
+  tables and the API.
+* *Every figure and table has a title.* The title becomes the numbered caption that the text can
+  point to.
+* *Link, do not repeat.* A rule lives in one page; the others link to it, across manuals with
+  `+link:other.html#anchor[]+`.
+* *Generated content stays generated.* If a number can be measured or a table read from the code,
+  a script or a plugin produces it.
+* *Admonitions are rare.* A `NOTE` or `WARNING` in every section stops being read.

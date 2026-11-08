@@ -2,7 +2,7 @@
 
 # Part of Nexus Library
 #
-# The theme of the pages, in <head> after the default stylesheet of Asciidoctor: the tokens
+# Plugin: the theme of the pages, in <head> after the default stylesheet of Asciidoctor: the tokens
 # (`res/adoc/tokens.css`: color seeds, fonts, spacing), the colors derived from them
 # (`res/adoc/palette.css`), then the style levels up to the one chosen.
 # The levels build on each other:
@@ -22,18 +22,19 @@
 #
 # `$ADOC_CSS` replaces the whole theme with a stylesheet of the project.
 #
-# The icons (`icons.rb`) come first, with every theme: `--icon-<name>` and the rules of `i:<name>[]`.
+# The icons (`Nxs::Icons`, `lib/icons.rb`) come first, with every theme: `--icon-<name>` and the
+# rules of `i:<name>[]`.
 
 require 'asciidoctor'
 require 'asciidoctor/extensions'
-require_relative 'icons'
+require_relative '../lib/icons'
 
-module Adoc
+module Nxs
   class Theme < Asciidoctor::Extensions::DocinfoProcessor
     use_dsl
     at_location :head
 
-    DIR = File.expand_path('../../res/adoc', __dir__)
+    DIR = File.expand_path('../../../res/adoc', __dir__)
     STYLES = %w[plain compact full].freeze
     SIZES = { 'small' => 15, 'normal' => 16, 'large' => 17 }.freeze # as `SIZES` of studio/studio.js
 
@@ -66,5 +67,5 @@ module Adoc
 end
 
 Asciidoctor::Extensions.register do
-  docinfo_processor Adoc::Theme
+  docinfo_processor Nxs::Theme
 end

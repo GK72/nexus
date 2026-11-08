@@ -5,7 +5,7 @@
 // color. The swatches are the page's own CSS colors, so they follow every edit without math here.
 
 (function () {
-  const S = window.NxStudio, C = S.color, { h, esc } = S;
+  const S = window.NxsStudio, C = S.color, { h, esc } = S;
 
   const GLOBAL = [
     ["neutral-h", "Neutral hue", 0, 360, 1], ["neutral-c", "Neutral chroma", 0, 0.04, 0.001],
