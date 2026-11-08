@@ -70,6 +70,17 @@ buffer's page; served already, it only opens the page. `:DocStop` (`\q`) stops t
 `FILE-dark.png`, `--size WxH` sets the window (1300x2400). For checking a render without opening a
 browser, by hand or by an agent.
 
+== Publishing
+
+`tools/doc-site.sh` builds the documentation site of a project into `build/site/`: from a clean
+export of `HEAD` (`--ref` another commit, `--working-tree` the files on disk), every book and
+document under `doc/` or the ones given, and an `index.html` that links them. Open its
+`index.html` to look at the site before publishing it.
+
+The workflow `.github/workflows/docs.yml` publishes it to GitHub Pages, on demand only: Actions,
+Docs, _Run workflow_ on the branch to publish. It builds the site with the same script and
+deploys it as a Pages artifact.
+
 == Options and variables
 
 [cols="2,5",options=header]

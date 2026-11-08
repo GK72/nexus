@@ -1,0 +1,52 @@
+# Part of Nexus Library
+#
+# Publishes the documentation to GitHub Pages, on demand only: Actions, Docs, Run workflow (pick
+# the branch), or `gh workflow run docs.yml`. Builds the site with `tools/doc-site.sh` and deploys
+# it as a Pages artifact, so no branch holds the generated files.
+#
+# Once per repository: Settings, Pages, Source: GitHub Actions.
+
+name: Docs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer run waits instead of cancelling the one in progress
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install Asciidoctor
+        run: gem install --no-document asciidoctor rouge
+
+      - name: Build the site
+        run: tools/doc-site.sh doc/documenting --out "${{ runner.temp }}/site"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
