@@ -40,7 +40,7 @@ A short introduction.
 
 `doctype: book` lets the level-1 sections (parts and chapters) carry the structure, `sectnums`
 numbers them for references in reviews and discussions, `toc: left` keeps the outline beside the
-text, and `experimental` turns on `kbd:[...]` and the other UI macros.
+text, and `experimental` turns on `+kbd:[...]+` and the other UI macros.
 
 === One page per topic
 

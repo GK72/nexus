@@ -10,6 +10,8 @@ ifeval::["{docname}" == "rendering"]
 :experimental:
 endif::[]
 
+`tools/doc.sh` renders AsciiDoc into standalone HTML pages, a single document or a whole book:
+
 [source,shell]
 ----
 tools/doc.sh doc/documenting                        # a book: the spine and its pages
