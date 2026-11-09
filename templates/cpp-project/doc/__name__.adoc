@@ -1,0 +1,9 @@
+= @name@
+:toc: left
+:toclevels: 2
+:experimental:
+
+@description@
+
+include::pages/overview.adoc[leveloffset=+1]
+include::pages/building.adoc[leveloffset=+1]

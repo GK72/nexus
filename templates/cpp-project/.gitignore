@@ -1,0 +1,6 @@
+/build/
+/.cache/
+/.tmp/
+CMakeUserPresets.json
+compile_commands.json
+__pycache__/

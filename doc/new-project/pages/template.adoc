@@ -1,0 +1,26 @@
+= Changing the Template
+ifeval::["{docname}" == "template"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+The template is the current best practice, not a snapshot of an old one. When a
+project finds a better way to do something that every project does, the
+template takes it over, and this book says why.
+
+Change the files in `templates/cpp-project`, then stamp a throwaway project and
+run its pipeline:
+
+[source,sh]
+----
+tools/new-project.sh demo --dir /tmp/demo && NEXUS_DIR="$PWD" /tmp/demo/ci/pipeline.sh
+----
+
+Template files are not sources of Nexus: they hold placeholders, so Nexus's
+`.file-headers.toml` excludes `templates/`. Every template file ends with
+exactly one newline, which the script keeps.
+
+Projects stamped before a change don't follow it on their own. Bring them along
+when they are next worked on, as a commit of its own (`Refact: Align with the
+project template`).

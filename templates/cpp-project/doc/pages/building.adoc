@@ -1,0 +1,12 @@
+= Build and test
+
+Nexus must be checked out next to this repository (`../nexus`), or set `NEXUS_DIR`: the pipeline,
+the test library and the book's rendering come from there.
+
+[source,sh]
+----
+ci/pipeline.sh                          # lint, build (build/debug), unit and function tests, the book
+ci/pipeline.sh --only function-test
+tools/configure.sh build/release Release && cmake --build build/release
+tools/doc.sh doc                        # this book, to build/doc/@name@/
+----

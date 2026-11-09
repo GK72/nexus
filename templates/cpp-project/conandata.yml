@@ -1,0 +1,6 @@
+requirements:
+  - nova/0.15.0
+  - boost/1.87.0
+
+test-requirements:
+  - gtest/1.14.0

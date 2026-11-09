@@ -1,0 +1,23 @@
+# Configuration of Nexus's tools/file_headers.py
+
+license = ""
+
+# The @author of files that have none.
+author = "@author@"
+
+# Directories that #include <...> paths are relative to, from the repository root.
+include_roots = ["lib@name@", "@name@"]
+
+# Modules that may reach `stable` without a sibling *.test.cpp.
+no_test_required = ["*/main.cpp"]
+
+# Lines changed since a tag was set before it is reported as stale.
+stale_lines = 100
+
+# Commit subjects that count as a bug fix, for `frozen` files.
+fix_commit_pattern = "(?i)\\bfix"
+
+# The expected "Part of <project>" per path. The longest matching prefix wins.
+[projects]
+"lib@name@" = "@part_of@"
+"@name@" = "@part_of@"

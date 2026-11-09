@@ -1,0 +1,3 @@
+# The templates hold placeholders (@name@, lib__name__/), not compilable sources.
+Diagnostics:
+  Suppress: ['*']

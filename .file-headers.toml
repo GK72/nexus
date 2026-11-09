@@ -2,6 +2,9 @@
 
 license = "Unlicense"
 
+# Not checked: the project templates hold placeholders, not sources.
+exclude = ["templates/*"]
+
 # The @author of files that have none.
 author = "Gábor Krisztián Girhiny"
 

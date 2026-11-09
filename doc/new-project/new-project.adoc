@@ -1,0 +1,20 @@
+= New Projects
+:doctype: book
+:toc: left
+:toclevels: 2
+:sectnums:
+:experimental:
+
+Every C++ project of the author starts from the same skeleton: one library, one
+program, unit and function tests, an NCI pipeline and a book, building with
+Conan and CMake on Nova. The skeleton is `templates/cpp-project` in Nexus;
+`tools/new-project.sh` copies it under a new name. A new project then passes
+its pipeline before it holds a line of its own code.
+
+link:stamping.html[Stamping a Project] shows how to make one,
+link:anatomy.html[Anatomy of a Project] what is in it and why, and
+link:template.html[Changing the Template] how the template itself evolves.
+
+include::pages/stamping.adoc[leveloffset=+1]
+include::pages/anatomy.adoc[leveloffset=+1]
+include::pages/template.adoc[leveloffset=+1]

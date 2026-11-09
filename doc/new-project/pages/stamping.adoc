@@ -1,0 +1,85 @@
+= Stamping a Project
+ifeval::["{docname}" == "stamping"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+Create the repository on GitHub first (empty, private), clone it next to Nexus,
+then stamp the skeleton into the clone:
+
+[source,sh]
+----
+git clone git@github.com:<user>/<name>.git ~/repos/<name>
+~/repos/nexus/tools/new-project.sh <name> --description "What it is, in one sentence."
+cd ~/repos/<name>
+ci/pipeline.sh
+----
+
+The name (`[a-z][a-z0-9_-]*`) names the CMake project, the library `lib<name>`,
+the program `<name>` and the book. The rest defaults from it and can differ:
+
+.The script's options.
+[cols="1,2,3"]
+|===
+| Option | Default | What it sets
+
+| `--dir`
+| `../<name>`, next to Nexus
+| the project's folder: `baldr` lives in `baldr-cpp`
+
+| `--namespace`
+| the name, `-` as `_`
+| the C++ namespace
+
+| `--part-of`
+| the name
+| the files' `Part of ...` header line: `Freyja Project`
+
+| `--author`
+| `author` of Nexus's `.file-headers.toml`
+| the files' `@author`
+
+| `--description`
+| a TODO
+| the one-liner of the README and the book
+|===
+
+The folder may exist only when it holds nothing but a `.git`. Without a clone,
+the script runs `git init` on `main`. It commits nothing.
+
+The first pipeline run configures `build/debug` (Conan, then CMake), builds,
+runs the unit and function tests of the placeholder and renders the book. When
+it passes, commit the skeleton as it is, `Feat: Project skeleton`, so later
+diffs show only the project's own work.
+
+== After the skeleton
+
+. Replace the placeholder module, `lib<name>/lib<name>/greeting.*`, with the
+  first real one, and the program's `main.cpp` and `tests/function/cli.sh` with
+  what the program really does.
+. Write the book's overview, `doc/pages/overview.adoc`, and the README's
+  one-liner if `--description` was left out.
+. Add the dependencies to `conandata.yml` and their `find_package` to
+  `dependencies.cmake`.
+. Put the project's tasks into norn, under `<name>/...`.
+
+== Placeholders
+
+The script fills these into the template's files; anything else is copied as it
+is.
+
+.The template's placeholders.
+[cols="1,3"]
+|===
+| Placeholder | Becomes
+
+| `+@name@+`        | the name, e.g. `norn`
+| `+@NAME@+`        | the name in capitals, `-` as `_`, for CMake and shell variables (`NORN_ROOT`)
+| `+@namespace@+`   | the C++ namespace
+| `+@part_of@+`     | the project in the file headers
+| `+@author@+`      | the files' author
+| `+@description@+` | the one-line description
+| `+@date@+`        | today, for the file headers' `@created` and `@updated`
+| `+__name__+`      | the name, in paths: `lib__name__/` becomes `libnorn/`
+|===

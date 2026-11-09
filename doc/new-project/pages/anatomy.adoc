@@ -1,0 +1,120 @@
+= Anatomy of a Project
+ifeval::["{docname}" == "anatomy"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+A project keeps what is its own and takes the rest from Nexus, which is checked
+out next to it (`../nexus`, or `NEXUS_DIR`): the pipeline runner, the test
+library, the book's rendering and the header checks. None of it is copied, so a
+fix in Nexus reaches every project.
+
+.What a project holds.
+[cols="2,5"]
+|===
+| Path | What it is
+
+| `version.txt`                             | the version, one line; CMake's `project()` reads it
+| `CMakeLists.txt`                          | the project: reads the version, includes the files below, adds the directories
+| `dependencies.cmake`                      | the `find_package` calls
+| `settings.cmake`                          | the language and the code analysis (below)
+| `cmake/test.cmake`                        | `add_test_target(<module>)`: the module's `*.test.cpp` as `test-<module>`, on CTest
+| `conanfile.py`, `conandata.yml`           | the dependencies, pinned in `conandata.yml`; the tests' only when `with_tests`
+| `lib<name>/lib<name>/`                    | the library `<name>-core`; includes are `<lib<name>/x.hpp>`
+| `<name>/<name>/`                          | the program: `NOVA_MAIN`, Boost.Program_options, the build information
+| `tests/common.sh`, `tests/function/*.sh`  | function tests, TAP through nci-test, one stage per script
+| `ci/pipeline.sh`                          | the pipeline
+| `tools/configure.sh`                      | Conan and CMake into one build directory
+| `tools/doc.sh`                            | Nexus's `doc.sh`, with the book's own extensions from `doc/lib/*.rb`
+| `doc/<name>.adoc`, `doc/pages/`           | the book
+| `.file-headers.toml`                      | the configuration of Nexus's `tools/file_headers.py`
+|===
+
+== Building
+
+`tools/configure.sh <build-dir> <type> [cmake args]` installs the Conan
+packages into `<build-dir>/conan` and configures CMake with Ninja. Every build
+type and sanitizer gets a directory of its own (`build/debug`, `build/asan`,
+`build/release`), and the first one configured links `compile_commands.json` at
+the root for clangd. The pipeline configures `build/debug` when it is missing;
+Baldr builds the same directories by hand.
+
+The language is C++26 with reflection and contracts on GCC 16, through Nova's
+experimental feature set (`NOVA_EXPERIMENTAL_FEATURE_SET`). Nova also brings
+the warnings, the sanitizers and the build information:
+
+* `settings.cmake` links a `code-analysis` target into every target defined
+  after it (`link_libraries`), so each new library, program and test gets the
+  warnings, as errors, without being listed. `-DSANITIZERS=asan` or `tsan` adds
+  the sanitizers the same way.
+* `nova_target_build_info` generates `<name>/gen/build_info.hpp` for the
+  program: `<name> --version` prints `<version>+<commit>.<branch>[.dirty]`.
+
+All executables, the tests too, land in `<build-dir>/bin`.
+
+== The program
+
+`main.cpp` hands its `entrypoint` to Nova's `NOVA_MAIN`, which passes the
+arguments as `std::string_view`s and logs any exception that escapes, with
+Nova's backtrace for a `nova::exception`, then exits with a failure. The
+parsing follows Baldr's `main.cpp`:
+
+* `build_options_description()` holds the visible options; positional arguments
+  get a separate, hidden description, so `print_help()` doesn't list them as
+  flags.
+* `parse_args()` turns the arguments into an `options_t`, or into
+  `std::nullopt` once `--help` or `--version` has printed, and throws
+  Boost.Program_options' `po::error` on a usage error.
+* `entrypoint()` catches that error, prints the reason and the usage to stderr
+  and exits with 1; otherwise it does the work with the options.
+
+Boost comes from Conan with all its compiled modules off but Program_options
+(`conanfile.py`, `BOOST_MODULES_USED`); the header-only libraries, such as Asio
+and Beast, need none of them. A project that needs another module adds it to
+`BOOST_MODULES_USED` and to the `COMPONENTS` of its `find_package(Boost ...)`.
+
+== Testing
+
+Unit tests sit next to the module they test (`x.hpp`, `x.cpp`, `x.test.cpp`)
+and run with CTest. Function tests run the built program as a user would, as
+TAP scripts on nci-test. They follow link:../nci/ug-conventions.html[NCI's
+conventions]: they never build, and they are hermetic.
+
+== The pipeline
+
+`ci/pipeline.sh` declares the stages; link:../nci/ug-running.html[Running a
+Pipeline] covers the options.
+
+.The stages of a new project.
+[cols="1,3"]
+|===
+| Stage | What it does
+
+| `lint-shell`    | shellcheck over `ci/`, `tools/` and `tests/`; skipped without shellcheck
+| `file-headers`  | Nexus's `file_headers.py --check`; a failure only warns
+| `build`         | configures `build/debug` if needed, then builds it
+| `unit-test`     | CTest
+| `function-test` | one stage per `tests/function/*.sh`
+| `docs`          | renders the book into the run's artifacts
+|===
+
+A stage that writes into the run's directories reads `NCI_ARTIFACTS` or `NCI_STAGE_DIR` inside a
+function, not in its `nci::stage` line: they exist only once the run started.
+
+== Documentation and headers
+
+The project's manual is its book in `doc/`, rendered by Nexus's `doc.sh`. It
+keeps only what is specific to the project and links to the
+link:../documenting/index.html[Documenting] book for the rest.
+
+Every C++ file starts with the header that `file_headers.py` checks: `Part of
+<project>`, `@brief`, `@author`, the dates, `@status` and `@reviewed`. New
+projects are private: their `.file-headers.toml` sets `license = ""`, and their
+files carry no license line.
+
+== Repository
+
+The default branch is `main`. Commits follow Conventional Commits, naming the
+concept (`Feat(store): Sessions`). There are no GitHub workflows: the pipeline
+runs on the desktop.
