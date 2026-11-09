@@ -14,7 +14,7 @@
 # Requires bash 4.4+ (5.0+ for precise timing).
 
 [[ -n "${NCI_VERSION:-}" ]] && return 0
-readonly NCI_VERSION="0.2.0"
+readonly NCI_VERSION="0.3.0"
 
 # Lines that look like errors: compiler and tool errors, test frameworks (gtest, ctest, TAP), asserts.
 NCI_ERRORS="${NCI_ERRORS:-(^|[^[:alnum:]_])(error|Error|ERROR|FAIL|FAILED|FAILURE|Failed|fatal|Fatal|FATAL|panic|Assertion|Traceback|Bail out!)([^[:alnum:]_]|$)|^not ok }"
@@ -27,6 +27,7 @@ NCI_STAGE_CMDS=()
 NCI_STAGE_PATHS=()
 NCI_STAGE_NEEDS=()
 NCI_STAGE_SOFT=()
+NCI_STAGE_MANUAL=()
 NCI_STAGE_ERRORS=()
 NCI_CALLER_DIR="${PWD}"
 
@@ -42,12 +43,13 @@ nci::init() {
 #            -- COMMAND [ARG...]
 nci::stage() {
     local name="$1"; shift
-    local paths="" needs="" soft=0 errors=""
+    local paths="" needs="" soft=0 manual=0 errors=""
     while (( $# )); do
         case "$1" in
             --paths)         paths="$2"; shift 2 ;;
             --needs)         needs="$2"; shift 2 ;;
             --allow-failure) soft=1; shift ;;
+            --manual)        manual=1; shift ;;
             --errors)        errors="$2"; shift 2 ;;
             --)              shift; break ;;
             *)               nci::_die "stage '${name}': unknown option '$1' (missing '--' before the command?)" ;;
@@ -60,6 +62,11 @@ nci::stage() {
     for need in ${needs}; do
         expanded="$(nci::_expand "${need}")"
         [[ -n "${expanded}" ]] || nci::_die "stage '${name}' needs '${need}', which is not declared before it"
+        local stage
+        for stage in ${expanded}; do
+            (( ! NCI_STAGE_MANUAL[$(nci::_index "${stage}")] )) \
+                || nci::_die "stage '${name}' needs '${stage}', which is manual: only --only runs it"
+        done
         resolved+="${resolved:+ }${expanded}"
     done
 
@@ -68,6 +75,7 @@ nci::stage() {
     NCI_STAGE_PATHS+=("${paths}")
     NCI_STAGE_NEEDS+=("${resolved}")
     NCI_STAGE_SOFT+=("${soft}")
+    NCI_STAGE_MANUAL+=("${manual}")
     NCI_STAGE_ERRORS+=("${errors}")
 }
 
@@ -79,7 +87,7 @@ nci::stages() {
     while (( $# )) && [[ "$1" != -- ]]; do
         case "$1" in
             --paths)         paths="$2"; shift 2 ;;
-            --allow-failure) opts+=("$1"); shift ;;
+            --allow-failure|--manual) opts+=("$1"); shift ;;
             *)               opts+=("$1" "${2:-}"); shift 2 ;;
         esac
     done
@@ -277,6 +285,15 @@ nci::_select() {
     for (( i = 0; i < count; i++ )); do
         name="${NCI_STAGE_NAMES[i]}"
         NCI_SELECTED[i]=0
+        # A manual stage runs only when --only or --with names it (or its group); nothing needs one.
+        if (( NCI_STAGE_MANUAL[i] )) && [[ "${NCI_SEL_MODE}" != only ]]; then
+            if nci::_in_list "${NCI_SEL_WITH}" "${name}"; then
+                NCI_SELECTED[i]=1 NCI_REASON[i]="--with"
+            else
+                NCI_REASON[i]="manual: --with ${name}"
+            fi
+            continue
+        fi
         case "${NCI_SEL_MODE}" in
             all)
                 NCI_SELECTED[i]=1 NCI_REASON[i]="" ;;
@@ -685,6 +702,7 @@ Selection:
   -l, --list            show the stages and which would run, run nothing
   -o, --only STAGE,...  run only these stages (and the stages they need)
   -s, --skip STAGE,...  do not run these stages
+      --with STAGE,...  run these manual stages too (and the stages they need)
   -f, --from STAGE      start at this stage (resume a failed run)
   -c, --changed         run the stages affected by the changes since the merge base with --base
                         (committed, uncommitted and untracked); stages without paths always run
@@ -719,7 +737,7 @@ nci::main() {
     NCI_SCRIPT="$(realpath --relative-to="${NCI_CALLER_DIR}" "$0")"
     [[ "${NCI_SCRIPT}" == */* ]] || NCI_SCRIPT="./${NCI_SCRIPT}"
 
-    NCI_SEL_MODE=all NCI_SEL_ONLY="" NCI_SEL_SKIP="" NCI_SEL_FROM="" NCI_SEL_BASE=""
+    NCI_SEL_MODE=all NCI_SEL_ONLY="" NCI_SEL_SKIP="" NCI_SEL_WITH="" NCI_SEL_FROM="" NCI_SEL_BASE=""
     NCI_SEL_WARN="" NCI_OPT_STRICT=0 NCI_OPT_CLEAN=0
     NCI_OPT_LIST=0 NCI_OPT_KEEP_GOING=0 NCI_OPT_VERBOSE="${NCI_VERBOSE:-0}"
     while (( $# )); do
@@ -727,6 +745,7 @@ nci::main() {
             -l|--list)       NCI_OPT_LIST=1; shift ;;
             -o|--only)       NCI_SEL_MODE=only; NCI_SEL_ONLY="${2//,/ }"; shift 2 ;;
             -s|--skip)       NCI_SEL_SKIP="${2//,/ }"; shift 2 ;;
+            --with)          NCI_SEL_WITH="${2//,/ }"; shift 2 ;;
             -f|--from)       NCI_SEL_FROM="$2"; shift 2 ;;
             -c|--changed)    NCI_SEL_MODE=changed; shift ;;
             -b|--base)       NCI_SEL_BASE="$2"; shift 2 ;;
@@ -755,11 +774,19 @@ nci::main() {
         NCI_STAGE_PATHS=("" "${NCI_STAGE_PATHS[@]}")
         NCI_STAGE_NEEDS=("" "${NCI_STAGE_NEEDS[@]}")
         NCI_STAGE_SOFT=(0 "${NCI_STAGE_SOFT[@]}")
+        NCI_STAGE_MANUAL=(0 "${NCI_STAGE_MANUAL[@]}")
         NCI_STAGE_ERRORS=("" "${NCI_STAGE_ERRORS[@]}")
     fi
 
     # shellcheck disable=SC2086  # word splitting on purpose
-    nci::_check_names ${NCI_SEL_ONLY} ${NCI_SEL_SKIP} ${NCI_SEL_FROM} ${NCI_SEL_WARN}
+    nci::_check_names ${NCI_SEL_ONLY} ${NCI_SEL_SKIP} ${NCI_SEL_WITH} ${NCI_SEL_FROM} ${NCI_SEL_WARN}
+    local with stage
+    for with in ${NCI_SEL_WITH}; do
+        for stage in $(nci::_expand "${with}"); do
+            (( NCI_STAGE_MANUAL[$(nci::_index "${stage}")] )) \
+                || nci::_die "--with ${with}: '${stage}' is not a manual stage, it runs anyway"
+        done
+    done
     if [[ "${NCI_SEL_MODE}" == changed ]]; then
         [[ -n "${NCI_SEL_BASE}" ]] || NCI_SEL_BASE="$(nci::_default_base)" || nci::_die "no base for --changed, use --base"
     fi
@@ -778,6 +805,7 @@ nci::main() {
         only)    NCI_SELECTION_TEXT="only: ${NCI_SEL_ONLY}" ;;
         changed) NCI_SELECTION_TEXT="changed since ${NCI_SEL_BASE} (${NCI_CHANGED_COUNT} files)" ;;
     esac
+    [[ -n "${NCI_SEL_WITH}" ]] && NCI_SELECTION_TEXT+=", with: ${NCI_SEL_WITH}"
     [[ -n "${NCI_SEL_SKIP}" ]] && NCI_SELECTION_TEXT+=", skip: ${NCI_SEL_SKIP}"
     [[ -n "${NCI_SEL_FROM}" ]] && NCI_SELECTION_TEXT+=", from: ${NCI_SEL_FROM}"
     [[ -n "${NCI_SEL_WARN}" ]] && NCI_SELECTION_TEXT+=", warn: ${NCI_SEL_WARN}"

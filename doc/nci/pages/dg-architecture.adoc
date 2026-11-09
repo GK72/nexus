@@ -65,6 +65,8 @@ so arguments with spaces survive.
 | `NCI_STAGE_NEEDS` | The needs, expanded at declaration: group names become their stages, so
 the run needs no group logic.
 | `NCI_STAGE_SOFT` | 1 for `--allow-failure`.
+| `NCI_STAGE_MANUAL` | 1 for `--manual`: left out of the base set unless the mode is `--only` or
+`--with` names it.
 | `NCI_STAGE_ERRORS` | The regex of `--errors`, or empty.
 |===
 

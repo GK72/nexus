@@ -60,12 +60,15 @@ everything below that directory. A stage without paths always runs under `--chan
 Selecting the stage selects them too, and the stage is blocked when one of them fails.
 | `--allow-failure` | A failure is a warning: the pipeline passes and the stages that need it
 still run (see link:ug-running.html#_warnings[Warnings]).
+| `--manual` | It runs only when `--only` or `--with` names it or its group, never on its own in a
+full run or under `--changed`: a deploy or a release. Its own needs are selected with it; no stage
+may need it.
 | `--errors REGEX` | The extended regex of the error lines in its failure report, instead of
 the default one.
 |===
 
 Declaration errors stop the script before anything runs, with exit code 2: an unknown option, a
-missing command, a stage declared twice, a need not declared before.
+missing command, a stage declared twice, a need not declared before, a need that is manual.
 
 === Groups
 

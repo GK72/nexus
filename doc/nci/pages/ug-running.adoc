@@ -168,6 +168,8 @@ stage without paths always runs.
 | `-b, --base REF` | The base of `--changed`. Default: `$NCI_BASE`, then `origin/$GITHUB_BASE_REF`,
 `master`, `main`, `origin/HEAD`, the first that exists.
 | `-s, --skip STAGE,...` | Leaves these out, even when needed by another stage.
+| `--with STAGE,...` | Adds these manual stages, and the stages they need, to a full or `--changed`
+run: `--with deploy` runs everything, then deploys. Naming a stage that is not manual is an error.
 | `-f, --from STAGE` | Leaves out every stage before this one: resuming a failed run.
 | `-l, --list` | Runs nothing; prints the stages, whether each would run and why, and its paths.
 |===
@@ -175,7 +177,9 @@ stage without paths always runs.
 A group name stands for all of its stages wherever a stage is expected: `--only function-test` is
 every `function-test/...` stage. The options combine in a fixed order, explained in
 link:dg-architecture.html#_selection[Selection]: the base set (all, `--only` or `--changed`), then
-the needs, then `--skip`, then `--from`.
+the needs, then `--skip`, then `--from`. A stage declared with `--manual` is in the base set only
+when `--only` or `--with` names it: `ci/pipeline.sh --only deploy` deploys after what it needs,
+`ci/pipeline.sh --with deploy` after everything.
 
 == Warnings
 
