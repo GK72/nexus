@@ -353,10 +353,12 @@ def check_tag_layout(path, header):
     return findings
 
 
-def check_required_tags(path, header, needs_status):
+def check_required_tags(path, header, needs_status, needs_license):
     required = [name for name in FIELD_ORDER if name != "coauthor"]
     if not needs_status:
         required.remove("status")
+    if not needs_license:
+        required.remove("license")
     if header.tag("date"):
         required.remove("created")
 
@@ -402,7 +404,10 @@ def check_tag_values(path, header, config, root):
                                 f"expected one of {', '.join(REVIEW_RANK)}"))
 
     license_tag = header.tag("license")
-    if license_tag and license_tag.value != config.license:
+    if license_tag and not config.license:
+        findings.append(Finding(path, license_tag.line, "error",
+                                f"no license expected (private), found '{license_tag.value}'"))
+    elif license_tag and license_tag.value != config.license:
         findings.append(Finding(path, license_tag.line, "error",
                                 f"expected license {config.license}, found '{license_tag.value}'"))
 
@@ -447,7 +452,8 @@ def check_format(source, sources, config, root):
     findings += check_part_of(path, header, config)
     findings += check_brief(path, header)
     findings += check_tag_layout(path, header)
-    findings += check_required_tags(path, header, not (inherits_status or exempt))
+    findings += check_required_tags(path, header, not (inherits_status or exempt),
+                                  bool(config.license))
     findings += check_tag_values(path, header, config, root)
 
     status = header.tag("status")
@@ -836,7 +842,8 @@ def complete_parts(parts, facts):
     if facts.created:
         fields.setdefault("created", [facts.created])
     fields.setdefault("reviewed", [facts.reviewed])
-    fields.setdefault("license", [facts.license])
+    if facts.license:
+        fields.setdefault("license", [facts.license])
 
     if facts.status is None:
         fields.pop("status", None)

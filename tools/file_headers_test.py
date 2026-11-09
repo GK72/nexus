@@ -2,6 +2,7 @@
 """Tests of file_headers.py. Run with `python3 tools/file_headers_test.py`."""
 
 import contextlib
+import dataclasses
 import io
 import os
 import subprocess
@@ -168,6 +169,15 @@ class FormatTest(unittest.TestCase):
 
     def test_wrong_license(self):
         self.assert_error(header(license="SPDX-License-Identifier: MIT"), "expected license")
+
+    def test_private_project_has_no_license(self):
+        private = dataclasses.replace(CONFIG, license="")
+        files = {"lib/a.hpp": header(license=None)}
+        self.assertEqual(fh.check_all(fh.build_sources(files), private, ".", NoHistory()), [])
+        files = {"lib/a.hpp": header()}
+        found = [finding.message
+                 for finding in fh.check_all(fh.build_sources(files), private, ".", NoHistory())]
+        self.assertTrue(any("no license expected" in message for message in found), found)
 
     def test_malformed_comment_line(self):
         self.assert_error(header().replace(" * @brief", "* @brief"), "must start with ' * '")
