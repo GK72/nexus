@@ -21,11 +21,13 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <cerrno>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <ranges>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace po = boost::program_options;
@@ -205,7 +207,7 @@ void add_common_options(po::options_description& desc, po::positional_options_de
 
         file_out.open(options.output_path, mode);
         if (not file_out) {
-            return nova::unexpected(nova::error("Could not open output file: " + options.output_path));
+            return nova::wrap_error(std::error_code(errno, std::generic_category()), options.output_path);
         }
     }
 
@@ -303,7 +305,7 @@ auto entrypoint(auto args) -> int {
         });
 
     if (not result) {
-        nova::log::error("{}", result.error().message);
+        nova::log::error("{}", result.error());
         return EXIT_FAILURE;
     }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <libbtx/error.hpp>
+
 #include <libnova/expected.hpp>
 #include <libnova/error.hpp>
 #include <libnova/data.hpp>
@@ -29,7 +31,7 @@ inline nova::expected<int, nova::error> hex_to_int(char c) {
     if (c >= 'A' && c <= 'F') {
         return c - 'A' + 10;
     }
-    return {nova::unexpect, nova::error(fmt::format("Invalid hex character: {}", c))};
+    return nova::wrap_error(error_e::invalid_hex, fmt::format("'{}'", c));
 }
 
 /**
@@ -87,7 +89,7 @@ public:
      */
     auto add_hex(std::string_view& in) -> nova::expected<int, nova::error> {
         if (in.size() < 2) {
-            return {nova::unexpect, nova::error("Unexpected end of input while parsing hex token")};
+            return nova::wrap_error(error_e::unexpected_end, "in a \\x token");
         }
 
         char h1 = in[0];
@@ -139,7 +141,7 @@ public:
         }
 
         if (positions < 8) {
-            return {nova::unexpect, nova::error(fmt::format("Incomplete \\b token: expected 8 positions, got {}", positions))};
+            return nova::wrap_error(error_e::incomplete_bits, fmt::format("expected 8 positions, got {}", positions));
         }
         return 0;
     }
@@ -170,7 +172,7 @@ inline nova::expected<int, nova::error> skip_comment(std::string_view& in) {
         }
         return 0;
     }
-    return {nova::unexpect, nova::error("Invalid comment: expected '//'")};
+    return nova::wrap_error(error_e::invalid_comment, "expected '//'");
 }
 
 } // namespace btx::details

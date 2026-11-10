@@ -5,9 +5,14 @@
 #include <libnova/error.hpp>
 #include <libnova/expected.hpp>
 
+#include <fmt/format.h>
+
+#include <string>
+
 namespace {
 struct btx_handle {
     nova::expected<nova::bytes, nova::error> result;
+    std::string error;      ///< The text of the error, which `btx_result_t::error` points to
 };
 }
 
@@ -25,7 +30,8 @@ auto btx_encode(const char* input) -> btx_result_t {
         result.data = reinterpret_cast<const uint8_t*>(res->data());
         result.size = res->size();
     } else {
-        result.error = res.error().message.c_str();
+        handle->error = fmt::format("{}", res.error());
+        result.error = handle->error.c_str();
     }
     return result;
 }
@@ -42,7 +48,8 @@ auto btx_decode(const uint8_t* data, size_t size) -> btx_result_t {
         result.data = reinterpret_cast<const uint8_t*>(res->data());
         result.size = res->size();
     } else {
-        result.error = res.error().message.c_str();
+        handle->error = fmt::format("{}", res.error());
+        result.error = handle->error.c_str();
     }
     return result;
 }

@@ -36,7 +36,7 @@ namespace {
     field.name = node["name"].as<std::string>();
 
     if (not node["type"]) {
-        return nova::unexpected(nova::error("Missing mandatory field: type"));
+        return nova::wrap_error(error_e::invalid_descriptor, "Missing mandatory field: type");
     }
 
     const std::string type_str = node["type"].as<std::string>();
@@ -47,7 +47,7 @@ namespace {
     } else if (type_str == "string") {
         field.type = descriptor::field_type::string;
     } else {
-        return nova::unexpected(nova::error("Unknown field type: " + type_str));
+        return nova::wrap_error(error_e::invalid_descriptor, "Unknown field type: " + type_str);
     }
 
     const std::string len_type_str = node["length_type"].as<std::string>("byte");
@@ -56,7 +56,7 @@ namespace {
     } else if (len_type_str == "byte") {
         field.len_type = descriptor::length_type::byte;
     } else {
-        return nova::unexpected(nova::error("Unknown length type: " + len_type_str));
+        return nova::wrap_error(error_e::invalid_descriptor, "Unknown length type: " + len_type_str);
     }
 
     auto len_node = node["length"];
@@ -90,7 +90,7 @@ namespace {
 {
     descriptor desc;
     if (not config["name"]) {
-        return nova::unexpected(nova::error("Missing mandatory field: name"));
+        return nova::wrap_error(error_e::invalid_descriptor, "Missing mandatory field: name");
     }
 
     desc.name = config["name"].as<std::string>();
@@ -98,11 +98,11 @@ namespace {
 
     auto msg_node = config["message"];
     if (not msg_node) {
-        return nova::unexpected(nova::error("Missing mandatory field: message"));
+        return nova::wrap_error(error_e::invalid_descriptor, "Missing mandatory field: message");
     }
 
     if (not msg_node["id"]) {
-        return nova::unexpected(nova::error("Missing mandatory field: message:id"));
+        return nova::wrap_error(error_e::invalid_descriptor, "Missing mandatory field: message:id");
     }
 
     if (msg_node["id"].as<std::string>().starts_with("0x")) {
@@ -135,7 +135,7 @@ namespace {
         YAML::Node config = YAML::Load(std::string(yaml_content));
         return parse_descriptor(config);
     } catch (const std::exception& e) {
-        return nova::unexpected(nova::error(e.what()));
+        return nova::wrap_error(error_e::invalid_descriptor, e.what());
     }
 }
 
@@ -146,7 +146,7 @@ namespace {
         YAML::Node config = YAML::LoadFile(yaml_path.string());
         return parse_descriptor(config);
     } catch (const std::exception& e) {
-        return nova::unexpected(nova::error(e.what()));
+        return nova::wrap_error(error_e::invalid_descriptor, e.what());
     }
 }
 

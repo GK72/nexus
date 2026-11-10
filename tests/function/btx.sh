@@ -46,12 +46,12 @@ tap::case "decode: hex"                 decode 48656c6c6f                       
 tap::case "decode: multiple lines"      decode 0102030405060708090A             '\x01\x02\x03\x04\x05\x06\x07\x08
 \x09\x0A'
 
-tap::case "reject: invalid hex"         reject '\xGG'                           "Invalid hex character: G"
+tap::case "reject: invalid hex"         reject '\xGG'                           "Invalid hex character .'G'."
 tap::case "reject: truncated hex"       reject '\x4'                            "Unexpected end of input"
 tap::case "reject: truncated bits"      reject '\b101'                          "Incomplete .*b token"
-tap::case "reject: malformed comment"   reject '/ Invalid'                      "Invalid comment: expected '//'"
+tap::case "reject: malformed comment"   reject '/ Invalid'                      "Invalid comment .expected '//'."
 tap::case "reject: hex after bits"      reject '\b1111 0xAA'                    "Incomplete .*b token"
-tap::case "reject: 0x hex"              reject '0xAA'                           "Unexpected character: '0'"
-tap::case "reject: 0b bits"             reject '0b10'                           "Unexpected character: '0'"
+tap::case "reject: 0x hex"              reject '0xAA'                           "Unexpected character .'0'."
+tap::case "reject: 0b bits"             reject '0b10'                           "Unexpected character .'0'."
 
 tap::done

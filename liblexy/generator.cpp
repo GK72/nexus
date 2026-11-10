@@ -107,14 +107,14 @@ private:
                 if (symbol_table.contains(ref_name)) {
                     length_val = symbol_table.at(ref_name);
                 } else {
-                    return nova::unexpected(nova::error("Length reference not found: " + ref_name));
+                    return nova::wrap_error(error_e::encode, "Length reference not found: " + ref_name);
                 }
             }
 
             const std::size_t length_bits = (field_item.len_type == descriptor::length_type::byte) ? length_val * BitsPerByte : length_val;
 
             if (not values[field_item.name]) {
-                return nova::unexpected(nova::error("Missing value for field: " + field_item.name));
+                return nova::wrap_error(error_e::encode, "Missing value for field: " + field_item.name);
             }
 
             if (field_item.type == descriptor::field_type::unsigned_integer) {
@@ -138,7 +138,7 @@ private:
 
         return writer.data();
     } catch (const std::exception& e) {
-        return nova::unexpected(nova::error(e.what()));
+        return nova::wrap_error(error_e::encode, e.what());
     }
 }
 
@@ -164,7 +164,7 @@ private:
                 if (symbol_table.contains(ref_name)) {
                     length_val = static_cast<std::size_t>(symbol_table.at(ref_name));
                 } else {
-                    return nova::unexpected(nova::error("Length reference not found: " + ref_name));
+                    return nova::wrap_error(error_e::encode, "Length reference not found: " + ref_name);
                 }
             }
 
@@ -196,7 +196,7 @@ private:
 
         return writer.data();
     } catch (const std::exception& e) {
-        return nova::unexpected(nova::error(e.what()));
+        return nova::wrap_error(error_e::encode, e.what());
     }
 }
 

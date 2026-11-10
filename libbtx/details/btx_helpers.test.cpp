@@ -96,7 +96,8 @@ TEST(BtxHelpers, InvalidComment) {
     std::string_view input(" This is not a comment\nNext line");
     auto res = skip_comment(input);
     EXPECT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Invalid comment: expected '//'");
+    EXPECT_EQ(res.error().code, btx::error_e::invalid_comment);
+    EXPECT_EQ(res.error().detail, "expected '//'");
 }
 
 } // namespace btx::details::test

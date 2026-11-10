@@ -34,7 +34,7 @@ auto to_binary(std::string_view in) -> nova::expected<nova::bytes, nova::error> 
             in.remove_prefix(1);
         } else if (ch == '\\') {
             if (in.size() < 2) {
-                return {nova::unexpect, nova::error("Unexpected end of input after '\\'")};
+                return nova::wrap_error(error_e::unexpected_end, "after '\\'");
             }
             const char type = in[1];
             in.remove_prefix(2);
@@ -47,10 +47,10 @@ auto to_binary(std::string_view in) -> nova::expected<nova::bytes, nova::error> 
                     return {nova::unexpect, res.error()};
                 }
             } else {
-                return {nova::unexpect, nova::error(fmt::format("Unexpected character '\\' followed by '{}'", type))};
+                return nova::wrap_error(error_e::unexpected_character, fmt::format("'\\' followed by '{}'", type));
             }
         } else {
-            return {nova::unexpect, nova::error(fmt::format("Unexpected character: '{}'", ch))};
+            return nova::wrap_error(error_e::unexpected_character, fmt::format("'{}'", ch));
         }
     }
 

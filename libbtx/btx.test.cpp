@@ -80,7 +80,8 @@ TEST(Btx, InvalidHex) {
 TEST(Btx, InvalidComment) {
     auto result = btx::to_binary("/ Invalid comment");
     EXPECT_FALSE(result.has_value());
-    EXPECT_EQ(result.error().message, "Invalid comment: expected '//'");
+    EXPECT_EQ(result.error().code, btx::error_e::invalid_comment);
+    EXPECT_EQ(result.error().detail, "expected '//'");
 }
 
 TEST(Btx, FromBinary) {

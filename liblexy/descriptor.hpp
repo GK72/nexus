@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <liblexy/error.hpp>
+
 #include <libnova/expected.hpp>
 #include <libnova/error.hpp>
 #include <libnova/data.hpp>

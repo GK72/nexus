@@ -74,7 +74,7 @@ message:
 TEST(BtxDescriptor, TC_003_Negative_MissingType) {
     const auto res = lexy::load_descriptor(InputTC_003);
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Missing mandatory field: type");
+    EXPECT_EQ(res.error().detail, "Missing mandatory field: type");
 }
 
 
@@ -89,7 +89,7 @@ message:
 TEST(BtxDescriptor, TC_004_Negative_MissingId) {
     const auto res = lexy::load_descriptor(InputTC_004);
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Missing mandatory field: message:id");
+    EXPECT_EQ(res.error().detail, "Missing mandatory field: message:id");
 }
 
 
@@ -106,7 +106,7 @@ message:
 TEST(BtxDescriptor, TC_005_Negative_UnknownFieldType) {
     const auto res = lexy::load_descriptor(InputTC_005);
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Unknown field type: float");
+    EXPECT_EQ(res.error().detail, "Unknown field type: float");
 }
 
 
@@ -125,7 +125,7 @@ message:
 TEST(BtxDescriptor, TC_006_Negative_UnknownLengthType) {
     const auto res = lexy::load_descriptor(InputTC_006);
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Unknown length type: kilobyte");
+    EXPECT_EQ(res.error().detail, "Unknown length type: kilobyte");
 }
 
 
@@ -138,7 +138,7 @@ TEST(BtxDescriptor, TC_007_Negative_InvalidYaml) {
     const auto res = lexy::load_descriptor(InputTC_007);
     ASSERT_FALSE(res.has_value());
     // yaml-cpp error message contains "bad file" or similar
-    EXPECT_FALSE(res.error().message.empty());
+    EXPECT_FALSE(res.error().detail.empty());
 }
 
 
@@ -149,7 +149,7 @@ id: 1
 TEST(BtxDescriptor, TC_008_Negative_MissingName) {
     const auto res = lexy::load_descriptor(InputTC_008);
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Missing mandatory field: name");
+    EXPECT_EQ(res.error().detail, "Missing mandatory field: name");
 }
 
 
@@ -174,7 +174,7 @@ TEST(BtxDescriptor, TC_009_Negative_InvalidReference) {
     const std::string bin = "hello";
     const auto parse_res  = lexy::decode(*desc_res, nova::data_view(bin));
     EXPECT_FALSE(parse_res.has_value());
-    EXPECT_TRUE(parse_res.error().message.find("Length reference not found") != std::string::npos);
+    EXPECT_TRUE(parse_res.error().detail.find("Length reference not found") != std::string::npos);
 }
 
 constexpr auto InputTC_010 = R"yaml(
@@ -185,7 +185,7 @@ id: 1
 TEST(BtxDescriptor, TC_010_Negative_MissingMessage) {
     const auto res = lexy::load_descriptor(InputTC_010);
     ASSERT_FALSE(res.has_value());
-    EXPECT_EQ(res.error().message, "Missing mandatory field: message");
+    EXPECT_EQ(res.error().detail, "Missing mandatory field: message");
 }
 
 } // namespace

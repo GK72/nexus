@@ -136,18 +136,18 @@ public:
         desc.message.id = 0;
 
         if (m_current.type != token_type::kw_message) {
-            return nova::unexpected(nova::error("Expected 'message' keyword"));
+            return nova::wrap_error(error_e::syntax, "Expected 'message' keyword");
         }
         consume();
 
         if (m_current.type != token_type::identifier) {
-            return nova::unexpected(nova::error("Expected message name"));
+            return nova::wrap_error(error_e::syntax, "Expected message name");
         }
         desc.message.name = std::string(m_current.value);
         consume();
 
         if (m_current.type != token_type::lbrace) {
-            return nova::unexpected(nova::error("Expected '{'"));
+            return nova::wrap_error(error_e::syntax, "Expected '{'");
         }
         consume();
 
@@ -161,12 +161,12 @@ public:
         }
 
         if (m_current.type != token_type::rbrace) {
-            return nova::unexpected(nova::error("Expected '}'"));
+            return nova::wrap_error(error_e::syntax, "Expected '}'");
         }
         consume();
 
         if (desc.message.fields.empty()) {
-            return nova::unexpected(nova::error("No fields found in message"));
+            return nova::wrap_error(error_e::syntax, "No fields found in message");
         }
 
         return desc;
@@ -189,18 +189,18 @@ private:
             field.type = descriptor::field_type::boolean;
             field.len_type = descriptor::length_type::bit;
         } else {
-            return nova::unexpected(nova::error("Expected field type (int, str, bool)"));
+            return nova::wrap_error(error_e::syntax, "Expected field type (int, str, bool)");
         }
         consume();
 
         if (m_current.type != token_type::identifier) {
-            return nova::unexpected(nova::error("Expected field name"));
+            return nova::wrap_error(error_e::syntax, "Expected field name");
         }
         field.name = std::string(m_current.value);
         consume();
 
         if (m_current.type != token_type::colon) {
-            return nova::unexpected(nova::error("Expected ':'"));
+            return nova::wrap_error(error_e::syntax, "Expected ':'");
         }
         consume();
 
@@ -208,17 +208,17 @@ private:
             try {
                 field.length = std::stoul(std::string(m_current.value));
             } catch (...) {
-                return nova::unexpected(nova::error("Invalid length value: " + std::string(m_current.value)));
+                return nova::wrap_error(error_e::syntax, "Invalid length value: " + std::string(m_current.value));
             }
         } else if (m_current.type == token_type::ref_identifier) {
             field.length = std::string(m_current.value);
         } else {
-            return nova::unexpected(nova::error("Expected length (number or @reference)"));
+            return nova::wrap_error(error_e::syntax, "Expected length (number or @reference)");
         }
         consume();
 
         if (m_current.type != token_type::semicolon) {
-            return nova::unexpected(nova::error("Expected ';'"));
+            return nova::wrap_error(error_e::syntax, "Expected ';'");
         }
         consume();
 

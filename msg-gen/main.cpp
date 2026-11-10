@@ -97,13 +97,13 @@ auto entrypoint(auto args) -> int {
 
     auto desc_res = lexy::load_descriptor(std::filesystem::path{ options->descriptor_path });
     if (not desc_res) {
-        nova::log::error("Failed to load descriptor: {}", desc_res.error().message);
+        nova::log::error("Failed to load descriptor: {}", desc_res.error());
         return EXIT_FAILURE;
     }
 
     auto gen_res = lexy::generate_random(*desc_res);
     if (not gen_res) {
-        nova::log::error("Generation error: {}", gen_res.error().message);
+        nova::log::error("Generation error: {}", gen_res.error());
         return EXIT_FAILURE;
     }
 

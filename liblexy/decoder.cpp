@@ -36,7 +36,7 @@ constexpr std::size_t BitsPerByte = 8;
         if (symbol_table.contains(ref_name)) {
             length_val = symbol_table.at(ref_name);
         } else {
-            return nova::unexpected(nova::error("Length reference not found: " + ref_name));
+            return nova::wrap_error(error_e::decode, "Length reference not found: " + ref_name);
         }
     }
     return (field.len_type == descriptor::length_type::byte) ? length_val * BitsPerByte : length_val;
@@ -75,14 +75,14 @@ constexpr std::size_t BitsPerByte = 8;
             bit_pos += 1;
         } else if (field_item.type == descriptor::field_type::string) {
             if (bit_pos % BitsPerByte != 0) {
-                return nova::unexpected(nova::error("String field '" + field_item.name + "' must be byte-aligned"));
+                return nova::wrap_error(error_e::decode, "String field '" + field_item.name + "' must be byte-aligned");
             }
             std::string val(data.as_string(bit_pos / BitsPerByte, length_bits / BitsPerByte));
             fv.value = val;
             bit_pos += length_bits;
         }
     } catch (const std::exception& e) {
-        return nova::unexpected(nova::error("Error decoding field '" + field_item.name + "': " + e.what()));
+        return nova::wrap_error(error_e::decode, "Error decoding field '" + field_item.name + "': " + e.what());
     }
 
     return fv;
@@ -134,7 +134,7 @@ constexpr std::size_t BitsPerByte = 8;
             bit_pos += length_bits;
         } else if (field_item.type == descriptor::field_type::string) {
             if (bit_pos % BitsPerByte != 0) {
-                return nova::unexpected(nova::error("String field '" + field_item.name + "' must be byte-aligned"));
+                return nova::wrap_error(error_e::decode, "String field '" + field_item.name + "' must be byte-aligned");
             }
             const std::string val(data.as_string(bit_pos / BitsPerByte, length_bits / BitsPerByte));
             for (std::size_t i = 0; i < length_bits / BitsPerByte; ++i) {
@@ -153,7 +153,7 @@ constexpr std::size_t BitsPerByte = 8;
             bit_pos += length_bits;
         }
     } catch (const std::exception& e) {
-        return nova::unexpected(nova::error("Error formatting field '" + field_item.name + "': " + e.what()));
+        return nova::wrap_error(error_e::decode, "Error formatting field '" + field_item.name + "': " + e.what());
     }
 
     return empty { };

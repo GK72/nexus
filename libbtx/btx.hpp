@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <libbtx/error.hpp>
+
 #include <libnova/data.hpp>
 #include <libnova/error.hpp>
 #include <libnova/expected.hpp>

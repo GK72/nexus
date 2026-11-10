@@ -8,12 +8,12 @@ set(NEXUS_VERSION "0.3.31")
 project("nexus" VERSION ${NEXUS_VERSION} LANGUAGES CXX)
 message(STATUS "Nexus version ${NEXUS_VERSION}")
 
-find_package(nova REQUIRED)
 include(GNUInstallDirs)
 include(dependencies.cmake)
 
 include(novaCompilerWarnings)
 include(novaCompilerSettings)
+include(novaBuildInfo)
 
 include(settings.cmake)
 
