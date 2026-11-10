@@ -27,6 +27,7 @@ add_subdirectory(liblexy)
 add_subdirectory(libnxs)
 
 add_subdirectory(btx)
+add_subdirectory(heimdall)
 add_subdirectory(msg-gen)
 
 if(BUILD_TESTING)

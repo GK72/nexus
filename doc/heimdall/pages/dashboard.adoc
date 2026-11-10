@@ -1,0 +1,64 @@
+= Dashboard
+ifeval::["{docname}" == "dashboard"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+`heimdall` without a command prints the dashboard, the welcome screen of a
+shell: the shell window of `tools/tmux.sh` runs `heimdall -f` when a session
+starts. The screen is a header and a few sections, each under a rule with its
+title, at most 100 columns wide.
+
+.The dashboard
+[source,text]
+----
+  Dashboard                                                               Tuesday, 10 November 2026
+  weather: not yet available                                                        17:38 · week 46
+
+  ── system ──────────────────────────────────────────────────────────────────────────────────────
+  gkd-mtuf · Manjaro Linux · kernel 7.2.9 · up 4h 12m
+  Disks: / ▰▰▰▰▱▱▱▱▱▱ 40%   ~ ▰▰▱▱▱▱▱▱▱▱ 18%   /mnt/data ▰▰▰▱▱▱▱▱▱▱ 32%
+
+  ── repos ─────────────────────────────────── 14 repos · 12 need attention · oldest fetch 21h ago
+  aya               u/chris/feat/avatar  ~2
+  baldr             master               ↓2
+  baldr-cpp         ci                   ?1 ≡1            fetch failed
+  btx               master                                fetch failed
+  dsp               v2                   ↑3               fetch failed
+  fdm               main                                  fetch failed
+  freyja            u/chris/main         ~8 ?3 ↑41 ≡4     +2 worktrees · fetch failed
+  nexus             master               ~1 ?2 ↑18 ≡3     +1 worktree · fetch failed
+  … 4 more  heimdall git
+                                                                                             53 ms
+----
+
+[.note]
+A meter is green below 60%, yellow below 85% and red above.
+
+== Repos
+
+The brief report of link:git.html[Git], at most eight repositories, then how
+many more there are. The rule carries the totals: the number of repositories,
+how many need attention and the age of the oldest fetch, or `fetched just now`
+after `-f`. When none needs attention, a single line says so.
+
+== Footer
+
+The time the dashboard took to gather everything, right-aligned and faint, so a
+slow section shows.
+
+== Options
+
+.Options of `heimdall`
+[cols="1,3"]
+|===
+| Option | Effect
+
+| `-f`, `--fetch`   | fetch every repository before the survey
+| `--repos N`       | repositories listed at most (default 8)
+| `--width N`       | columns (default: the terminal's, at most 100)
+| `--color WHEN`    | `auto` (default), `always` or `never`
+| `-h`, `--help`    | the usage
+| `--version`       | the version
+|===

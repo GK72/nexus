@@ -17,8 +17,8 @@
 source "$(dirname "$(realpath "$0")")/../tools/ci/nci.sh"
 
 LINT_PATHS='ci/ tools/ci/ tools/tmux.sh tools/skills/ tests/'
-CPP_PATHS='CMakeLists.txt CMakeUserPresets.json *.cmake cmake/ conanfile.txt deps/ libbtx/ liblexy/ libnxs/ btx/ msg-gen/'
 HEADER_CHECKER_PATHS='*.cpp *.hpp *.h .file-headers.toml tools/file_headers.py'
+CPP_PATHS='CMakeLists.txt CMakeUserPresets.json *.cmake cmake/ conanfile.txt deps/ libbtx/ liblexy/ libnxs/ heimdall/ btx/ msg-gen/'
 TEST_PATHS='tests/common.sh tests/data/ tools/ci/nci-test.sh'
 DOC_PATHS='doc/ res/adoc/ tools/doc.sh tools/doc-site.sh tools/asciidoc/'
 
@@ -44,6 +44,11 @@ docs() {
     nci::note "$(find "${NCI_ARTIFACTS}/site" -name '*.html' | wc -l) pages"
 }
 
+install() {
+    [[ -z "$(git status --porcelain)" ]] || { echo "uncommitted changes: commit before deploying" >&2; return 1; }
+    baldr build -b Release -D CMAKE_INSTALL_PREFIX="${HOME}/.local" --target install
+}
+
 nci::init nexus
 nci::stage  lint-shell    --paths "${LINT_PATHS}" -- lint_shell
 nci::stage  file-headers  --paths "${HEADER_CHECKER_PATHS}" --allow-failure   -- python3 tools/file_headers.py --check
@@ -52,4 +57,5 @@ nci::stage  build         --paths "${CPP_PATHS}"                              --
 nci::stage  unit-test     --paths "${CPP_PATHS}"               --needs build  -- unit_test
 nci::stages function-test --paths "${CPP_PATHS} ${TEST_PATHS}" --needs build  -- tests/function/*.sh
 nci::stage  docs          --paths "${DOC_PATHS}"                              -- docs
+nci::stage  install       --manual --needs 'unit-test function-test'          -- install
 nci::main "$@"

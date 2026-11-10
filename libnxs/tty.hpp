@@ -90,7 +90,7 @@ std::size_t terminal_width();
  *
  * ANSI SGR escape sequences (e.g. color codes) occupy no columns on screen,
  * so they must be excluded before computing how many terminal columns a
- * line will actually occupy.
+ * line will actually occupy. A UTF-8 character counts as one column.
  */
 std::size_t visible_width(const std::string& line);
 

@@ -31,6 +31,15 @@ std::size_t skip_csi_sequence(const std::string& line, std::size_t i) {
 
 } // namespace detail
 
+namespace {
+
+/// Whether `byte` starts a character: anything but a UTF-8 continuation byte.
+[[nodiscard]] auto is_lead_byte(char byte) -> bool {
+    return (static_cast<unsigned char>(byte) & 0xC0U) != 0x80U;
+}
+
+} // namespace
+
 std::size_t terminal_width() {
     struct winsize ws {};
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 and ws.ws_col > 0) {
@@ -46,7 +55,9 @@ std::size_t visible_width(const std::string& line) {
             i = detail::skip_csi_sequence(line, i);
             continue;
         }
-        ++width;
+        if (is_lead_byte(line[i])) {
+            ++width;
+        }
         ++i;
     }
     return width;
@@ -63,6 +74,7 @@ std::string cap_visible_width(const std::string& line, std::size_t max_width) {
     std::string result;
     std::string trailing_escape;
     std::size_t visible = 0;
+    bool keep = true;
     for (std::size_t i = 0; i < line.size();) {
         if (line[i] == '\x1b' and i + 1 < line.size() and line[i + 1] == '[') {
             std::size_t j = detail::skip_csi_sequence(line, i);
@@ -76,9 +88,14 @@ std::string cap_visible_width(const std::string& line, std::size_t max_width) {
             continue;
         }
 
-        if (visible < budget) {
+        if (is_lead_byte(line[i])) {
+            keep = visible < budget;
+            if (keep) {
+                ++visible;
+            }
+        }
+        if (keep) {
             result += line[i];
-            ++visible;
         }
         ++i;
     }

@@ -1,0 +1,27 @@
+= Configuration
+ifeval::["{docname}" == "configuration"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+Heimdall reads one TOML file, `~/.config/nexus/heimdall.toml`
+(`$XDG_CONFIG_HOME/nexus/heimdall.toml` when that is set). The file and each of
+its keys are optional; without them, every repository one level under
+`~/repos` is tracked.
+
+.A configuration.
+[source,toml]
+----
+# Directories whose repositories are tracked, one level deep.
+roots = ["~/repos"]
+
+# Repository names (globs) left out.
+exclude-from-roots = ["zsh-autocomplete", "*-old"]
+
+# Explicit listing of tracked repositories.
+repositories = ["~/repos/nexus"]
+----
+
+Paths given to `heimdall git` append to `repositories`. `--exclude-from-roots`
+appends to the configuration's globs.

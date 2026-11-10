@@ -1,0 +1,24 @@
+= Roadmap
+ifeval::["{docname}" == "roadmap"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+Heimdall is envisioned as a central place to track all kind of needs of a user:
+personal tasks, development tasks, planner, calendar, reminders, etc.
+
+== Planned
+
+* **Weather** in the dashboard's header, in place of the placeholder.
+* **Calendar**: the next four weeks in the dashboard.
+* **Norn**: the planned and spent hours in the calendar, and the ready tasks
+  per project, from `norn.py --json`.
+* **Extended Git**:
+** stale branches that are merged or idle, besides those whose upstream is
+  gone;
+** prunable worktrees, whose directory is gone;
+** a record of the fetches, which keeps a failed fetch reported after the run:
+  Git writes `FETCH_HEAD` even when a fetch fails;
+** `--json` output, and `-a` for every repository and branch;
+** a progress bar while fetching.

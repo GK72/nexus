@@ -24,6 +24,7 @@ fix_commit_pattern = "(?i)\\bfix"
 [projects]
 btx = "BTX Toolset"
 daw = "Nexus Library"
+heimdall = "Nexus Library"
 libbtx = "BTX Toolset"
 liblexy = "BTX Toolset"
 libnxs = "Nexus Library"

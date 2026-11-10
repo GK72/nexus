@@ -1,0 +1,26 @@
+= Heimdall
+:doctype: book
+:toc: left
+:toclevels: 2
+:sectnums:
+:experimental:
+
+Heimdall keeps watch over the workspace. Run without a command, it prints the
+dashboard: the date, the system and the repositories that need attention, the
+welcome screen of a new shell. Each part of the dashboard has a command of its
+own for the full view.
+
+[source,bash]
+----
+heimdall                    # the dashboard
+heimdall git                # the full report of the repositories
+----
+
+Each chapter is also a page of its own: link:dashboard.html[Dashboard],
+link:git.html[Git], link:configuration.html[Configuration],
+link:roadmap.html[Roadmap].
+
+include::pages/dashboard.adoc[leveloffset=+1]
+include::pages/git.adoc[leveloffset=+1]
+include::pages/configuration.adoc[leveloffset=+1]
+include::pages/roadmap.adoc[leveloffset=+1]

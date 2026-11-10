@@ -1,0 +1,140 @@
+= Git
+ifeval::["{docname}" == "git"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+`heimdall git` surveys the tracked repositories, by default the ones in `~/repos`,
+and reports which ones need attention. Updating, fetching is explicit.
+
+[source,bash]
+----
+heimdall git                    # the repositories that need attention
+heimdall git -f                 # fetch all of them first
+heimdall git ~/repos/freyja     # also a repository the configuration does not track
+heimdall git -b                 # one line per repository
+heimdall git --check            # exit status 1 if anything needs attention
+----
+
+== Repository status
+
+A repository needs attention when any of the following holds. Everything else
+counts as clean.
+
+.Status in high-to-low priority
+[cols="1,3,9"]
+|===
+| Mark | Condition | Meaning
+
+| `!n` | conflicts  | files with unresolved merge conflicts in a worktree
+| `+n` | staged     | files staged but not committed
+| `~n` | modified   | tracked files changed but not staged
+| `?n` | untracked  | files Git does not track and does not ignore
+| `↑n` | unpushed   | commits on no remote at all, counted once per repository
+| `↓n` | behind     | commits of the upstream not yet in the local branch
+| `≡n` | stashed    | entries in the stash
+| | upstream gone | a branch whose upstream was deleted on the remote
+| | fetch failed  | the last `--fetch` of this run failed for the repository
+|===
+
+The marks always appear in this order, so they line up from row to row.
+
+Every worktree of a repository is checked, the main one and the linked ones.
+Linked worktrees and submodules are found through their repository, never as
+repositories of their own.
+
+_Unpushed_ means on no remote at all, not ahead of the upstream: a branch
+pushed to `origin` under another name, or merged there already, has nothing
+unpushed. A repository without remotes has nothing to push and never counts
+as unpushed; it is marked `°` instead.
+
+== The report
+
+The default output is a header line with the totals, a block per repository
+that needs attention, and one line naming the clean ones.
+
+.An example report
+[source,text]
+----
+Heimdall git report: 14 repos · 3 need attention · 1 dirty · 47 unpushed · 1 stashed · oldest fetch 21h ago
+
+ ▌freyja  ~/repos/freyja  fetched 21h ago
+  ├ ⌂ u/chris/main            ~8 ?3 ↑41
+  ├ ⎇ u/chris/exp/character   ~2         .claude/worktrees/character
+  ├ • old-shading             ↑3         upstream gone  5mo
+  └ ≡ stash@{0}               3w         WIP on u/chris/main: 4c1e2a0 Sky model
+
+ ▌dsp  ~/repos/dsp  fetched 21h ago
+  └ ⌂ v2                      ↑3
+
+ ▌baldr  ~/repos/baldr  fetched 21h ago
+  └ ⌂ master                  ↓2
+
+ ! conflict  + staged  ~ modified  ? untracked  ↑ unpushed  ↓ behind  ≡ stash  ° no remote
+----
+
+A block lists, in this order:
+
+* the worktrees: `⌂` the main one, `⎇` a linked one with its path, `@abc1234`
+  for a detached head; the main worktree only when it needs attention itself;
+* the other branches that need attention (`•`), newest first, with the age of
+  their last commit;
+* the stashes (`≡`), with their age and message.
+
+== The brief report
+
+`-b` prints one line per repository that needs attention: its name, the branch
+of its main worktree, the marks summed over all its worktrees, and notes. The
+link:dashboard.html[Dashboard] shows the same lines.
+
+.The brief report
+[source,text]
+----
+Heimdall git brief: 14 repos · 3 need attention · oldest fetch 21h ago
+  freyja   u/chris/main   ~10 ?3 ↑44 ≡1   +1 worktree · 1 upstream gone
+  dsp      v2             ↑3
+  baldr    master         ↓2
+----
+
+== Fetching
+
+Use `-f` (which runs `git fetch --all --prune`) to keep the repositories in
+sync with the remotes. Fetching runs in the background and reports failures
+as `fetch failed` with the line of Git's complaint that tells the cause, such
+as ssh's `Permission denied (publickey)`.
+
+Without `-f`, the age of the last fetch comes from `FETCH_HEAD`, so a fetch by
+hand counts too.
+
+== Options
+
+.Options of `heimdall git`
+[cols="1,3"]
+|===
+| Option | Effect
+
+| `PATH...`         | repositories to track besides the configured ones
+| `-f`, `--fetch`   | fetch every repository first
+| `-b`, `--brief`   | one line per repository that needs attention
+| `--check`         | exit status 1 if anything needs attention
+| `--exclude-from-roots GLOB` | leave out repositories of the roots whose name matches; repeatable
+| `-j`, `--jobs N`  | repositories inspected at once (default 8)
+| `--color WHEN`    | `auto` (default), `always` or `never`
+| `-h`, `--help`    | the usage
+| `--version`       | the version
+|===
+
+Colour is off when the output is not a terminal, when `NO_COLOR` is set or when
+`TERM` is `dumb`, unless `--color always` says otherwise. Colours are truecolor
+when `COLORTERM` says so, the 256-colour cube otherwise.
+
+.Exit status
+[cols="1,3"]
+|===
+| Status | Meaning
+
+| 0 | done; with `--check`, nothing needs attention
+| 1 | with `--check`: something needs attention
+| 2 | wrong usage or an unreadable configuration
+|===

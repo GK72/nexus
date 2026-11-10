@@ -41,6 +41,14 @@ TEST(Tty, CapVisibleWidth_ExactBudgetNotTruncated) {
     EXPECT_EQ(nxs::tty::cap_visible_width(line, 5), line);
 }
 
+TEST(Tty, VisibleWidth_CountsUtf8CharactersOnce) {
+    EXPECT_EQ(nxs::tty::visible_width("↑3 ▰▱ é"), 7);
+}
+
+TEST(Tty, CapVisibleWidth_KeepsUtf8CharactersWhole) {
+    EXPECT_EQ(nxs::tty::cap_visible_width("▰▰▰▰▰▰▰▰", 5), "▰▰...");
+}
+
 TEST(Tty, TerminalWidth_FallsBackWhenNotATty) {
     EXPECT_GT(nxs::tty::terminal_width(), 0);
 }

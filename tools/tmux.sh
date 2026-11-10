@@ -4,7 +4,7 @@
 #
 # Usage: tmux.sh [path]   (default: the Nexus repository)
 #
-# Windows: 1 nvim, 2 shell, 3 ai (claude), 9 btop
+# Windows: 1 nvim, 2 shell (with Heimdall), 3 ai (claude), 9 btop
 #
 # Every window starts with the default shell and the application is typed into
 # it via send-keys, so exiting the application drops back to the shell instead
@@ -53,7 +53,7 @@ new_window() {
 }
 
 new_window 1 nvim  nvim
-new_window 2 shell
+new_window 2 shell "heimdall -f"
 new_window 3 ai    claude
 new_window 9 btop  btop
 
