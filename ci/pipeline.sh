@@ -16,13 +16,21 @@
 # shellcheck source=../tools/ci/nci.sh
 source "$(dirname "$(realpath "$0")")/../tools/ci/nci.sh"
 
+LINT_PATHS='ci/ tools/ci/ tools/tmux.sh tools/skills/ tests/'
 CPP_PATHS='CMakeLists.txt CMakeUserPresets.json *.cmake cmake/ conanfile.txt deps/ libbtx/ liblexy/ libnxs/ btx/ msg-gen/'
+HEADER_CHECKER_PATHS='*.cpp *.hpp *.h .file-headers.toml tools/file_headers.py'
 TEST_PATHS='tests/common.sh tests/data/ tools/ci/nci-test.sh'
 DOC_PATHS='doc/ res/adoc/ tools/doc.sh tools/doc-site.sh tools/asciidoc/'
 
 lint_shell() {
     command -v shellcheck >/dev/null || nci::skip "shellcheck not installed"
-    shellcheck --external-sources tools/ci/*.sh ci/*.sh tests/common.sh tests/function/*.sh
+    shellcheck --external-sources \
+        tools/ci/*.sh \
+        tools/tmux.sh \
+        tools/skills/*/*.sh \
+        ci/*.sh \
+        tests/common.sh \
+        tests/function/*.sh
 }
 
 unit_test() {
@@ -37,12 +45,11 @@ docs() {
 }
 
 nci::init nexus
-nci::stage  lint-shell    --paths 'ci/ tools/ci/ tests/'                     -- lint_shell
-nci::stage  file-headers  --paths '*.cpp *.hpp *.h .file-headers.toml tools/file_headers.py' --allow-failure \
-                                                                              -- python3 tools/file_headers.py --check
+nci::stage  lint-shell    --paths "${LINT_PATHS}" -- lint_shell
+nci::stage  file-headers  --paths "${HEADER_CHECKER_PATHS}" --allow-failure   -- python3 tools/file_headers.py --check
 nci::stage  tools-test    --paths 'tools/*.py'                                -- python3 tools/file_headers_test.py
 nci::stage  build         --paths "${CPP_PATHS}"                              -- baldr build -b Debug
-nci::stage  unit-test     --paths "${CPP_PATHS}"              --needs build   -- unit_test
+nci::stage  unit-test     --paths "${CPP_PATHS}"               --needs build  -- unit_test
 nci::stages function-test --paths "${CPP_PATHS} ${TEST_PATHS}" --needs build  -- tests/function/*.sh
 nci::stage  docs          --paths "${DOC_PATHS}"                              -- docs
 nci::main "$@"

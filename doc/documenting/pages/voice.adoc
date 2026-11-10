@@ -1,0 +1,23 @@
+= Voice
+ifeval::["{docname}" == "voice"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+How a page reads: what goes into the prose and what stays out. Each rule shows a
+weak and a strong version, both from a real review. The structure of books and
+pages is in link:writing.html[Writing].
+
+* **Show, do not describe**: when an example or a mockup shows a thing, the prose
+  does not walk through it again. Keep only what the example cannot show, such
+  as a rule.
+
+* **Say what, not how**: A user guide tells what an application/tool does for
+  the reader. How it does it belongs to a developer guide or to the code.
+
+* **No history**: A page describes what is, not what it replaced or how it came
+  to be. Where a direction matters, a short vision says where it goes.
+
+* **Short captions**: A caption names the figure or table; the prose around it
+  explains.

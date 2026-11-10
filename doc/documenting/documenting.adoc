@@ -12,12 +12,13 @@
 
 How projects write their manuals: AsciiDoc pages put together into books, rendered to standalone
 HTML by `tools/doc.sh`, with plugins for what plain AsciiDoc cannot do. Each chapter is also a
-page of its own: link:rendering.html[Rendering], link:writing.html[Writing],
+page of its own: link:rendering.html[Rendering], link:writing.html[Writing], link:voice.html[Voice],
 link:style.html[Style], link:figures.html[Figures], link:interactive.html[Interactive Blocks],
 link:plugins.html[Plugins].
 
 include::pages/rendering.adoc[leveloffset=+1]
 include::pages/writing.adoc[leveloffset=+1]
+include::pages/voice.adoc[leveloffset=+1]
 include::pages/style.adoc[leveloffset=+1]
 include::pages/figures.adoc[leveloffset=+1]
 include::pages/interactive.adoc[leveloffset=+1]
