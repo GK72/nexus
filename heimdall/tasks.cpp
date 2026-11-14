@@ -316,6 +316,11 @@ auto parse_plan(const nova::dyn_value& doc) -> nova::expected<plan_t, nova::erro
         }
         if (doc.is<nova::dyn_value::seq_t>("sessions")) {
             for (const auto& item : doc.at("sessions").as_seq()) {
+                // A session that only mentioned the task (added it, referred to it) spent
+                // nothing on it; links without a role come from norn before roles: work.
+                if (item.lookup<std::string>("role", "work") != "work") {
+                    continue;
+                }
                 plan.sessions.push_back({ .task = item.lookup<std::string>("task"),
                                           .session = item.lookup<std::string>("session") });
             }
@@ -327,13 +332,15 @@ auto parse_plan(const nova::dyn_value& doc) -> nova::expected<plan_t, nova::erro
     return plan;
 }
 
-void attribute_tokens(plan_t& plan, const std::map<std::string, usage_t>& usage) {
+void attribute_usage(plan_t& plan, const std::map<std::string, usage_t>& usage) {
     std::map<std::string, std::size_t> shares;
     for (const auto& link : plan.sessions) {
         ++shares[link.session];
     }
     for (auto& task : plan.tasks) {
         task.tokens_spent = 0;
+        task.claude_wall_ms = 0;
+        task.claude_api_ms = 0;
     }
     for (const auto& link : plan.sessions) {
         const auto used = usage.find(link.session);
@@ -341,7 +348,10 @@ void attribute_tokens(plan_t& plan, const std::map<std::string, usage_t>& usage)
         if (used == usage.end() or task == plan.tasks.end()) {
             continue;
         }
-        task->tokens_spent += used->second.spent() / static_cast<std::int64_t>(shares.at(link.session));
+        const auto share = static_cast<std::int64_t>(shares.at(link.session));
+        task->tokens_spent += used->second.spent() / share;
+        task->claude_wall_ms += used->second.wall_ms / share;
+        task->claude_api_ms += used->second.api_ms / share;
     }
 }
 
@@ -620,6 +630,10 @@ auto render_task(const style_t& style, const plan_t& plan, const task_t& task, c
         std::vector<std::string> token_facts { fact("tokens", task.tokens > 0 ? "~" + tokens_text(task.tokens) : "-") };
         token_facts.push_back(fact("spent", tokens_text(task.tokens_spent)));
         token_facts.push_back(fact("sessions", fmt::format("{}", sessions)));
+        if (task.claude_wall_ms > 0 or task.claude_api_ms > 0) {
+            token_facts.push_back(fact("Claude", fmt::format("{} wall, {} API", duration_text(task.claude_wall_ms),
+                                                             duration_text(task.claude_api_ms))));
+        }
         out.push_back(join(token_facts, separator));
     }
     std::vector<std::string> dates { fact("added", task.added) };

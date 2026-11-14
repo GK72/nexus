@@ -2,7 +2,7 @@
  * Part of Nexus Library
  *
  * @brief   What Claude Code keeps locally: the transcripts of its sessions, the
- *          tokens they used and the memory files they read.
+ *          tokens and time they used and the memory files they read.
  *
  * A session's transcript is `<projects>/<slug>/<session>.jsonl`, one JSON
  * object per line; its subagents write `<slug>/<session>/subagents/<agent>.jsonl`.
@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -27,12 +28,14 @@
 
 namespace heimdall {
 
-/// Tokens of the model's answers in a transcript.
+/// Tokens of the model's answers in a transcript, and the time Claude took.
 struct usage_t {
     std::int64_t input = 0;
     std::int64_t cache_creation = 0;
     std::int64_t cache_read = 0;
     std::int64_t output = 0;
+    std::int64_t wall_ms = 0;               ///< The turns, from the prompt to the answer's end
+    std::int64_t api_ms = 0;                ///< The requests, from sending to the answer's last part
 
     /// The tokens a session spent: new input, cache writes and output; cache reads are left out.
     [[nodiscard]] auto spent() const -> std::int64_t { return input + cache_creation + output; }
@@ -42,6 +45,10 @@ struct usage_t {
 /**
  * @brief   The usage of the answers in the transcript `jsonl`, each answer
  *          once: a transcript repeats an answer's usage on every part of it.
+ *
+ * The wall time is the sum of the turns' `turn_duration`; the API time, of each
+ * `api-request` up to the last part of its answer (by `requestRef`), so the time
+ * of the tools and of the author's replies is left out of it.
  */
 [[nodiscard]] auto transcript_usage(std::string_view jsonl) -> usage_t;
 
@@ -59,13 +66,20 @@ struct usage_t {
 /**
  * @brief   The usage of each of `sessions`, read from their transcripts and
  *          their subagents' under `projects`; a session without a transcript
- *          is left out.
+ *          is left out. Subagents add tokens and API time; their wall time is
+ *          within the session's turns.
  */
 [[nodiscard]] auto session_usage(const std::filesystem::path& projects, const std::set<std::string>& sessions)
     -> std::map<std::string, usage_t>;
 
 /// Tokens as `850`, `60k`, `1.2k` or `1.4M`.
 [[nodiscard]] auto tokens_text(std::int64_t tokens) -> std::string;
+
+/// A duration as `45s`, `12m` or `2h05m`.
+[[nodiscard]] auto duration_text(std::int64_t ms) -> std::string;
+
+/// Milliseconds since the epoch of a transcript's `2026-11-14T14:30:46.426Z`; nothing if malformed.
+[[nodiscard]] auto timestamp_ms(std::string_view text) -> std::optional<std::int64_t>;
 
 /// `path` as text; empty if it cannot be read.
 [[nodiscard]] auto read_text(const std::filesystem::path& path) -> std::string;

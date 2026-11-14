@@ -54,6 +54,8 @@ struct task_t {
     std::int64_t tokens = 0;                ///< Tokens estimated; 0 if not
     bool shelved = false;                   ///< Its project is shelved
     std::int64_t tokens_spent = 0;          ///< Tokens of the sessions linked to it
+    std::int64_t claude_wall_ms = 0;        ///< Wall time of those sessions' turns
+    std::int64_t claude_api_ms = 0;         ///< API time of those sessions' requests
 
     [[nodiscard]] auto open() const -> bool { return status == "open"; }
     [[nodiscard]] auto proposed() const -> bool { return open() and not approved; }
@@ -98,10 +100,11 @@ struct plan_t {
 [[nodiscard]] auto parse_plan(const nova::dyn_value& doc) -> nova::expected<plan_t, nova::error>;
 
 /**
- * @brief   Sets the tokens each task spent from the `usage` of the sessions
- *          linked to it; a session linked to several tasks is split evenly.
+ * @brief   Sets the tokens and Claude's time each task took from the `usage` of
+ *          the sessions linked to it; a session linked to several tasks is split
+ *          evenly.
  */
-void attribute_tokens(plan_t& plan, const std::map<std::string, usage_t>& usage);
+void attribute_usage(plan_t& plan, const std::map<std::string, usage_t>& usage);
 
 /**
  * @brief   The plan from the norn client `command`, run with

@@ -155,7 +155,7 @@ TEST(Tasks, DetailOfAClosedTask) {
 namespace {
 
 // norn: a task Claude proposed, one it added that was approved (priority 1, with a session),
-// and one of the author's; aya is shelved.
+// and one of the author's; aya is shelved. Session s2 only mentioned norn/a.
 constexpr std::string_view Proposals = R"({
   "tasks": [
     {"id": "norn/a", "project": "norn", "kind": "feature", "title": "A", "status": "open", "state": "proposed",
@@ -168,7 +168,8 @@ constexpr std::string_view Proposals = R"({
      "original": 3, "current": 3, "spent": 0, "shelved": true}
   ],
   "deps": [],
-  "sessions": [{"task": "norn/b", "session": "s1"}, {"task": "norn/c", "session": "s1"}]
+  "sessions": [{"task": "norn/a", "session": "s2", "role": "mention"},
+               {"task": "norn/b", "session": "s1"}, {"task": "norn/c", "session": "s1", "role": "work"}]
 })";
 
 auto proposals() -> heimdall::plan_t {
@@ -176,8 +177,10 @@ auto proposals() -> heimdall::plan_t {
     EXPECT_TRUE(doc.has_value());
     auto parsed = heimdall::parse_plan(*doc);
     EXPECT_TRUE(parsed.has_value());
-    heimdall::attribute_tokens(*parsed, { { "s1", heimdall::usage_t { .input = 10, .cache_creation = 9'990,
-                                                                       .cache_read = 500'000, .output = 10'000 } } });
+    heimdall::attribute_usage(*parsed, { { "s1", heimdall::usage_t { .input = 10, .cache_creation = 9'990,
+                                                                       .cache_read = 500'000, .output = 10'000,
+                                                                       .wall_ms = 1'200'000, .api_ms = 360'000 } },
+                                          { "s2", heimdall::usage_t { .input = 5'000, .wall_ms = 60'000 } } });
     return *parsed;
 }
 
@@ -194,7 +197,11 @@ TEST(Tasks, ParsesApprovalPriorityTokensAndSessions) {
     // 20k spent in s1, without cache reads, split between the two tasks linked to it.
     EXPECT_EQ(parsed.find("norn/b")->tokens_spent, 10'000);
     EXPECT_EQ(parsed.find("norn/c")->tokens_spent, 10'000);
-    EXPECT_EQ(parsed.find("norn/a")->tokens_spent, 0);
+    EXPECT_EQ(parsed.find("norn/a")->tokens_spent, 0) << "s2 only mentioned it";
+    // s1's 20 minutes of turns and 6 of API time, split the same way.
+    EXPECT_EQ(parsed.find("norn/b")->claude_wall_ms, 600'000);
+    EXPECT_EQ(parsed.find("norn/c")->claude_api_ms, 180'000);
+    EXPECT_EQ(parsed.find("norn/a")->claude_wall_ms, 0);
 }
 
 TEST(Tasks, ProposedFirstShelvedOnlyCounted) {
@@ -221,7 +228,7 @@ TEST(Tasks, ShelvedShownWithAllOrItsPrefix) {
 TEST(Tasks, DetailShowsTokensAndApproval) {
     const auto parsed = proposals();
     const auto text = heimdall::render_task(Plain, parsed, *parsed.find("norn/b"), view());
-    EXPECT_NE(text.find("tokens ~60k · spent 10k · sessions 1"), std::string::npos) << text;
+    EXPECT_NE(text.find("tokens ~60k · spent 10k · sessions 1 · Claude 10m wall, 3m API"), std::string::npos) << text;
     EXPECT_NE(text.find("priority 1 · by Claude"), std::string::npos) << text;
     const auto proposed = heimdall::render_task(Plain, parsed, *parsed.find("norn/a"), view());
     EXPECT_NE(proposed.find("awaiting approval"), std::string::npos) << proposed;

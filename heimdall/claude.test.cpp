@@ -31,7 +31,41 @@ constexpr std::string_view Transcript =
     R"({"type":"assistant","message":{"id":"m4","content":[{"type":"tool_use","name":"Bash","input":{"command":"cat docs/c.md"}}]}})" "\n"
     R"({"type":"assistant", "usage" broken)" "\n";
 
+// Two turns: request r1 answered in two parts (3s), r2 (1.5s), and r3 that never got an answer.
+constexpr std::string_view Timed =
+    R"({"type":"api-request","id":"r1","timestamp":"2026-11-14T14:30:46.000Z"})" "\n"
+    R"({"type":"assistant","requestRef":"r1","timestamp":"2026-11-14T14:30:48.000Z","message":{"id":"m1","usage":{"output_tokens":1}}})" "\n"
+    R"({"type":"assistant","requestRef":"r1","timestamp":"2026-11-14T14:30:49.000Z","message":{"id":"m1","usage":{"output_tokens":1}}})" "\n"
+    R"({"type":"api-request","id":"r2","timestamp":"2026-11-14T14:30:59.500Z"})" "\n"
+    R"({"type":"assistant","requestRef":"r2","timestamp":"2026-11-14T14:31:01.000Z","message":{"id":"m2","usage":{"output_tokens":1}}})" "\n"
+    R"({"type":"api-request","id":"r3","timestamp":"2026-11-14T14:32:00.000Z"})" "\n"
+    R"({"type":"api-request-blob","id":"r1","timestamp":"2026-11-14T14:00:00.000Z"})" "\n"
+    R"({"type":"system","subtype":"turn_duration","durationMs":20000})" "\n"
+    R"({"type":"system","subtype":"turn_duration","durationMs":5000})" "\n";
+
 } // namespace
+
+TEST(Claude, TimesAreTurnsAndAnsweredRequests) {
+    const auto usage = heimdall::transcript_usage(Timed);
+    EXPECT_EQ(usage.wall_ms, 25'000);
+    EXPECT_EQ(usage.api_ms, 4'500);
+    EXPECT_EQ(usage.output, 2);
+}
+
+TEST(Claude, TimestampMs) {
+    EXPECT_EQ(heimdall::timestamp_ms("1970-01-01T00:00:01.250Z"), 1'250);
+    EXPECT_EQ(heimdall::timestamp_ms("1970-01-02T00:00:00Z"), 86'400'000);
+    EXPECT_EQ(heimdall::timestamp_ms("2026-11-14T14:30:46.4Z").value() % 1'000, 400);
+    EXPECT_FALSE(heimdall::timestamp_ms("2026-13-14T14:30:46Z"));
+    EXPECT_FALSE(heimdall::timestamp_ms("yesterday"));
+}
+
+TEST(Claude, DurationText) {
+    EXPECT_EQ(heimdall::duration_text(0), "0s");
+    EXPECT_EQ(heimdall::duration_text(44'600), "45s");
+    EXPECT_EQ(heimdall::duration_text(12 * 60'000), "12m");
+    EXPECT_EQ(heimdall::duration_text(125 * 60'000), "2h05m");
+}
 
 TEST(Claude, UsageCountsEachAnswerOnce) {
     const auto usage = heimdall::transcript_usage(Transcript);

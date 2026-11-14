@@ -37,14 +37,19 @@ If several tasks match, or none does, say so and ask; don't pick one silently.
    look. If it is `blocked`, report what it waits on (`chain`) before starting.
 2. **Link the session** as soon as work starts: `norn.py task session <id>` (takes
    `$CLAUDE_CODE_SESSION_ID`). Heimdall reads the linked transcripts for the tokens spent. Link
-   every task worked on in the session, including ones finished in passing.
+   every task worked on in the session, including ones finished in passing. A task the session
+   only added or referred to gets `norn.py task session <id> --mention`: it stays findable from
+   the session, but the tokens don't count toward it. Linking again sets the role, which fixes a
+   wrong link; `norn.py task sessions <id>` lists them.
 3. **Learned it is bigger or smaller**: `norn.py task reestimate <id> <hours> "<why>"`. The
    original estimate never changes; that is the point of the books.
 4. **Done**: `norn.py task done <id> "<note>"` once the author has the result (committed, or
    accepted when there is no commit). Abandoned or superseded:
    `norn.py task drop <id> "<why>"`.
 5. **Time**: `norn.py log <id> <hours> "<note>" [--date D]` only for hours the author reported or
-   confirmed. When closing a task, ask for the time if it matters to them; offer the session's or
+   confirmed: `log` is human time. Claude's own wall and API time come from the transcripts of
+   the work sessions (Heimdall, `heimdall tasks <id>`), so never log them; work done on its own
+   may close with no human time at all. When closing a task, ask for the time if it matters to them; offer the session's or
    the day's commit times as a hint, never as the answer.
 
 ## Adding tasks
@@ -70,7 +75,8 @@ If several tasks match, or none does, say so and ask; don't pick one silently.
 - Edit later with `norn.py task edit <id> --title/--note/--refs/--priority/--tokens`; delete a
   task added by mistake with `norn.py task rm <id>` (refused once time is logged; drop it then).
 
-After adding, show the author the `task_line` norn printed, and say which ones wait for approval.
+After adding, link the session with `--mention` (unless work on the task starts here), show the
+author the `task_line` norn printed, and say which ones wait for approval.
 
 ## Projects
 

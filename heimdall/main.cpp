@@ -189,7 +189,7 @@ template <typename T>
 [[nodiscard]] auto load_plan(const heimdall::config_t& config) -> nova::expected<heimdall::plan_t, nova::error> {
     auto plan = heimdall::load_plan(config.norn);
     if (plan) {
-        heimdall::attribute_tokens(*plan, heimdall::session_usage(heimdall::expand_home(config.claude),
+        heimdall::attribute_usage(*plan, heimdall::session_usage(heimdall::expand_home(config.claude),
                                                                   plan->session_ids()));
     }
     return plan;
