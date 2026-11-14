@@ -5,7 +5,7 @@
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-10
- * @updated     2026-11-10
+ * @updated     2026-11-14
  * @status      experimental
  * @reviewed    none
  * SPDX-License-Identifier: Unlicense
@@ -244,6 +244,9 @@ auto survey(const config_t& config, const survey_options& options) -> std::vecto
     auto repositories = config.repositories;
     repositories.insert(repositories.end(), options.repositories.begin(), options.repositories.end());
     const auto paths = discover(config.roots, exclude, repositories);
+    if (paths.empty()) {
+        return {};
+    }
 
     std::vector<repo_t> repos(paths.size());
     std::atomic<std::size_t> next = 0;

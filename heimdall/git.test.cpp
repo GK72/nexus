@@ -5,7 +5,7 @@
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-10
- * @updated     2026-11-10
+ * @updated     2026-11-14
  * @reviewed    none
  * SPDX-License-Identifier: Unlicense
  */
@@ -113,4 +113,8 @@ TEST(Git, Attention) {
     repo.branches.push_back({ .name = "x", .gone = true });
     EXPECT_TRUE(repo.attention());
     EXPECT_EQ(repo.gone(), 1);
+}
+
+TEST(Git, Survey_NothingTrackedIsEmpty) {
+    EXPECT_TRUE(heimdall::survey(heimdall::config_t{}, {}).empty());
 }

@@ -6,9 +6,9 @@ ifeval::["{docname}" == "configuration"]
 endif::[]
 
 Heimdall reads one TOML file, `~/.config/nexus/heimdall.toml`
-(`$XDG_CONFIG_HOME/nexus/heimdall.toml` when that is set). The file and each of
-its keys are optional; without them, every repository one level under
-`~/repos` is tracked.
+(`$XDG_CONFIG_HOME/nexus/heimdall.toml` when that is set). Each key is
+optional, but nothing is tracked by default: without `roots` or `repositories`
+there are no repositories. Heimdall warns when the file is missing.
 
 .A configuration.
 [source,toml]

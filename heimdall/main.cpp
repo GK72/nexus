@@ -26,11 +26,13 @@
 #include <charconv>
 #include <chrono>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 namespace {
@@ -243,6 +245,11 @@ template <typename T>
 }
 
 [[nodiscard]] auto run(const options_t& options) -> int {
+    std::error_code ec;
+    if (not std::filesystem::exists(heimdall::config_path(), ec)) {
+        fmt::println(stderr, "heimdall: warning: no configuration at {}; no repositories are tracked",
+                     heimdall::config_path().string());
+    }
     auto config = heimdall::load_config(heimdall::config_path());
     if (not config) {
         fmt::println(stderr, "heimdall: {}: {} {}", heimdall::config_path().string(), config.error().code.message(),

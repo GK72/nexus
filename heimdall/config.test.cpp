@@ -5,7 +5,7 @@
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-10
- * @updated     2026-11-10
+ * @updated     2026-11-14
  * @reviewed    none
  * SPDX-License-Identifier: Unlicense
  */
@@ -27,7 +27,7 @@ auto parse(std::string_view toml) -> nova::expected<heimdall::config_t, nova::er
 TEST(Config, Defaults) {
     const auto config = parse("");
     ASSERT_TRUE(config.has_value());
-    EXPECT_EQ(config->roots, std::vector<std::string>{ "~/repos" });
+    EXPECT_TRUE(config->roots.empty());
     EXPECT_TRUE(config->exclude_from_roots.empty());
     EXPECT_TRUE(config->repositories.empty());
     EXPECT_EQ(config->norn, std::vector<std::string>{ "norn.py" });
@@ -61,7 +61,7 @@ TEST(Config, WrongTypeIsAnError) {
 TEST(Config, MissingFileMeansDefaults) {
     const auto config = heimdall::load_config("/nonexistent/heimdall.toml");
     ASSERT_TRUE(config.has_value());
-    EXPECT_EQ(config->roots, std::vector<std::string>{ "~/repos" });
+    EXPECT_TRUE(config->roots.empty());
 }
 
 TEST(Config, DashboardSectionsAndClaude) {

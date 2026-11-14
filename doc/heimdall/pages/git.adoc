@@ -5,7 +5,7 @@ ifeval::["{docname}" == "git"]
 :experimental:
 endif::[]
 
-`heimdall git` surveys the tracked repositories, by default the ones in `~/repos`,
+`heimdall git` surveys the repositories the configuration tracks
 and reports which ones need attention. Updating, fetching is explicit.
 
 [source,bash]
