@@ -30,7 +30,8 @@ lint_shell() {
         tools/skills/*/*.sh \
         ci/*.sh \
         tests/common.sh \
-        tests/function/*.sh
+        tests/function/*.sh \
+        tests/doc/*.sh
 }
 
 unit_test() {
@@ -56,6 +57,8 @@ nci::stage  tools-test    --paths 'tools/*.py'                                --
 nci::stage  build         --paths "${CPP_PATHS}"                              -- baldr build -b Debug
 nci::stage  unit-test     --paths "${CPP_PATHS}"               --needs build  -- unit_test
 nci::stages function-test --paths "${CPP_PATHS} ${TEST_PATHS}" --needs build  -- tests/function/*.sh
+nci::stage  doc-unit-test --paths 'tools/asciidoc/'                           -- ruby tools/asciidoc/lib/diff_test.rb
+nci::stages doc-test      --paths "${DOC_PATHS} tests/doc/"                   -- tests/doc/*.sh
 nci::stage  docs          --paths "${DOC_PATHS}"                              -- docs
 nci::stage  install       --manual --needs 'unit-test function-test'          -- install
 nci::main "$@"

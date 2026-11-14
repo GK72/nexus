@@ -1,0 +1,170 @@
+/*
+ * Part of Nexus Library
+ *
+ * The marks of `tools/doc.sh --diff` (plugin `diff.rb`): a tinted box with a bar on its left per
+ * changed block, inserted and removed words, struck copies of removed blocks, badges, the flags of
+ * the table of contents, and the toolbar. The colors are the `--diff-*` roles of `palette.css`,
+ * with fallbacks for a project stylesheet without them. `html.nx-diff-off` hides every mark,
+ * `html.nx-diff-no-deleted` the removed blocks and words.
+ */
+
+.nx-diff {
+  --nx-d-pad: 0.3rem;
+  --nx-d-bar: 3px;
+  border-radius: 2px;
+  scroll-margin: 5rem 0;
+}
+.nx-diff-added { --nx-d-tint: var(--diff-added-bg, #e6f4ea); --nx-d-line: var(--diff-added, #2f9e5b); }
+.nx-diff-changed { --nx-d-tint: var(--diff-changed-bg, #e8f0fb); --nx-d-line: var(--diff-changed, #3b7dd8); }
+.nx-diff-deleted { --nx-d-tint: var(--diff-deleted-bg, #fbeaea); --nx-d-line: var(--diff-deleted, #d64545); }
+/* A whole section: a lighter box, its badge says the rest */
+.nx-diff-added:is(.sect1, .sect2, .sect3, .sect4, .sect5, .sect6) {
+  --nx-d-tint: color-mix(in srgb, var(--diff-added-bg, #e6f4ea) 40%, var(--bg, #fff));
+}
+.nx-diff-deleted:is(.sect1, .sect2, .sect3, .sect4, .sect5, .sect6) {
+  --nx-d-tint: color-mix(in srgb, var(--diff-deleted-bg, #fbeaea) 40%, var(--bg, #fff));
+}
+
+/* Marks show unless `html.nx-diff-off`. The box, widened by a shadow of its own color; under it,
+   a shadow of the bar color, shifted left */
+:root:not(.nx-diff-off) .nx-diff:not(tr) {
+  background: var(--nx-d-tint);
+  box-shadow: 0 0 0 var(--nx-d-pad) var(--nx-d-tint), calc(-1 * var(--nx-d-bar)) 0 0 var(--nx-d-pad) var(--nx-d-line);
+}
+/* A sibling right below a mark keeps clear of its widened box */
+:root:not(.nx-diff-off) .nx-diff + .nx-diff { margin-top: calc(2 * var(--nx-d-pad) + 0.15rem); }
+
+/* Table rows: the cells take the color, the first one the bar */
+:root:not(.nx-diff-off) tr.nx-diff > * { background: var(--nx-d-tint); }
+:root:not(.nx-diff-off) tr.nx-diff > :first-child { box-shadow: inset var(--nx-d-bar) 0 0 var(--nx-d-line); }
+
+/* Removed blocks: struck through and faded, in place */
+.nx-diff-deleted { opacity: 0.62; text-decoration: line-through; text-decoration-color: var(--diff-deleted, #d64545); }
+.nx-diff-deleted :is(td, th, p, li, dt, dd, pre, code, h1, h2, h3, h4, h5, h6, .title) {
+  text-decoration: line-through;
+  text-decoration-color: var(--diff-deleted, #d64545);
+}
+.nx-diff-deleted :is(svg, img) { filter: grayscale(1); }
+
+/* Words */
+ins.nx-ins { text-decoration: none; color: inherit; }
+:root:not(.nx-diff-off) ins.nx-ins {
+  text-decoration: none;
+  color: inherit;
+  background: var(--diff-ins-bg, #c6ebd2);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--diff-ins-bg, #c6ebd2);
+}
+del.nx-del {
+  color: var(--diff-del-ink, #c03030);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.85;
+}
+del.nx-del + ins.nx-ins, ins.nx-ins + del.nx-del { margin-left: 0.2em; }
+
+/* Badges at a title: a new page, a new or removed section */
+.nx-diff-badge {
+  display: inline-block;
+  margin-left: 0.6em;
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  vertical-align: middle;
+  text-decoration: none;
+}
+.nx-diff-badge-new { color: var(--diff-added, #2f9e5b); background: var(--diff-added-bg, #e6f4ea); }
+.nx-diff-badge-deleted { color: var(--diff-deleted, #d64545); background: var(--diff-deleted-bg, #fbeaea); }
+
+/* The table of contents and the book's navigation: a dot at what changed */
+#toc a.nx-diff-toc::after, a.nx-diff-page::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  margin-left: 0.45em;
+  border-radius: 50%;
+  background: var(--diff-changed, #3b7dd8);
+  vertical-align: 0.12em;
+}
+#toc a.nx-diff-toc-new::after { background: var(--diff-added, #2f9e5b); }
+.nx-crumbs a.nx-diff-page::after { margin-right: -0.2em; }
+
+/* The change in focus after a jump */
+:root:not(.nx-diff-off) .nx-diff-current { outline: 2px solid var(--diff-changed, #3b7dd8); outline-offset: calc(var(--nx-d-pad) + 3px); }
+:root:not(.nx-diff-off) tr.nx-diff-current { outline-offset: 0; }
+
+/* Off */
+html.nx-diff-off :is(.nx-diff-deleted, del.nx-del, .nx-diff-badge),
+html.nx-diff-no-deleted :is(.nx-diff-deleted, del.nx-del) { display: none; }
+html.nx-diff-off :is(#toc a.nx-diff-toc, a.nx-diff-page)::after { display: none; }
+
+/* The toolbar */
+.nx-diff-bar {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.7rem;
+  border: 1px solid var(--rule, #d1d5db);
+  border-radius: 0.5rem;
+  background: var(--surface, #fff);
+  color: var(--ink, #1f2937);
+  box-shadow: 0 0.3rem 1.2rem rgb(0 0 0 / 0.14);
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+body:has(.nx-pager) .nx-diff-bar { bottom: 3.4rem; }
+.nx-diff-bar .nx-diff-count { font-weight: 600; white-space: nowrap; }
+.nx-diff-bar .nx-diff-count small { color: var(--muted, #6b7280); font-weight: 400; font-size: inherit; }
+.nx-diff-bar .nx-diff-kinds { display: inline-flex; gap: 0.25rem; margin: 0 0.15rem; }
+.nx-diff-bar .nx-diff-kinds span { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--muted, #6b7280); }
+.nx-diff-bar .nx-diff-kinds span::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 2px; }
+.nx-diff-bar .nx-diff-kinds .k-added::before { background: var(--diff-added, #2f9e5b); }
+.nx-diff-bar .nx-diff-kinds .k-changed::before { background: var(--diff-changed, #3b7dd8); }
+.nx-diff-bar .nx-diff-kinds .k-deleted::before { background: var(--diff-deleted, #d64545); }
+.nx-diff-bar button, .nx-diff-bar summary {
+  font: inherit;
+  color: inherit;
+  background: var(--bg, #f9fafb);
+  border: 1px solid var(--rule, #d1d5db);
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+}
+.nx-diff-bar button:hover, .nx-diff-bar summary:hover { border-color: var(--link, #2563eb); color: var(--link, #2563eb); }
+.nx-diff-bar button[aria-pressed="false"] { color: var(--muted, #6b7280); text-decoration: line-through; }
+.nx-diff-bar button:disabled { opacity: 0.4; cursor: default; }
+.nx-diff-bar .nx-diff-sep { width: 1px; align-self: stretch; background: var(--rule, #d1d5db); margin: 0 0.1rem; }
+.nx-diff-bar details { position: relative; margin: 0; }
+.nx-diff-bar summary { display: block; margin: 0; list-style: none; }
+.nx-diff-bar summary::-webkit-details-marker, .nx-diff-bar summary::before { display: none; }
+.nx-diff-bar details ul {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  min-width: 12rem;
+  max-height: 60vh;
+  overflow: auto;
+  margin: 0;
+  padding: 0.3rem 0;
+  list-style: none;
+  border: 1px solid var(--rule, #d1d5db);
+  border-radius: 0.4rem;
+  background: var(--surface, #fff);
+  box-shadow: 0 0.3rem 1.2rem rgb(0 0 0 / 0.14);
+}
+.nx-diff-bar details li a { display: block; padding: 0.25rem 0.8rem; color: inherit; text-decoration: none; }
+.nx-diff-bar details li a:hover { color: var(--link, #2563eb); }
+.nx-diff-bar details li a[aria-current] { font-weight: 600; }
+@media print { .nx-diff-bar { display: none; } }

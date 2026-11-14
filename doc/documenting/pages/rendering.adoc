@@ -18,6 +18,7 @@ tools/doc.sh doc/documenting                        # a book: the spine and its 
 tools/doc.sh doc/finance/compound.adoc              # a single document
 tools/doc.sh doc/*.adoc                             # documents outside the book layout
 tools/doc.sh --serve doc/documenting                # render, serve, re-render on changes
+tools/doc.sh --serve --diff doc/documenting         # ... with the changes since HEAD marked
 tools/doc.sh --shot --dark build/doc/documenting/figures.html   # a screenshot to look at
 tools/doc.sh --help
 ----
@@ -63,6 +64,40 @@ file is its spine or one of its pages, the file alone otherwise, and opens the b
 buffer's page; served already, it only opens the page. `:DocStop` (`\q`) stops the server,
 `:DocLog` shows its output. The plugin is `env/config/nvim/lua/nexus/doc.lua`.
 
+== Changes
+
+`--diff` marks in the rendered pages what changed since the last commit, so a
+change is reviewed by reading the pages rather than the AsciiDoc diff. Every
+change of the working tree counts: staged, unstaged and untracked files, new
+pages among them. `--diff=REF` compares with another commit. It works on one
+render and under `--serve`, where a commit clears the marks it covers.
+
+.The marks of `--diff`.
+[cols="2,5",options=header]
+|===
+| Change | Mark
+
+| A new block | A green bar and background.
+| A changed block | A blue bar and background. In a paragraph, a list item or a
+table cell, the new words are highlighted and the removed ones struck through.
+| A removed block | Struck through and faded, where it stood.
+| A new page, section or list | One mark for all of it; a page or a section
+gets a _New_ badge at its title.
+| A changed figure | The whole figure, marked as changed.
+|===
+
+Blocks compare by their text: rewrapping a paragraph or renumbering the figures
+changes nothing.
+
+A toolbar at the bottom right counts the changes and jumps to the previous and
+next one (kbd:[p], kbd:[n]). It turns the marks off (kbd:[m]) and the removed
+text off (kbd:[x]); the browser remembers both. Its _Pages_ menu lists the
+pages of the book that changed. The table of contents puts a dot at each
+section with a change, and the navigation bars at each changed page.
+
+A document outside git, one that git ignores, or one without a change renders
+without marks. `--diff` needs git and the nokogiri gem.
+
 == Screenshots
 
 `--shot FILE.html...` writes `FILE.png` beside each page with a headless Chromium-based browser
@@ -91,6 +126,8 @@ deploys it as a Pages artifact.
 | `-r`, `--require FILE.rb` | An extra extension, for every document of the run. Repeatable.
 | `-a`, `--attribute NAME=VALUE` | A document attribute, over the one in the document. Repeatable.
 | `--serve[=PORT]`, `--interval SEC` | Serve and re-render on changes; see <<_serving>>.
+| `--diff[=REF]` | Mark what changed since commit `REF`, `HEAD` by default; see
+<<_changes>>.
 | `--shot`, `--dark`, `--size WxH` | Screenshots; see <<_screenshots>>.
 | `ADOC_STYLE` | The style level, `plain`, `compact` or `full` (default); the `:theme-style:`
 attribute of a document wins. See link:style.html[Nexus Style].

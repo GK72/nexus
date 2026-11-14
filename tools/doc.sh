@@ -13,8 +13,14 @@
 # A document may have a companion extension next to it, `FILE.rb` for `FILE.adoc`, loaded for that
 # document only (e.g. the model of an interactive block).
 #
+# `--diff[=REF]` marks what changed since commit REF (default: HEAD), from the working tree with
+# staged, unstaged and untracked files: it exports REF of each document's repository into a
+# temporary folder, renders the document there too, and gives the plugin `diff.rb` that render to
+# compare with.
+#
 # Run with `--help` for the usage. Dependencies: asciidoctor, optionally rouge (gems); python3 for
-# `--serve`, inotifywait (inotify-tools) for its file watching; a Chromium-based browser for `--shot`.
+# `--serve`, inotifywait (inotify-tools) for its file watching; a Chromium-based browser for `--shot`;
+# git and nokogiri (gem) for `--diff`.
 
 set -euo pipefail
 
@@ -38,6 +44,8 @@ Options:
   -a, --attribute NAME=VAL  document attribute, over the one in the document; repeatable
   --serve[=PORT]            render, serve OUT on 127.0.0.1:PORT (default: 8000), re-render on
                             changes; open pages reload themselves
+  --diff[=REF]              mark what changed since commit REF (default: HEAD): staged, unstaged
+                            and untracked changes, new pages; with or without --serve
   --interval SEC            seconds between checks when watching without inotifywait (0.5)
   --shot                    screenshot the given HTML files to FILE.png (no rendering)
   --dark                    with --shot: the dark theme, to FILE-dark.png
@@ -84,6 +92,7 @@ interval="0.5"
 shot=false
 shot_dark=false
 shot_size="1300,2400"
+diff_ref=""
 
 # Accepts `-o DIR`, `--out DIR` and `--out=DIR`; options and files in any order, `--` ends the options.
 parse_args() {
@@ -127,6 +136,15 @@ parse_args() {
             --serve=*)
                 serve_port="${1#*=}"
                 [[ "${serve_port}" =~ ^[0-9]+$ ]] || die "--serve: not a port: ${serve_port}"
+                shift
+                ;;
+            --diff)
+                diff_ref=HEAD
+                shift
+                ;;
+            --diff=*)
+                diff_ref="${1#*=}"
+                [[ -n "${diff_ref}" ]] || die "--diff=: no commit given"
                 shift
                 ;;
             --interval)
@@ -242,16 +260,14 @@ plan() {
 
 # -------------------------------------------------------------------------------------- Rendering
 
-# Renders job `$1`; prints the output path.
-render() {
-    local -r src="${job_src[$1]}" out="${job_out[$1]}" book="${job_book[$1]}"
+# Renders document `$1` to `$2`; `$3` is the spine of its book, or empty; the rest are more
+# arguments of asciidoctor, before the companion and the attributes.
+render_doc() {
+    local -r src="$1" out="$2" book="$3"
+    shift 3
     local -r companion="${src%.adoc}.rb"
-    local args=(--safe-mode safe -r "${SCRIPT_DIR}/asciidoc/extensions.rb")
+    local args=(--safe-mode safe -r "${SCRIPT_DIR}/asciidoc/extensions.rb" "$@")
 
-    local require
-    for require in "${requires[@]}"; do
-        args+=(-r "$(realpath "${require}")")
-    done
     if [[ -f "${companion}" ]]; then
         args+=(-r "${companion}")
     fi
@@ -267,7 +283,21 @@ render() {
     mkdir -p "$(dirname "${out}")"
     # Safe mode jails `-D` to the document's directory, so the document goes through stdout.
     asciidoctor "${args[@]}" -o - "${src}" >"${out}"
-    printf '%s\n' "${out}"
+}
+
+# Renders job `$1`; prints the output path.
+render() {
+    local -r i="$1"
+    local args=() require
+    for require in "${requires[@]}"; do
+        args+=(-r "$(realpath "${require}")")
+    done
+    if [[ -n "${diff_of[i]:-}" ]]; then
+        args+=(-a "nxs-diff=${diff_of[i]}" -a "nxs-diff-ref=${diff_ref}")
+        [[ -z "${diff_pages[i]:-}" ]] || args+=(-a "nxs-diff-pages=${diff_pages[i]}")
+    fi
+    render_doc "${job_src[i]}" "${job_out[i]}" "${job_book[i]}" "${args[@]}"
+    printf '%s\n' "${job_out[i]}"
 }
 
 # Renders the jobs given by index; a failure is reported, the others still render.
@@ -277,6 +307,137 @@ render_jobs() {
         render "${i}" || { warn "failed: ${job_src[i]}"; failed=1; }
     done
     return "${failed}"
+}
+
+# ------------------------------------------------------------------------------------------- Diff
+
+diff_dir=""             # temporary: the exported commits and their renders
+diff_of=()              # per job: the render at REF to compare with, `-` for a new page, or empty
+diff_pages=()           # per job of a book: the book's pages that changed, by name
+declare -A diff_seen=() # per repository: the commit to compare with, empty when nothing changed
+declare -A diff_trees=()  # per repository and commit: the exported files
+declare -A diff_warned=()
+
+# Sets `diff_commit` to the commit of REF in repository `$1`, or to nothing when the working tree
+# has no change since it.
+diff_resolve() {
+    local -r repo="$1"
+    if [[ -n "${diff_seen[${repo}]+set}" ]]; then
+        diff_commit="${diff_seen[${repo}]}"
+        return
+    fi
+    diff_commit="$(git -C "${repo}" rev-parse --verify -q "${diff_ref}^{commit}")" ||
+        die "--diff: no such commit in ${repo}: ${diff_ref}"
+    if [[ "${diff_commit}" == "$(git -C "${repo}" rev-parse HEAD)" &&
+          -z "$(git -C "${repo}" status --porcelain)" ]]; then
+        diff_commit=""
+    fi
+    diff_seen[${repo}]="${diff_commit}"
+}
+
+# Sets `diff_tree` to a folder with the files of commit `$2` of repository `$1`, exported once.
+diff_export() {
+    local -r key="$1@$2"
+    diff_tree="${diff_trees[${key}]:-}"
+    [[ -z "${diff_tree}" ]] || return 0
+    diff_tree="${diff_dir}/tree-${#diff_trees[@]}"
+    mkdir -p "${diff_tree}"
+    git -C "$1" archive "$2" | tar -x -C "${diff_tree}"
+    diff_trees[${key}]="${diff_tree}"
+}
+
+# Prints path `$1` in the export `$3` of repository `$2` when it is in the repository and the
+# export has it, else the path itself.
+diff_map() {
+    local -r path="$1" repo="$2" tree="$3"
+    if [[ "${path}" == "${repo}" || "${path}" == "${repo}/"* ]] && [[ -e "${tree}${path#"${repo}"}" ]]; then
+        printf '%s\n' "${tree}${path#"${repo}"}"
+    else
+        printf '%s\n' "${path}"
+    fi
+}
+
+# Prints the files of repository `$1` that differ from commit `$2`, relative to it: changed,
+# staged, deleted or untracked.
+diff_files() {
+    git -C "$1" diff --name-only "$2" --
+    git -C "$1" ls-files --others --exclude-standard
+}
+
+# Warns once that document `$1` shows no changes, for reason `$2`.
+diff_warn() {
+    [[ -z "${diff_warned[$1]:-}" ]] || return 0
+    warn "--diff: $2, no changes to show: $1"
+    diff_warned[$1]=1
+}
+
+# Finds, for every job, the render at REF to compare with, rendering it when it is not there yet,
+# and the pages of its book that changed.
+diff_prepare() {
+    diff_seen=()
+    diff_of=()
+    diff_pages=()
+    local i repo rel ref_src ref_out ref_book root require args
+    local -A changed_files=() book_pages=()
+    for i in "${!job_src[@]}"; do
+        if ! repo="$(git -C "$(dirname "${job_src[i]}")" rev-parse --show-toplevel 2>/dev/null)"; then
+            diff_warn "${job_src[i]}" "not in a git repository"
+            continue
+        fi
+        if git -C "${repo}" check-ignore -q -- "${job_src[i]}"; then
+            diff_warn "${job_src[i]}" "ignored by git"
+            continue
+        fi
+        diff_resolve "${repo}"
+        [[ -n "${diff_commit}" ]] || continue
+        diff_export "${repo}" "${diff_commit}"
+
+        if [[ -z "${changed_files[${repo}]+set}" ]]; then
+            changed_files[${repo}]="$(diff_files "${repo}" "${diff_commit}" | sed "s|^|${repo}/|")"
+        fi
+        rel="${job_src[i]#"${repo}"/}"
+        ref_src="${diff_tree}/${rel}"
+        if [[ ! -f "${ref_src}" ]]; then
+            diff_of[i]="-"
+        else
+            ref_out="${diff_dir}/out-${diff_commit:0:12}/${job_out[i]#"${out_dir}"/}"
+            if [[ ! -f "${ref_out}" ]]; then
+                args=()
+                for require in "${requires[@]}"; do
+                    args+=(-r "$(diff_map "$(realpath "${require}")" "${repo}" "${diff_tree}")")
+                done
+                ref_book=""
+                [[ -z "${job_book[i]}" ]] || ref_book="$(diff_map "${job_book[i]}" "${repo}" "${diff_tree}")"
+                root="$(diff_map "${ADOC_ROOT}" "${repo}" "${diff_tree}")"
+                if ! ADOC_ROOT="${root}" serve_port="" \
+                     render_doc "${ref_src}" "${ref_out}" "${ref_book}" "${args[@]}" 2>>"${diff_dir}/ref.log"; then
+                    warn "--diff: does not render at ${diff_ref}, no changes to show: ${job_src[i]}"
+                    rm -f "${ref_out}"
+                    continue
+                fi
+            fi
+            diff_of[i]="${ref_out}"
+        fi
+    done
+
+    # The pages of each book that changed: their source changed, or the spine when any did
+    local spine name names
+    for spine in "${!books[@]}"; do
+        names=""
+        for i in "${!job_src[@]}"; do
+            [[ "${job_book[i]}" == "${spine}" || "${job_src[i]}" == "${spine}" ]] || continue
+            [[ -n "${diff_of[i]:-}" ]] || continue
+            printf '%s\n' "${changed_files[@]}" | grep -qxF -- "${job_src[i]}" || continue
+            if [[ "${job_src[i]}" == "${spine}" ]]; then name=index; else name="$(basename "${job_src[i]}" .adoc)"; fi
+            names+=" ${name}"
+        done
+        [[ -z "${names}" || " ${names} " == *" index "* ]] || names="index${names}"
+        book_pages[${spine}]="${names# }"
+    done
+    for i in "${!job_src[@]}"; do
+        [[ -n "${diff_of[i]:-}" ]] || continue
+        diff_pages[i]="${book_pages[${job_book[i]:-${job_src[i]}}]:-}"
+    done
 }
 
 # -------------------------------------------------------------------------------------- Watching
@@ -334,6 +495,17 @@ on_change() {
     mapfile -t jobs < <(affected "$@")
     ((${#jobs[@]} > 0)) || return 0
     printf '%s: changed: %s\n' "${SCRIPT_NAME}" "$*" >&2
+    if [[ -n "${diff_ref}" ]]; then
+        # A change of the plugins may change the renders at REF too; a commit or a page that
+        # changes first changes what every page compares with
+        local path
+        for path in "$@"; do
+            [[ "${path}" != "${SCRIPT_DIR}/asciidoc/"* ]] || rm -rf "${diff_dir:?}"/out-*
+        done
+        local -r before="${diff_seen[*]}|${diff_pages[*]}"
+        diff_prepare
+        [[ "${diff_seen[*]}|${diff_pages[*]}" == "${before}" ]] || jobs=("${!job_src[@]}")
+    fi
     render_jobs "${jobs[@]}" || true
 }
 
@@ -370,10 +542,9 @@ watch() {
 serve() {
     command -v python3 >/dev/null || die "--serve needs python3"
     python3 -m http.server "${serve_port}" --bind 127.0.0.1 --directory "${out_dir}" >/dev/null 2>&1 &
-    local -r pid=$!
-    trap 'kill '"${pid}"' 2>/dev/null' EXIT
+    server_pid=$!
     sleep 0.3
-    kill -0 "${pid}" 2>/dev/null || die "--serve: port ${serve_port} is taken"
+    kill -0 "${server_pid}" 2>/dev/null || die "--serve: port ${serve_port} is taken"
     local i
     for i in "${!job_out[@]}"; do
         [[ -n "${job_book[i]}" ]] && continue
@@ -409,7 +580,7 @@ shots() {
         if ${shot_dark}; then
             png="${page%.html}-dark.png"
             page="${page%.html}.dark-shot.html"
-            sed 's/<html lang="\([^"]*\)">/<html lang="\1" data-theme="dark">/' "${file}" >"${page}"
+            sed '0,/<html[ >]/s/<html\([ >]\)/<html data-theme="dark"\1/' "${file}" >"${page}"
         fi
         "${exe}" --headless=new --hide-scrollbars --window-size="${shot_size}" --virtual-time-budget=3000 \
             --screenshot="${png}" "file://${page}" >/dev/null 2>&1 || warn "--shot failed: ${file}"
@@ -418,8 +589,16 @@ shots() {
     done
 }
 
+server_pid=""
+
+cleanup() {
+    [[ -z "${server_pid}" ]] || kill "${server_pid}" 2>/dev/null || true
+    [[ -z "${diff_dir}" ]] || rm -rf "${diff_dir}"
+}
+
 main() {
     parse_args "$@"
+    trap cleanup EXIT
 
     if ${shot}; then
         shots
@@ -453,6 +632,12 @@ main() {
 
     plan
     mkdir -p "${out_dir}"
+    if [[ -n "${diff_ref}" ]]; then
+        command -v git >/dev/null || die "--diff needs git"
+        ruby -e 'require "nokogiri"' 2>/dev/null || die "--diff needs nokogiri (gem install nokogiri)"
+        diff_dir="$(mktemp -d "${TMPDIR:-/tmp}/doc-diff.XXXXXX")"
+        diff_prepare
+    fi
     if [[ -n "${serve_port}" ]]; then
         render_jobs "${!job_src[@]}" || true
         serve

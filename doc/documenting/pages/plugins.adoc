@@ -102,4 +102,5 @@ Some rules that kept the plugins simple:
 | `demo.rb` | `[demo]` | link:writing.html#_showing_markup[Writing, Showing Markup]
 | `nav.rb` | Nothing: the pages of a book | link:rendering.html#_books[Rendering, Books]
 | `live.rb` | Nothing: `--serve` | link:rendering.html#_serving[Rendering, Serving]
+| `diff.rb` | Nothing: `--diff` | link:rendering.html#_changes[Rendering, Changes]
 |===

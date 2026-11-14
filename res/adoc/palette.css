@@ -56,6 +56,16 @@
   --series-2: oklch(calc(var(--accent-l) - 0.08) var(--orange-c) var(--orange-h));
   --series-3: oklch(calc(var(--accent-l) - 0.08) var(--green-c) var(--green-h));
 
+  /* Changes (`tools/doc.sh --diff`): a bar and a background per kind of change, and the words */
+  --diff-added: var(--pal-green);
+  --diff-added-bg: oklch(0.955 calc(var(--green-c) * 0.3) var(--green-h));
+  --diff-changed: var(--pal-blue);
+  --diff-changed-bg: oklch(0.96 calc(var(--blue-c) * 0.22) var(--blue-h));
+  --diff-deleted: var(--pal-red);
+  --diff-deleted-bg: oklch(0.96 calc(var(--red-c) * 0.2) var(--red-h));
+  --diff-ins-bg: oklch(0.89 calc(var(--green-c) * 0.6) var(--green-h));
+  --diff-del-ink: var(--red);
+
   /* Code blocks: dark in both themes, the tints as syntax colors */
   --code-bg: oklch(0.22 calc(var(--n-c) * 1.3) var(--n-h));
   --code-fg: oklch(0.91 calc(var(--n-c) * 0.8) var(--n-h));
@@ -86,6 +96,10 @@
     --series-2: oklch(calc(var(--accent-l) - 0.04) var(--orange-c) var(--orange-h));
     --series-3: oklch(calc(var(--accent-l) - 0.04) var(--green-c) var(--green-h));
     --code-bg: oklch(0.15 var(--n-c) var(--n-h));
+    --diff-added-bg: oklch(0.255 calc(var(--green-c) * 0.3) var(--green-h));
+    --diff-changed-bg: oklch(0.255 calc(var(--blue-c) * 0.28) var(--blue-h));
+    --diff-deleted-bg: oklch(0.245 calc(var(--red-c) * 0.25) var(--red-h));
+    --diff-ins-bg: oklch(0.38 calc(var(--green-c) * 0.55) var(--green-h));
     color-scheme: dark;
   }
 }
@@ -108,5 +122,9 @@
   --series-2: oklch(calc(var(--accent-l) - 0.04) var(--orange-c) var(--orange-h));
   --series-3: oklch(calc(var(--accent-l) - 0.04) var(--green-c) var(--green-h));
   --code-bg: oklch(0.15 var(--n-c) var(--n-h));
+  --diff-added-bg: oklch(0.255 calc(var(--green-c) * 0.3) var(--green-h));
+  --diff-changed-bg: oklch(0.255 calc(var(--blue-c) * 0.28) var(--blue-h));
+  --diff-deleted-bg: oklch(0.245 calc(var(--red-c) * 0.25) var(--red-h));
+  --diff-ins-bg: oklch(0.38 calc(var(--green-c) * 0.55) var(--green-h));
   color-scheme: dark;
 }
