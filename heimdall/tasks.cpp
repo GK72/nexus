@@ -24,6 +24,7 @@
 #include <iterator>
 #include <set>
 #include <system_error>
+#include <tuple>
 #include <utility>
 
 namespace heimdall {
@@ -33,6 +34,8 @@ namespace {
 constexpr std::size_t KindWidth = 7;
 constexpr std::size_t HoursWidth = 5;
 constexpr std::size_t StateWidth = 7;
+constexpr std::size_t MarksWidth = 3;
+constexpr std::size_t TokensWidth = 9;
 constexpr std::size_t MaxNameWidth = 44;
 constexpr std::size_t MinTitleWidth = 12;
 
@@ -54,6 +57,9 @@ constexpr std::size_t MinTitleWidth = 12;
 }
 
 [[nodiscard]] auto state_color(std::string_view state) -> std::string_view {
+    if (state == "proposed") {
+        return "yellow";
+    }
     if (state == "active") {
         return "accent";
     }
@@ -66,11 +72,43 @@ constexpr std::size_t MinTitleWidth = 12;
     return state == "done" ? "dim" : "faint";
 }
 
-/// Active first, then ready, then blocked; closed ones last; then by id.
+/// By priority; then active, ready, blocked, closed ones last; then by id.
 [[nodiscard]] auto before(const task_t* lhs, const task_t* rhs) -> bool {
-    static constexpr auto Order = std::to_array<std::string_view>({ "active", "ready", "blocked", "done" });
+    static constexpr auto Order = std::to_array<std::string_view>({ "active", "ready", "proposed", "blocked", "done" });
     const auto rank = [](const task_t* task) { return std::ranges::find(Order, task->state) - Order.begin(); };
-    return std::pair(rank(lhs), std::string_view(lhs->id)) < std::pair(rank(rhs), std::string_view(rhs->id));
+    return std::tuple(lhs->priority, rank(lhs), std::string_view(lhs->id))
+         < std::tuple(rhs->priority, rank(rhs), std::string_view(rhs->id));
+}
+
+/// Tokens left of the estimate; 0 without one.
+[[nodiscard]] auto tokens_left(const task_t& task) -> std::int64_t {
+    return task.tokens > task.tokens_spent ? task.tokens - task.tokens_spent : 0;
+}
+
+/// The token column: the estimate, and what was spent once there is some.
+[[nodiscard]] auto tokens_cell(const task_t& task) -> std::string {
+    if (task.tokens_spent > 0) {
+        return tokens_text(task.tokens_spent) + "/" + (task.tokens > 0 ? tokens_text(task.tokens) : "?");
+    }
+    return task.tokens > 0 ? "~" + tokens_text(task.tokens) : "";
+}
+
+/// The optional columns of a list: shown when one of its tasks has something in them.
+struct columns_t {
+    bool marks = false;                     ///< Priority other than 2, or added by Claude
+    bool tokens = false;                    ///< Tokens estimated or spent
+
+    void add(const task_t& task) {
+        marks = marks or task.priority != 2 or task.by_claude();
+        tokens = tokens or task.tokens > 0 or task.tokens_spent > 0;
+    }
+};
+
+/// The priority unless it is the usual 2, and `✦` for a task Claude added on its own.
+[[nodiscard]] auto marks(const style_t& style, const task_t& task) -> std::string {
+    const auto priority = task.priority == 2 ? std::string(" ") : fmt::format("{}", task.priority);
+    return style(priority, task.priority == 1 ? "accent" : "faint", task.priority == 1)
+         + (task.by_claude() ? style("✦", "yellow") : " ") + " ";
 }
 
 /// A line of a tree: the branches before it, the task, and whether it was shown above.
@@ -116,27 +154,39 @@ void grow(std::vector<entry_t>& out, const task_t* task, const std::string& glyp
     return task.project == home ? std::string(task.name()) : task.id;
 }
 
-/// Columns the names of `entries` take, at most `MaxNameWidth`.
-[[nodiscard]] auto name_width(const std::vector<entry_t>& entries, std::string_view home) -> std::size_t {
-    std::size_t width = 0;
+/// The optional columns `entries` need.
+[[nodiscard]] auto columns_of(const std::vector<entry_t>& entries) -> columns_t {
+    columns_t columns;
     for (const auto& entry : entries) {
-        width = std::max(width, visible_width(entry.branches + shown_id(*entry.task, home)));
+        columns.add(*entry.task);
+    }
+    return columns;
+}
+
+/// Columns the marks and names of `entries` take, at most `MaxNameWidth`.
+[[nodiscard]] auto name_width(const std::vector<entry_t>& entries, std::string_view home, const columns_t& columns)
+    -> std::size_t
+{
+    std::size_t width = 0;
+    const auto marks = columns.marks ? MarksWidth : 0;
+    for (const auto& entry : entries) {
+        width = std::max(width, marks + visible_width(entry.branches + shown_id(*entry.task, home)));
     }
     return std::min(width, MaxNameWidth);
 }
 
-/// The lines of a tree: name, kind, hours left, state and title, in columns.
+/// The lines of a tree: priority, name, kind, hours and tokens left, state and title, in columns.
 [[nodiscard]] auto tree_lines(const style_t& style, const std::vector<entry_t>& entries, std::string_view home,
-                              std::size_t width, std::size_t name_width,
+                              std::size_t width, std::size_t name_width, const columns_t& columns,
                               const std::function<std::string(const task_t&)>& notes = {})
     -> std::vector<std::string>
 {
-
     std::vector<std::string> lines;
     for (const auto& entry : entries) {
         const auto& task = *entry.task;
-        const auto branches = style(entry.branches, "faint");
-        const auto room = name_width > visible_width(entry.branches) ? name_width - visible_width(entry.branches) : 1;
+        const auto branches = (columns.marks ? marks(style, task) : std::string()) + style(entry.branches, "faint");
+        const auto taken = visible_width(entry.branches) + (columns.marks ? MarksWidth : 0);
+        const auto room = name_width > taken ? name_width - taken : 1;
         const auto name = ellipsize(shown_id(task, home), room);
         if (entry.repeat) {
             lines.push_back(branches + style(name, "dim") + style("  ↑ above", "faint"));
@@ -145,6 +195,7 @@ void grow(std::vector<entry_t>& out, const task_t* task, const std::string& glyp
         auto line = pad(branches + style(name, task.open() ? "text" : "dim", task.state == "active"), name_width)
                   + "  " + pad(style(task.kind, kind_color(task.kind)), KindWidth)
                   + " " + style(fmt::format("{:>{}}", task.open() ? hours(task.left()) : "", HoursWidth), "text")
+                  + (columns.tokens ? " " + style(fmt::format("{:>{}}", tokens_cell(task), TokensWidth), "dim") : "")
                   + "  " + pad(style(task.state, state_color(task.state)), StateWidth);
         const auto used = visible_width(line) + 2;
         if (width >= used + MinTitleWidth) {
@@ -200,6 +251,14 @@ auto plan_t::find(std::string_view id) const -> const task_t* {
     return task != tasks.end() ? &*task : nullptr;
 }
 
+auto plan_t::session_ids() const -> std::set<std::string> {
+    std::set<std::string> ids;
+    for (const auto& link : sessions) {
+        ids.insert(link.session);
+    }
+    return ids;
+}
+
 auto plan_t::needs(std::string_view id) const -> std::vector<const task_t*> {
     std::vector<const task_t*> ret;
     for (const auto& dep : deps) {
@@ -245,16 +304,45 @@ auto parse_plan(const nova::dyn_value& doc) -> nova::expected<plan_t, nova::erro
                 .current = item.lookup<double>("current", 0.0),
                 .spent = item.lookup<double>("spent", 0.0),
                 .moves = item.lookup<int>("moves", 0),
+                .priority = item.lookup<int>("priority", 2),
+                .source = item.lookup<std::string>("source", "author"),
+                .approved = item.lookup<bool>("approved", true),
+                .tokens = item.lookup<std::int64_t>("tokens", 0),
+                .shelved = item.lookup<bool>("shelved", false),
             });
         }
         for (const auto& item : doc.at("deps").as_seq()) {
             plan.deps.push_back({ .task = item.lookup<std::string>("task"), .needs = item.lookup<std::string>("needs") });
+        }
+        if (doc.is<nova::dyn_value::seq_t>("sessions")) {
+            for (const auto& item : doc.at("sessions").as_seq()) {
+                plan.sessions.push_back({ .task = item.lookup<std::string>("task"),
+                                          .session = item.lookup<std::string>("session") });
+            }
         }
     } catch (const std::exception& ex) {
         return nova::wrap_error(std::errc::invalid_argument, ex.what());
     }
     std::ranges::sort(plan.tasks, {}, &task_t::id);
     return plan;
+}
+
+void attribute_tokens(plan_t& plan, const std::map<std::string, usage_t>& usage) {
+    std::map<std::string, std::size_t> shares;
+    for (const auto& link : plan.sessions) {
+        ++shares[link.session];
+    }
+    for (auto& task : plan.tasks) {
+        task.tokens_spent = 0;
+    }
+    for (const auto& link : plan.sessions) {
+        const auto used = usage.find(link.session);
+        auto task = std::ranges::find(plan.tasks, link.task, &task_t::id);
+        if (used == usage.end() or task == plan.tasks.end()) {
+            continue;
+        }
+        task->tokens_spent += used->second.spent() / static_cast<std::int64_t>(shares.at(link.session));
+    }
 }
 
 auto load_plan(const std::vector<std::string>& command) -> nova::expected<plan_t, nova::error> {
@@ -310,28 +398,61 @@ auto project_repos(const plan_t& plan, const std::vector<std::filesystem::path>&
 auto render_tasks(const style_t& style, const plan_t& plan, std::string_view prefix, const tasks_view& view)
     -> std::string
 {
+    // A prefix inside a shelved project shows it.
+    const auto prefix_project = prefix.substr(0, prefix.find('/'));
     std::map<std::string, std::vector<const task_t*>> by_project;
+    std::vector<const task_t*> proposed;
+    std::map<std::string, std::pair<std::size_t, double>> shelved;
     for (const auto& task : plan.tasks) {
-        if (task.open() and matches(task, prefix)) {
+        if (not task.open() or not matches(task, prefix)) {
+            continue;
+        }
+        if (task.proposed()) {
+            proposed.push_back(&task);
+        } else if (task.shelved and not view.shelved and task.project != prefix_project) {
+            auto& [count, left] = shelved[task.project];
+            ++count;
+            left += task.left();
+        } else {
             by_project[task.project].push_back(&task);
         }
     }
     const auto separator = style(" · ", "faint");
 
     double total = 0.0;
+    std::int64_t tokens = 0;
     std::size_t count = 0;
     for (const auto& [project, tasks] : by_project) {
         count += tasks.size();
         for (const auto* task : tasks) {
             total += task->left();
+            tokens += tokens_left(*task);
         }
     }
-    const auto totals = style(fmt::format("{} open", count), "text") + separator
-                      + style(fmt::format("{} project{}", by_project.size(), by_project.size() == 1 ? "" : "s"), "dim")
-                      + separator + style(hours(total) + " left", "dim");
+    auto totals = style(fmt::format("{} open", count), "text") + separator
+                + style(fmt::format("{} project{}", by_project.size(), by_project.size() == 1 ? "" : "s"), "dim")
+                + separator + style(hours(total) + " left", "dim");
+    if (tokens > 0) {
+        totals += separator + style(fmt::format("~{} tok", tokens_text(tokens)), "dim");
+    }
 
     std::vector<std::string> out { "", spread(style("Tasks", "title", true), totals, view.width) };
-    if (by_project.empty()) {
+    std::vector<std::string> aside;
+    if (not proposed.empty()) {
+        aside.push_back(style(fmt::format("{} awaiting approval", proposed.size()), "yellow"));
+    }
+    if (not shelved.empty()) {
+        std::vector<std::string> names;
+        for (const auto& [project, sum] : shelved) {
+            names.push_back(fmt::format("{} ({} task{}, {})", project, sum.first, sum.first == 1 ? "" : "s",
+                                        hours(sum.second)));
+        }
+        aside.push_back(style("shelved: " + join(names, ", "), "faint"));
+    }
+    if (not aside.empty()) {
+        out.push_back(spread("", join(aside, separator), view.width));
+    }
+    if (by_project.empty() and proposed.empty()) {
         out.emplace_back();
         out.push_back(style(prefix.empty() ? "no open tasks" : fmt::format("no open task under {}", prefix), "dim"));
     }
@@ -341,9 +462,29 @@ auto render_tasks(const style_t& style, const plan_t& plan, std::string_view pre
         std::string info;
         std::vector<entry_t> entries;
         std::function<std::string(const task_t&)> notes;
+        int priority = 3;                   ///< The highest of its tasks
     };
     std::vector<section_t> sections;
     std::size_t names = 0;
+    columns_t columns;
+    for (const auto* task : proposed) {
+        columns.add(*task);
+    }
+    for (const auto& [project, tasks] : by_project) {
+        for (const auto* task : tasks) {
+            columns.add(*task);
+        }
+    }
+    if (not proposed.empty()) {
+        std::ranges::sort(proposed, before);
+        std::vector<entry_t> entries;
+        for (const auto* task : proposed) {
+            entries.push_back({ .task = task });
+        }
+        sections.push_back({ .project = "awaiting approval", .info = style("norn.py task approve <id>", "faint"),
+                             .entries = std::move(entries), .priority = 0 });
+        names = std::max(names, name_width(sections.back().entries, "", columns));
+    }
     for (const auto& [project, tasks] : by_project) {
         std::set<std::string_view> chosen;
         for (const auto* task : tasks) {
@@ -354,10 +495,14 @@ auto render_tasks(const style_t& style, const plan_t& plan, std::string_view pre
         };
         std::vector<const task_t*> roots;
         double left = 0.0;
+        std::int64_t tokens = 0;
+        int priority = 3;
         std::size_t ready = 0;
         std::size_t blocked = 0;
         for (const auto* task : tasks) {
             left += task->left();
+            tokens += tokens_left(*task);
+            priority = std::min(priority, task->priority);
             ready += task->state == "ready" or task->state == "active" ? 1 : 0;
             blocked += task->state == "blocked" ? 1 : 0;
             if (std::ranges::none_of(plan.needs(task->id), inside)) {
@@ -391,15 +536,20 @@ auto render_tasks(const style_t& style, const plan_t& plan, std::string_view pre
             info.push_back(style(fmt::format("{} blocked", blocked), "orange"));
         }
         info.push_back(style(hours(left) + " left", "dim"));
+        if (tokens > 0) {
+            info.push_back(style(fmt::format("~{} tok", tokens_text(tokens)), "dim"));
+        }
 
         sections.push_back({ .project = project, .info = join(info, separator), .entries = tree(roots, children),
-                             .notes = elsewhere });
-        names = std::max(names, name_width(sections.back().entries, project));
+                             .notes = elsewhere, .priority = priority });
+        names = std::max(names, name_width(sections.back().entries, project, columns));
     }
+    std::ranges::stable_sort(sections, {}, &section_t::priority);
     for (const auto& section : sections) {
+        const auto home = section.priority == 0 ? std::string() : section.project;
         out.emplace_back();
         out.push_back(rule(style, section.project, view.width, section.info));
-        std::ranges::move(tree_lines(style, section.entries, section.project, view.width, names, section.notes),
+        std::ranges::move(tree_lines(style, section.entries, home, view.width, names, columns, section.notes),
                           std::back_inserter(out));
     }
 
@@ -408,6 +558,34 @@ auto render_tasks(const style_t& style, const plan_t& plan, std::string_view pre
         text += (line.empty() ? "" : "  " + line) + "\n";
     }
     return text;
+}
+
+auto tasks_summary(const style_t& style, const plan_t& plan) -> std::string {
+    const auto separator = style(" · ", "faint");
+    std::size_t count = 0;
+    std::size_t proposed = 0;
+    double left = 0.0;
+    std::int64_t tokens = 0;
+    for (const auto& task : plan.tasks) {
+        if (not task.open() or task.shelved) {
+            continue;
+        }
+        if (task.proposed()) {
+            ++proposed;
+            continue;
+        }
+        ++count;
+        left += task.left();
+        tokens += tokens_left(task);
+    }
+    auto line = style(fmt::format("{} open", count), "text") + separator + style(hours(left) + " left", "dim");
+    if (tokens > 0) {
+        line += separator + style(fmt::format("~{} tok", tokens_text(tokens)), "dim");
+    }
+    if (proposed > 0) {
+        line += separator + style(fmt::format("{} awaiting approval", proposed), "yellow");
+    }
+    return line + style("  heimdall tasks", "faint");
 }
 
 auto render_task(const style_t& style, const plan_t& plan, const task_t& task, const tasks_view& view) -> std::string {
@@ -437,9 +615,21 @@ auto render_task(const style_t& style, const plan_t& plan, const task_t& task, c
         plan_facts.push_back(fact("moved", fmt::format("{}×", task.moves)));
     }
     out.push_back(join(plan_facts, separator));
+    const auto sessions = std::ranges::count(plan.sessions, task.id, &session_link_t::task);
+    if (task.tokens > 0 or task.tokens_spent > 0 or sessions > 0) {
+        std::vector<std::string> token_facts { fact("tokens", task.tokens > 0 ? "~" + tokens_text(task.tokens) : "-") };
+        token_facts.push_back(fact("spent", tokens_text(task.tokens_spent)));
+        token_facts.push_back(fact("sessions", fmt::format("{}", sessions)));
+        out.push_back(join(token_facts, separator));
+    }
     std::vector<std::string> dates { fact("added", task.added) };
     if (task.closed) {
         dates.push_back(fact(task.status, *task.closed));
+    }
+    dates.push_back(fact("priority", fmt::format("{}", task.priority)));
+    dates.push_back(fact("by", task.by_claude() ? "Claude" : "the author"));
+    if (task.proposed()) {
+        dates.push_back(style("awaiting approval", "yellow"));
     }
     out.push_back(join(dates, separator));
     out.push_back(style("repository ", "dim") + repo_info(style, view, task.project));
@@ -463,7 +653,9 @@ auto render_task(const style_t& style, const plan_t& plan, const task_t& task, c
         out.push_back(rule(style, "waits on", view.width, info));
         const children_fn up = [&](const task_t& t) { return t.open() ? plan.needs(t.id) : std::vector<const task_t*>{}; };
         const auto entries = tree(needs, up);
-        std::ranges::move(tree_lines(style, entries, task.project, view.width, name_width(entries, task.project)),
+        const auto columns = columns_of(entries);
+        std::ranges::move(tree_lines(style, entries, task.project, view.width,
+                                     name_width(entries, task.project, columns), columns),
                           std::back_inserter(out));
     }
 
@@ -474,7 +666,9 @@ auto render_task(const style_t& style, const plan_t& plan, const task_t& task, c
                            style(fmt::format("{} open", open_only(dependents).size()), "dim")));
         const children_fn down = [&](const task_t& t) { return open_only(plan.needed_by(t.id)); };
         const auto entries = tree(dependents, down);
-        std::ranges::move(tree_lines(style, entries, task.project, view.width, name_width(entries, task.project)),
+        const auto columns = columns_of(entries);
+        std::ranges::move(tree_lines(style, entries, task.project, view.width,
+                                     name_width(entries, task.project, columns), columns),
                           std::back_inserter(out));
     }
 

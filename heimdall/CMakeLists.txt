@@ -1,8 +1,10 @@
 add_library(heimdall-core
+    claude.cpp
     config.cpp
     dashboard.cpp
     git.cpp
     heimdall.cpp
+    memory.cpp
     process.cpp
     report.cpp
     style.cpp

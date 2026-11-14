@@ -5,7 +5,7 @@
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-10
- * @updated     2026-11-10
+ * @updated     2026-11-14
  * @status      experimental
  * @reviewed    none
  * SPDX-License-Identifier: Unlicense
@@ -15,6 +15,7 @@
 #include "heimdall/dashboard.hpp"
 #include "heimdall/git.hpp"
 #include "heimdall/heimdall.hpp"
+#include "heimdall/memory.hpp"
 #include "heimdall/report.hpp"
 #include "heimdall/tasks.hpp"
 
@@ -25,6 +26,7 @@
 #include <charconv>
 #include <chrono>
 #include <cstdio>
+#include <fstream>
 #include <optional>
 #include <span>
 #include <string>
@@ -35,17 +37,20 @@ namespace {
 
 constexpr std::string_view Usage = R"(usage: heimdall [-f] [--repos N] [--width N] [--color WHEN]
        heimdall git [-f] [-b] [--check] [--exclude-from-roots GLOB]... [-j N] [--color WHEN] [PATH...]
-       heimdall tasks [--width N] [--color WHEN] [ID | PREFIX]
+       heimdall tasks [-a] [--width N] [--color WHEN] [ID | PREFIX]
+       heimdall memory [--width N] [--color WHEN]
 
 The dashboard; with `git`, the report of the tracked repositories; with `tasks`,
 the open tasks of norn per project, as trees of what unblocks what, or one task
-in full.
+in full; with `memory`, Claude's memory files, their sizes and how often
+sessions read them.
 
   -f, --fetch                  fetch every repository first
   --repos N                    dashboard: repositories listed at most (default 8)
-  --width N                    dashboard, tasks: columns (default: the terminal's, at most 100)
+  --width N                    dashboard, tasks, memory: columns (default: the terminal's, at most 100)
   -b, --brief                  git: one line per repository that needs attention
   --check                      git: exit status 1 if anything needs attention
+  -a, --all                    tasks: shelved projects too
   --exclude-from-roots GLOB    git: leave out repositories of the roots; repeatable
   -j, --jobs N                 repositories inspected at once (default 8)
   --color WHEN                 auto (default), always or never
@@ -60,6 +65,7 @@ struct options_t {
     bool fetch = false;
     bool brief = false;
     bool check = false;
+    bool all = false;
     int jobs = 8;
     std::size_t repos = 8;
     std::optional<std::size_t> width;
@@ -88,7 +94,7 @@ template <typename T>
     std::size_t index = 0;
     if (not args.empty() and not args.front().starts_with('-')) {
         options.command = args.front();
-        if (options.command != "git" and options.command != "tasks") {
+        if (options.command != "git" and options.command != "tasks" and options.command != "memory") {
             throw usage_error { fmt::format("unknown command: {}", options.command) };
         }
         ++index;
@@ -110,8 +116,8 @@ template <typename T>
         }
     };
     const auto not_tasks = [&](std::string_view option) {
-        if (options.command == "tasks") {
-            throw usage_error { fmt::format("{} is not an option of `heimdall tasks`", option) };
+        if (options.command == "tasks" or options.command == "memory") {
+            throw usage_error { fmt::format("{} is not an option of `heimdall {}`", option, options.command) };
         }
     };
 
@@ -132,6 +138,11 @@ template <typename T>
         } else if (arg == "--check") {
             git_only(arg);
             options.check = true;
+        } else if (arg == "-a" or arg == "--all") {
+            if (options.command != "tasks") {
+                throw usage_error { fmt::format("{} is an option of `heimdall tasks`", arg) };
+            }
+            options.all = true;
         } else if (arg == "--exclude-from-roots") {
             git_only(arg);
             options.exclude_from_roots.emplace_back(value(arg));
@@ -159,6 +170,8 @@ template <typename T>
             }
         } else if (arg.starts_with('-')) {
             throw usage_error { fmt::format("unknown option: {}", arg) };
+        } else if (options.command == "memory") {
+            throw usage_error { "memory takes no arguments" };
         } else if (options.command == "tasks") {
             if (not options.paths.empty()) {
                 throw usage_error { "tasks takes one id or prefix" };
@@ -172,11 +185,38 @@ template <typename T>
     return options;
 }
 
+/// The plan of norn, with the tokens its tasks spent from the transcripts of their sessions.
+[[nodiscard]] auto load_plan(const heimdall::config_t& config) -> nova::expected<heimdall::plan_t, nova::error> {
+    auto plan = heimdall::load_plan(config.norn);
+    if (plan) {
+        heimdall::attribute_tokens(*plan, heimdall::session_usage(heimdall::expand_home(config.claude),
+                                                                  plan->session_ids()));
+    }
+    return plan;
+}
+
+/// The memory directories, the reads of their transcripts from the scan cache, which is then updated.
+[[nodiscard]] auto load_memories(const heimdall::config_t& config) -> std::vector<heimdall::memory_t> {
+    const auto cache_path = heimdall::scan_cache_path();
+    const auto cached = heimdall::parse_scan_cache(heimdall::read_text(cache_path));
+    heimdall::scan_cache_t scanned;
+    std::vector<heimdall::memory_t> memories;
+    for (const auto& dir : heimdall::memory_dirs(config.memory, heimdall::expand_home(config.claude))) {
+        memories.push_back(heimdall::load_memory(dir, cached, scanned));
+    }
+    if (scanned != cached) {
+        std::error_code ec;
+        std::filesystem::create_directories(cache_path.parent_path(), ec);
+        std::ofstream(cache_path) << heimdall::format_scan_cache(scanned);
+    }
+    return memories;
+}
+
 /// `heimdall tasks`: one task in full when `pattern` is its id, else the open tasks under it.
 [[nodiscard]] auto tasks(const heimdall::style_t& style, const heimdall::config_t& config, const std::string& pattern,
-                         std::size_t width) -> int
+                         std::size_t width, bool all) -> int
 {
-    const auto plan = heimdall::load_plan(config.norn);
+    const auto plan = load_plan(config);
     if (not plan) {
         fmt::println(stderr, "heimdall: norn: {}", plan.error().detail);
         return 1;
@@ -185,6 +225,7 @@ template <typename T>
         .width = width,
         .repos = heimdall::project_repos(*plan, heimdall::discover(config.roots, config.exclude_from_roots,
                                                                    config.repositories), config.projects),
+        .shelved = all,
     };
     if (const auto* task = plan->find(pattern)) {
         fmt::print("{}", heimdall::render_task(style, *plan, *task, view));
@@ -215,7 +256,12 @@ template <typename T>
     const auto width = options.width.value_or(std::min(MaxWidth, nxs::tty::terminal_width()) - Margin);
 
     if (options.command == "tasks") {
-        return tasks(style, *config, options.paths.empty() ? std::string() : options.paths.front(), width);
+        return tasks(style, *config, options.paths.empty() ? std::string() : options.paths.front(), width,
+                     options.all);
+    }
+    if (options.command == "memory") {
+        fmt::print("{}", heimdall::render_memory(style, load_memories(*config), width));
+        return 0;
     }
 
     const auto started = std::chrono::steady_clock::now();
@@ -242,7 +288,15 @@ template <typename T>
         .repos = repos,
         .fetched = options.fetch,
         .repo_limit = options.repos,
+        .sections = config->dashboard,
     };
+    if (std::ranges::contains(config->dashboard, std::string_view("tasks"))) {
+        const auto plan = load_plan(*config);
+        input.tasks = plan ? heimdall::tasks_summary(style, *plan) : style("norn: " + plan.error().detail, "dim");
+    }
+    if (std::ranges::contains(config->dashboard, std::string_view("memory"))) {
+        input.memory = heimdall::memory_summary(style, load_memories(*config));
+    }
     input.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
     fmt::print("{}", heimdall::render_dashboard(style, input));
     return 0;

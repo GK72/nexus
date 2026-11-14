@@ -166,12 +166,22 @@ auto render_dashboard(const style_t& style, const dashboard_input& input) -> std
 
     std::vector<std::string> out { "" };
     std::ranges::move(header(style, input), std::back_inserter(out));
-    out.emplace_back();
-    out.push_back(rule(style, "system", input.width));
-    std::ranges::move(system_lines(style, input.system), std::back_inserter(out));
-    out.emplace_back();
-    out.push_back(rule(style, "repos", input.width, info));
-    std::ranges::move(repo_lines(style, input), std::back_inserter(out));
+    for (const auto& section : input.sections) {
+        out.emplace_back();
+        if (section == "system") {
+            out.push_back(rule(style, "system", input.width));
+            std::ranges::move(system_lines(style, input.system), std::back_inserter(out));
+        } else if (section == "repos") {
+            out.push_back(rule(style, "repos", input.width, info));
+            std::ranges::move(repo_lines(style, input), std::back_inserter(out));
+        } else if (section == "tasks") {
+            out.push_back(rule(style, "tasks", input.width));
+            out.push_back(input.tasks);
+        } else if (section == "memory") {
+            out.push_back(rule(style, "memory", input.width));
+            out.push_back(input.memory);
+        }
+    }
     const auto elapsed = fmt::format("{} ms", input.elapsed.count());
     out.push_back(std::string(input.width > elapsed.size() ? input.width - elapsed.size() : 0, ' ')
                   + style(elapsed, "faint"));

@@ -5,7 +5,7 @@
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-10
- * @updated     2026-11-10
+ * @updated     2026-11-14
  * @status      experimental
  * @reviewed    none
  * SPDX-License-Identifier: Unlicense
@@ -52,6 +52,9 @@ struct dashboard_input {
     bool fetched = false;
     std::size_t repo_limit = 8;
     std::chrono::milliseconds elapsed {};
+    std::vector<std::string> sections { "system", "repos", "tasks", "memory" };    ///< In order
+    std::string tasks;                              ///< The tasks' line, or why there is none
+    std::string memory;                             ///< The memory's line
 };
 
 [[nodiscard]] auto render_dashboard(const style_t& style, const dashboard_input& input) -> std::string;

@@ -129,7 +129,7 @@ Every log starts with a header of what ran, so that a log read on its own still 
 ----
 #> nci stage   function-test/descriptor
 #> command     tests/function/descriptor.sh
-#> directory   /home/gkpro/repos/nexus
+#> directory   repos/nexus
 #> run         nexus 20261108-181028 (all stages)
 #> commit      3f8698b Feat: Tmux workspace launcher
 #> started     2026-11-08 18:10:29

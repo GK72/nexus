@@ -1,14 +1,15 @@
 /**
  * Part of Nexus Library
  *
- * @brief   Heimdall's configuration: which repositories it tracks.
+ * @brief   Heimdall's configuration: which repositories it tracks, where norn
+ *          and Claude's data are, and what the dashboard shows.
  *
  * Read from `$XDG_CONFIG_HOME/nexus/heimdall.toml`, else
  * `~/.config/nexus/heimdall.toml`. A missing file means the defaults.
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-10
- * @updated     2026-11-10
+ * @updated     2026-11-14
  * @status      experimental
  * @reviewed    none
  * SPDX-License-Identifier: Unlicense
@@ -33,7 +34,13 @@ struct config_t {
     std::vector<std::string> repositories;          ///< Tracked one by one
     std::vector<std::string> norn { "norn.py" };    ///< The norn client, with its arguments
     std::map<std::string, std::string> projects;    ///< norn project to repository name or path
+    std::string claude { "~/.claude/projects" };    ///< Claude Code's projects: transcripts and memory
+    std::vector<std::string> memory;                ///< Memory directories; empty: every project's
+    std::vector<std::string> dashboard { "system", "repos", "tasks", "memory" };  ///< Sections, in order
 };
+
+/// The sections the dashboard knows.
+[[nodiscard]] auto dashboard_sections() -> const std::vector<std::string>&;
 
 /**
  * @brief   The configuration file's path.
@@ -43,7 +50,8 @@ struct config_t {
 /**
  * @brief   The configuration in `doc`, missing keys at their defaults.
  *
- * @returns an error if a key is not a list of strings.
+ * @returns an error if a key has the wrong type, or the dashboard names a
+ *          section it does not know.
  */
 [[nodiscard]] auto parse_config(const nova::dyn_value& doc) -> nova::expected<config_t, nova::error>;
 

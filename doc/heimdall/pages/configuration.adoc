@@ -21,7 +21,26 @@ exclude-from-roots = ["zsh-autocomplete", "*-old"]
 
 # Explicit listing of tracked repositories.
 repositories = ["~/repos/nexus"]
+
+# The norn client and its arguments, run as `<norn> graph --format json`.
+norn = ["norn.py"]
+
+# Claude Code's projects: the transcripts and memory of its sessions.
+claude = "~/.claude/projects"
+
+# Memory directories; without the key, every project's.
+memory = ["~/.claude/projects/<project_path>/memory"]
+
+# The repository of a norn project, by name or path, where the names differ.
+[projects]
+baldr = "baldr-cpp"
+
+# The dashboard's sections, in order: system, repos, tasks, memory.
+[dashboard]
+sections = ["system", "repos", "tasks", "memory"]
 ----
 
 Paths given to `heimdall git` append to `repositories`. `--exclude-from-roots`
-appends to the configuration's globs.
+appends to the configuration's globs. A norn project's repository is the
+tracked one of the same name unless `projects` names another. An unknown
+dashboard section is an error.

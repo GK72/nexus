@@ -17,7 +17,7 @@ HEIMDALL="${HEIMDALL:-${BUILD}/heimdall/heimdall}"
 tap::require "${HEIMDALL}" "build first: ci/pipeline.sh --only build"
 
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
-export XDG_CONFIG_HOME="${TAP_DIR}/config" HOME="${TAP_DIR}/home"
+export XDG_CONFIG_HOME="${TAP_DIR}/config" XDG_CACHE_HOME="${TAP_DIR}/cache" HOME="${TAP_DIR}/home"
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
 mkdir -p "${HOME}"
@@ -161,11 +161,48 @@ usage() {
 }
 
 dashboard() {
-    configure "roots = [\"${FIXTURE}/repos\"]"
+    configure "roots = [\"${FIXTURE}/repos\"]" "norn = [\"$(fake_norn)\"]"
     tap::run "${HEIMDALL}" --color never --width 80
     tap::expect_status 0
     tap::expect_contains "${TAP_STDOUT}" 'Dashboard' 'weather: not yet available' '── system' 'Disks: /' \
-        '── repos' '2 repos · 1 need attention' 'app' ' ms'
+        '── repos' '2 repos · 1 need attention' 'app' '── tasks' '3 open · 7h left' '── memory' '0 files' ' ms'
+}
+
+dashboard_sections() {
+    configure "roots = [\"${FIXTURE}/repos\"]" "norn = [\"${TAP_DIR}/missing-norn\"]" \
+        '[dashboard]' 'sections = ["memory", "system"]'
+    tap::run "${HEIMDALL}" --color never --width 80
+    tap::expect_status 0
+    tap::expect_contains "${TAP_STDOUT}" '── memory' '── system'
+    if grep -q -e '── repos' -e '── tasks' "${TAP_STDOUT}"; then
+        tap::_fail "sections left out of the configuration are shown"
+    fi
+    configure '[dashboard]' 'sections = ["weather"]'
+    tap::run "${HEIMDALL}"
+    tap::expect_status 2
+    tap::expect_contains "${TAP_STDERR}" "unknown section 'weather'"
+}
+
+# Claude's memory of project p: the index and two files; one session read a.md with the Read
+# tool, another with cat in the memory directory.
+memory() {
+    local projects="${HOME}/.claude/projects" dir="${HOME}/.claude/projects/p/memory"
+    mkdir -p "${dir}"
+    printf '%s\n' '- [A](a.md)' > "${dir}/MEMORY.md"
+    printf '%s\n' '---' 'name: a' 'metadata:' '  type: reference' '---' 'A fact.' > "${dir}/a.md"
+    printf '%s\n' '---' 'name: b' 'metadata:' '  type: feedback' '---' 'A rule.' > "${dir}/b.md"
+    printf '%s\n' "{\"type\":\"assistant\",\"message\":{\"id\":\"m\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Read\",\"input\":{\"file_path\":\"${dir}/a.md\"}}]}}" \
+        > "${projects}/p/s1.jsonl"
+    printf '%s\n' "{\"type\":\"assistant\",\"message\":{\"id\":\"m\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Bash\",\"input\":{\"command\":\"cd ${dir}; cat a.md\"}}]}}" \
+        > "${projects}/p/s2.jsonl"
+    configure "roots = []"
+    tap::run "${HEIMDALL}" memory --color never --width 80
+    tap::expect_status 0
+    tap::expect_contains "${TAP_STDOUT}" 'Memory' '2 files' 'index' '── ~/.claude/projects/p/memory' '2 sessions' \
+        'a.md' 'reference' '2/2' 'b.md' '0/2'
+    tap::expect_eq "$(wc -l < "${XDG_CACHE_HOME}/heimdall/memory-reads.tsv")" 2 "transcripts cached"
+    tap::run "${HEIMDALL}" memory extra
+    tap::expect_status 2
 }
 
 # A norn client that answers `graph --format json` with a fixed plan: app/base unblocks
@@ -237,6 +274,8 @@ tap::case "a failed fetch"                          fetch_failure
 tap::case "roots and exclude-from-roots"            config
 tap::case "usage errors"                            usage
 tap::case "the dashboard"                           dashboard
+tap::case "the dashboard's sections"                dashboard_sections
+tap::case "Claude's memory"                         memory
 tap::case "tasks: a tree per project"               tasks
 tap::case "tasks: one task in full"                 task_detail
 tap::case "tasks: errors"                           task_errors

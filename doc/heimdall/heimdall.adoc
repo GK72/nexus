@@ -14,13 +14,17 @@ own for the full view.
 ----
 heimdall                    # the dashboard
 heimdall git                # the full report of the repositories
+heimdall tasks              # the open tasks of norn, per project
+heimdall memory             # Claude's memory files and how often they are read
 ----
 
 Each chapter is also a page of its own: link:dashboard.html[Dashboard],
-link:git.html[Git], link:configuration.html[Configuration],
-link:roadmap.html[Roadmap].
+link:git.html[Git], link:tasks.html[Tasks], link:memory.html[Memory],
+link:configuration.html[Configuration], link:roadmap.html[Roadmap].
 
 include::pages/dashboard.adoc[leveloffset=+1]
 include::pages/git.adoc[leveloffset=+1]
+include::pages/tasks.adoc[leveloffset=+1]
+include::pages/memory.adoc[leveloffset=+1]
 include::pages/configuration.adoc[leveloffset=+1]
 include::pages/roadmap.adoc[leveloffset=+1]

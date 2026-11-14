@@ -30,7 +30,13 @@ title, at most 100 columns wide.
   freyja            u/chris/main         ~8 ?3 ↑41 ≡4     +2 worktrees · fetch failed
   nexus             master               ~1 ?2 ↑18 ≡3     +1 worktree · fetch failed
   … 4 more  heimdall git
-                                                                                             53 ms
+
+  ── tasks ───────────────────────────────────────────────────────────────────────────────────────
+  27 open · 58.75h left · ~240k tok · 1 awaiting approval  heimdall tasks
+
+  ── memory ──────────────────────────────────────────────────────────────────────────────────────
+  55 files · 99.8 KB · ~25k tok · 8 to promote  heimdall memory
+                                                                                             66 ms
 ----
 
 [.note]
@@ -42,6 +48,17 @@ The brief report of link:git.html[Git], at most eight repositories, then how
 many more there are. The rule carries the totals: the number of repositories,
 how many need attention and the age of the oldest fetch, or `fetched just now`
 after `-f`. When none needs attention, a single line says so.
+
+== Tasks
+
+The totals of link:tasks.html[Tasks]: the open tasks, the hours and tokens left,
+and how many tasks Claude added that wait for approval. Shelved projects are
+left out.
+
+== Memory
+
+The totals of link:memory.html[Memory], and how many files are read so often
+that they may belong elsewhere.
 
 == Footer
 
@@ -62,3 +79,6 @@ slow section shows.
 | `-h`, `--help`    | the usage
 | `--version`       | the version
 |===
+
+The sections and their order are the configuration's
+link:configuration.html[`dashboard.sections`].

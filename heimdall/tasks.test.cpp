@@ -1,7 +1,8 @@
 /**
  * Part of Nexus Library
  *
- * @brief   Unit tests of the tasks: the plan, the repositories of projects, the views.
+ * @brief   Unit tests of the tasks: the plan, the repositories of projects, the views,
+ *          approval, shelving and tokens.
  *
  * @author      Gábor Krisztián Girhiny
  * @created     2026-11-14
@@ -124,7 +125,7 @@ TEST(Tasks, DetailShowsWhatItWaitsOnAndUnblocks) {
         "  Left\n"
         "\n"
         "  estimate 1h · spent 0h · left 1h\n"
-        "  added 2026-11-01\n"
+        "  added 2026-11-01 · priority 2 · by the author\n"
         "  repository /src/app\n"
         "\n"
         "  ── waits on ──────────────────────────── 1 open · 2h before it can start\n"
@@ -149,4 +150,84 @@ TEST(Tasks, DetailOfAClosedTask) {
     const auto text = heimdall::render_task(Plain, parsed, *parsed.find("lib/old"), view());
     EXPECT_NE(text.find("added 2026-10-01 · done 2026-10-02"), std::string::npos) << text;
     EXPECT_EQ(text.find("left"), std::string::npos) << text;
+}
+
+namespace {
+
+// norn: a task Claude proposed, one it added that was approved (priority 1, with a session),
+// and one of the author's; aya is shelved.
+constexpr std::string_view Proposals = R"({
+  "tasks": [
+    {"id": "norn/a", "project": "norn", "kind": "feature", "title": "A", "status": "open", "state": "proposed",
+     "original": 1, "current": 1, "spent": 0, "source": "claude", "approved": false, "tokens": 40000},
+    {"id": "norn/b", "project": "norn", "kind": "feature", "title": "B", "status": "open", "state": "ready",
+     "original": 2, "current": 2, "spent": 0, "source": "claude", "approved": true, "priority": 1, "tokens": 60000},
+    {"id": "norn/c", "project": "norn", "kind": "debt",    "title": "C", "status": "open", "state": "ready",
+     "original": 1, "current": 1, "spent": 0},
+    {"id": "aya/x",  "project": "aya",  "kind": "feature", "title": "X", "status": "open", "state": "ready",
+     "original": 3, "current": 3, "spent": 0, "shelved": true}
+  ],
+  "deps": [],
+  "sessions": [{"task": "norn/b", "session": "s1"}, {"task": "norn/c", "session": "s1"}]
+})";
+
+auto proposals() -> heimdall::plan_t {
+    auto doc = nova::dyn_value::parse(Proposals, nova::dyn_value::format_e::json);
+    EXPECT_TRUE(doc.has_value());
+    auto parsed = heimdall::parse_plan(*doc);
+    EXPECT_TRUE(parsed.has_value());
+    heimdall::attribute_tokens(*parsed, { { "s1", heimdall::usage_t { .input = 10, .cache_creation = 9'990,
+                                                                       .cache_read = 500'000, .output = 10'000 } } });
+    return *parsed;
+}
+
+} // namespace
+
+TEST(Tasks, ParsesApprovalPriorityTokensAndSessions) {
+    const auto parsed = proposals();
+    EXPECT_TRUE(parsed.find("norn/a")->proposed());
+    EXPECT_TRUE(parsed.find("norn/b")->by_claude());
+    EXPECT_EQ(parsed.find("norn/b")->priority, 1);
+    EXPECT_EQ(parsed.find("norn/c")->priority, 2);
+    EXPECT_TRUE(parsed.find("aya/x")->shelved);
+    EXPECT_EQ(parsed.session_ids(), (std::set<std::string>{ "s1" }));
+    // 20k spent in s1, without cache reads, split between the two tasks linked to it.
+    EXPECT_EQ(parsed.find("norn/b")->tokens_spent, 10'000);
+    EXPECT_EQ(parsed.find("norn/c")->tokens_spent, 10'000);
+    EXPECT_EQ(parsed.find("norn/a")->tokens_spent, 0);
+}
+
+TEST(Tasks, ProposedFirstShelvedOnlyCounted) {
+    EXPECT_EQ(heimdall::render_tasks(Plain, proposals(), "", view()),
+        "\n"
+        "  Tasks                            2 open · 1 project · 3h left · ~50k tok\n"
+        "                           1 awaiting approval · shelved: aya (1 task, 3h)\n"
+        "\n"
+        "  ── awaiting approval ───────────────────────── norn.py task approve <id>\n"
+        "   ✦ norn/a  feature    1h      ~40k  proposed  A\n"
+        "\n"
+        "  ── norn ────────── no repository · 2 open · 2 ready · 3h left · ~50k tok\n"
+        "  1✦ b       feature    2h   10k/60k  ready    B\n"
+        "     c       debt       1h     10k/?  ready    C\n");
+}
+
+TEST(Tasks, ShelvedShownWithAllOrItsPrefix) {
+    auto all = view();
+    all.shelved = true;
+    EXPECT_NE(heimdall::render_tasks(Plain, proposals(), "", all).find("── aya"), std::string::npos);
+    EXPECT_NE(heimdall::render_tasks(Plain, proposals(), "aya", view()).find("── aya"), std::string::npos);
+}
+
+TEST(Tasks, DetailShowsTokensAndApproval) {
+    const auto parsed = proposals();
+    const auto text = heimdall::render_task(Plain, parsed, *parsed.find("norn/b"), view());
+    EXPECT_NE(text.find("tokens ~60k · spent 10k · sessions 1"), std::string::npos) << text;
+    EXPECT_NE(text.find("priority 1 · by Claude"), std::string::npos) << text;
+    const auto proposed = heimdall::render_task(Plain, parsed, *parsed.find("norn/a"), view());
+    EXPECT_NE(proposed.find("awaiting approval"), std::string::npos) << proposed;
+}
+
+TEST(Tasks, SummaryLeavesShelvedOutAndCountsProposed) {
+    EXPECT_EQ(heimdall::tasks_summary(Plain, proposals()),
+              "2 open · 3h left · ~50k tok · 1 awaiting approval  heimdall tasks");
 }

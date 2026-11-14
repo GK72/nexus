@@ -1,0 +1,104 @@
+= Tasks
+ifeval::["{docname}" == "tasks"]
+:toc: left
+:toclevels: 2
+:experimental:
+endif::[]
+
+`heimdall tasks` shows the open tasks of norn per project, each project with
+its repository, as trees of what unblocks what. Given the id of a task, it
+shows that task in full. Tasks Claude added on its own come first, until they
+are approved; shelved projects are left out.
+
+[source,bash]
+----
+heimdall tasks                          # every open task
+heimdall tasks freyja                   # the open tasks of a project
+heimdall tasks freyja/gpu               # or of an area
+heimdall tasks freyja/gpu/mesh-store    # one task in full
+heimdall tasks -a                       # shelved projects too
+----
+
+== Projects
+
+.The open tasks.
+[source,text]
+----
+  Tasks                         8 open · 2 projects · 19.75h left · ~110k tok
+                           1 awaiting approval · shelved: aya (1 task, 3h)
+
+  ── awaiting approval ──────────────────────────── norn.py task approve <id>
+   ✦ nexus/claude/norn-skill   feature    2h      ~50k  proposed  Norn skill…
+
+  ── nexus ──────────────── ~/repos/nexus · 1 open · 1 ready · 2h left · ~60k tok
+  1  doc/split-modules           debt       2h  80k/60k  ready    Split doc.sh…
+
+  ── freyja ────── ~/repos/freyja · 7 open · 4 ready · 3 blocked · 17.75h left
+  core/small-fixes              debt     1.5h  ready    NaN in to_rgba8, ring…
+  gpu/gl-names                  debt    0.25h  ready    Move-only gl_name<kin…
+  gpu/texture-buffer            debt     2.5h  ready    RAII gpu::texture_buf…
+  └─ gpu/device                 debt       4h  blocked  gpu::device owned by …
+     └─ gpu/mesh-store          debt       4h  blocked  Slot map mesh store, …
+        └─ gpu/instanced-draws  feature    3h  blocked  One instanced draw pe…
+  gpu/timer-and-clear           debt     2.5h  ready    gpu::timer for GPU qu…
+  └─ gpu/device  ↑ above
+----
+
+A tree starts at a task that waits on nothing open in its project and branches
+to the tasks it unblocks. The hours are what is left of the estimate. A task
+that waits on two others is under both; the second time, `↑ above` points to
+the first.
+
+A task that waits on another project names it in orange, `needs lib/core`,
+before its title. A project whose repository Heimdall does not track says `no
+repository`; link:configuration.html[`projects`] names it.
+
+Projects follow their most urgent task, and a tree its tasks by priority. Two
+columns appear only when a task in view needs them:
+
+* the priority, when it is not the usual 2 (1 is high, 3 low), and `✦` for a
+  task Claude added on its own;
+* the tokens: `~60k` estimated, or `80k/60k` spent of the estimate.
+
+A task Claude adds on its own waits for approval in the first block; one it adds
+on the author's word counts as the author's. A shelved project shows as a count
+in the header, unless `-a` is given or the prefix is inside it.
+
+== Tokens
+
+The tokens a task spent are read from the transcripts of the Claude sessions
+linked to it in norn, `norn.py task session <id>`, subagents included. They are
+new input, cache writes and output; cache reads, which repeat the context on
+every answer, are left out. A session linked to several tasks counts for each
+an equal share.
+
+== One Task
+
+.A task in full.
+[source,text]
+----
+  freyja/gpu/mesh-store                                         debt · blocked
+  Slot map mesh store, mesh_handle owners, mesh_instance holds mesh_id (step
+  3)
+
+  estimate 4h · spent 0h · left 4h
+  tokens ~120k · spent 35k · sessions 1
+  added 2026-10-19 · priority 2 · by the author
+  repository ~/repos/freyja
+
+  ── waits on ──────────────────────────────── 3 open · 9h before it can start
+  gpu/device              debt       4h  blocked  gpu::device owned by the wi…
+  ├─ gpu/texture-buffer   debt     2.5h  ready    RAII gpu::texture_buffer fo…
+  └─ gpu/timer-and-clear  debt     2.5h  ready    gpu::timer for GPU queries …
+
+  ── unblocks ───────────────────────────────────────────────────────── 1 open
+  gpu/instanced-draws  feature    3h  blocked  One instanced draw per mesh; 1…
+
+  ── refs ────────────────────────────────────────────────────────────────────
+  gpu-device.md Phase 3, TODO(engine) engine/renderer3d.hpp:30
+----
+
+_Waits on_ is the whole chain, done tasks included, and its hours are what is
+left of every open task in it. _Unblocks_ follows the open tasks only. The
+estimate shows the original one too when it was changed, and how often the task
+was moved when it was.

@@ -63,3 +63,18 @@ TEST(Config, MissingFileMeansDefaults) {
     ASSERT_TRUE(config.has_value());
     EXPECT_EQ(config->roots, std::vector<std::string>{ "~/repos" });
 }
+
+TEST(Config, DashboardSectionsAndClaude) {
+    const auto config = parse("claude = \"/c\"\nmemory = [\"~/m\"]\n[dashboard]\nsections = [\"tasks\", \"system\"]\n");
+    ASSERT_TRUE(config.has_value()) << config.error().detail;
+    EXPECT_EQ(config->claude, "/c");
+    EXPECT_EQ(config->memory, (std::vector<std::string>{ "~/m" }));
+    EXPECT_EQ(config->dashboard, (std::vector<std::string>{ "tasks", "system" }));
+    EXPECT_EQ(parse("")->dashboard, (std::vector<std::string>{ "system", "repos", "tasks", "memory" }));
+}
+
+TEST(Config, UnknownDashboardSectionIsAnError) {
+    const auto config = parse("[dashboard]\nsections = [\"weather\"]\n");
+    ASSERT_FALSE(config.has_value());
+    EXPECT_NE(config.error().detail.find("weather"), std::string::npos);
+}
