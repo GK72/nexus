@@ -82,6 +82,8 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+fpath=(/home/gkpro/.local/share/zsh/site-functions $fpath)
+
 autoload -U compinit
 autoload -U bashcompinit
 compinit
