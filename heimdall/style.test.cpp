@@ -56,3 +56,20 @@ TEST(Style, Join) {
     const std::vector<std::string> items { "a", "", "b" };
     EXPECT_EQ(heimdall::join(items, " · "), "a · b");
 }
+
+TEST(Style, WrapAtSpaces) {
+    EXPECT_EQ(heimdall::wrap("one two three four", 9), (std::vector<std::string>{ "one two", "three", "four" }));
+}
+
+TEST(Style, WrapKeepsLineBreaksAndBlankLines) {
+    EXPECT_EQ(heimdall::wrap("a b\n\nc", 10), (std::vector<std::string>{ "a b", "", "c" }));
+}
+
+TEST(Style, WrapGivesALongWordItsOwnLine) {
+    EXPECT_EQ(heimdall::wrap("a verylongword b", 4), (std::vector<std::string>{ "a", "verylongword", "b" }));
+}
+
+TEST(Style, Rule) {
+    const auto style = heimdall::style_t::detect(heimdall::color_mode::never);
+    EXPECT_EQ(heimdall::rule(style, "repos", 20, "3"), "── repos ───────── 3");
+}

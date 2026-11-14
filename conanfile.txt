@@ -1,5 +1,5 @@
 [requires]
-nova/0.15.0
+nova/0.14.0
 fmt/12.1.0
 boost/1.87.0
 nlohmann_json/3.11.3

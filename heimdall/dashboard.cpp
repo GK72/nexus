@@ -82,26 +82,6 @@ constexpr std::size_t MeterWidth = 10;
     return style(full, color) + style(empty, "faint");
 }
 
-/// `left` and `right` on one line of `width` columns.
-[[nodiscard]] auto spread(const std::string& left, const std::string& right, std::size_t width) -> std::string {
-    const auto used = visible_width(left) + visible_width(right);
-    return left + std::string(std::max<std::size_t>(2, width > used ? width - used : 0), ' ') + right;
-}
-
-/// A section's rule: `── title ───── info`.
-[[nodiscard]] auto rule(const style_t& style, std::string_view title, std::size_t width, const std::string& info = {})
-    -> std::string
-{
-    const auto left = style("──", "faint") + " " + style(title, "title", true) + " ";
-    const auto right = info.empty() ? std::string() : " " + info;
-    const auto used = visible_width(left) + visible_width(right);
-    std::string fill;
-    for (auto count = std::max<std::size_t>(2, width > used ? width - used : 0); count > 0; --count) {
-        fill += "─";
-    }
-    return left + style(fill, "faint") + right;
-}
-
 [[nodiscard]] auto header(const style_t& style, const dashboard_input& input) -> std::vector<std::string> {
     const auto date = style(strftime_text(input.now, "%A, %-d %B %Y"), "text");
     const auto time = style(strftime_text(input.now, "%H:%M"), "text", true)

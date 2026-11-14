@@ -6,6 +6,7 @@ add_library(heimdall-core
     process.cpp
     report.cpp
     style.cpp
+    tasks.cpp
 )
 
 target_include_directories(heimdall-core PUBLIC

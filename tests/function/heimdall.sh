@@ -168,6 +168,66 @@ dashboard() {
         '── repos' '2 repos · 1 need attention' 'app' ' ms'
 }
 
+# A norn client that answers `graph --format json` with a fixed plan: app/base unblocks
+# app/top, which also waits on lib/core. Any other call fails, as norn's does.
+fake_norn() {
+    local norn="${TAP_DIR}/norn"
+    cat > "${norn}" <<'NORN'
+#!/usr/bin/env bash
+[[ "$*" == "graph --format json" ]] || { echo "norn: unexpected: $*" >&2; exit 2; }
+cat <<'JSON'
+{"tasks": [
+ {"id": "app/base", "project": "app", "kind": "debt", "title": "Base", "status": "open", "state": "ready",
+  "added": "2026-11-01", "closed": null, "note": "why\nand how", "refs": "", "original": 2, "current": 2, "spent": 0},
+ {"id": "app/top", "project": "app", "kind": "feature", "title": "Top", "status": "open", "state": "blocked",
+  "added": "2026-11-01", "closed": null, "note": "", "refs": "", "original": 1, "current": 1, "spent": 0},
+ {"id": "lib/core", "project": "lib", "kind": "bug", "title": "Core", "status": "open", "state": "ready",
+  "added": "2026-11-02", "closed": null, "note": "", "refs": "", "original": 4, "current": 4, "spent": 0}],
+ "deps": [{"task": "app/top", "needs": "app/base"}, {"task": "app/top", "needs": "lib/core"}]}
+JSON
+NORN
+    chmod +x "${norn}"
+    printf '%s' "${norn}"
+}
+
+tasks() {
+    configure "roots = [\"${FIXTURE}/repos\"]" "norn = [\"$(fake_norn)\"]"
+    tap::run "${HEIMDALL}" tasks --color never --width 80
+    tap::expect_status 0
+    tap::expect_contains "${TAP_STDOUT}" '3 open · 2 projects · 7h left' \
+        "── app" "${FIXTURE}/repos/app" '2 open · 1 ready · 1 blocked' \
+        'base' '└─ top' 'needs lib/core' '── lib' 'no repository'
+}
+
+task_detail() {
+    configure "roots = [\"${FIXTURE}/repos\"]" "norn = [\"$(fake_norn)\"]"
+    tap::run "${HEIMDALL}" tasks app/top --color never --width 80
+    tap::expect_status 0
+    tap::expect_contains "${TAP_STDOUT}" 'app/top' 'feature · blocked' '── waits on' '2 open · 6h before it can start' \
+        'base' 'lib/core'
+    tap::run "${HEIMDALL}" tasks app/base --color never --width 80
+    tap::expect_contains "${TAP_STDOUT}" '── unblocks' '── note' 'why' 'and how'
+}
+
+task_errors() {
+    configure "norn = [\"$(fake_norn)\"]"
+    tap::run "${HEIMDALL}" tasks nope
+    tap::expect_status 1
+    tap::expect_contains "${TAP_STDERR}" 'no task nope'
+    tap::run "${HEIMDALL}" tasks a b
+    tap::expect_status 2
+    tap::run "${HEIMDALL}" tasks -f
+    tap::expect_status 2
+    configure "norn = [\"${TAP_DIR}/missing-norn\"]"
+    tap::run "${HEIMDALL}" tasks
+    tap::expect_status 1
+    tap::expect_contains "${TAP_STDERR}" 'heimdall: norn:' 'could not start'
+    configure "norn = [\"$(fake_norn)\", \"--extra\"]"
+    tap::run "${HEIMDALL}" tasks
+    tap::expect_status 1
+    tap::expect_contains "${TAP_STDERR}" 'norn: unexpected: --extra graph --format json'
+}
+
 tap::case "the git report"                          report
 tap::case "the brief report"                        brief
 tap::case "--check"                                 check
@@ -177,5 +237,8 @@ tap::case "a failed fetch"                          fetch_failure
 tap::case "roots and exclude-from-roots"            config
 tap::case "usage errors"                            usage
 tap::case "the dashboard"                           dashboard
+tap::case "tasks: a tree per project"               tasks
+tap::case "tasks: one task in full"                 task_detail
+tap::case "tasks: errors"                           task_errors
 
 tap::done

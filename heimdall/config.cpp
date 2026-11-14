@@ -35,6 +35,11 @@ auto parse_config(const nova::dyn_value& doc) -> nova::expected<config_t, nova::
         config.roots = doc.lookup<std::vector<std::string>>("roots", config.roots);
         config.exclude_from_roots = doc.lookup<std::vector<std::string>>("exclude-from-roots", {});
         config.repositories = doc.lookup<std::vector<std::string>>("repositories", {});
+        config.norn = doc.lookup<std::vector<std::string>>("norn", config.norn);
+        config.projects = doc.lookup<std::map<std::string, std::string>>("projects", {});
+        if (config.norn.empty()) {
+            return nova::wrap_error(std::errc::invalid_argument, "norn: the command is empty");
+        }
     } catch (const std::exception& ex) {
         return nova::wrap_error(std::errc::invalid_argument, ex.what());
     }

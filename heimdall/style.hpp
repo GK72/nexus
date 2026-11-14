@@ -22,6 +22,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace heimdall {
 
@@ -61,6 +62,25 @@ struct style_t {
  * @brief   Plain `text` cut to `width` columns, ending with `…` when cut.
  */
 [[nodiscard]] auto ellipsize(std::string_view text, std::size_t width) -> std::string;
+
+/**
+ * @brief   `left` and `right` on one line of `width` columns, at least two
+ *          spaces apart.
+ */
+[[nodiscard]] auto spread(const std::string& left, const std::string& right, std::size_t width) -> std::string;
+
+/**
+ * @brief   A section's rule of `width` columns: `── title ───── info`.
+ */
+[[nodiscard]] auto rule(const style_t& style, std::string_view title, std::size_t width, const std::string& info = {})
+    -> std::string;
+
+/**
+ * @brief   Plain `text` wrapped at spaces to lines of `width` columns; its own
+ *          line breaks and blank lines stay. A word longer than `width` gets a
+ *          line of its own.
+ */
+[[nodiscard]] auto wrap(std::string_view text, std::size_t width) -> std::vector<std::string>;
 
 /**
  * @brief   The items with `separator` between them.

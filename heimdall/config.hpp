@@ -21,6 +21,7 @@
 #include <libnova/expected.hpp>
 
 #include <filesystem>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,8 @@ struct config_t {
     std::vector<std::string> roots { "~/repos" };   ///< Scanned one level deep
     std::vector<std::string> exclude_from_roots;    ///< Globs of repository names
     std::vector<std::string> repositories;          ///< Tracked one by one
+    std::vector<std::string> norn { "norn.py" };    ///< The norn client, with its arguments
+    std::map<std::string, std::string> projects;    ///< norn project to repository name or path
 };
 
 /**

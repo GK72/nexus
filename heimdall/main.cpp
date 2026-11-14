@@ -16,6 +16,7 @@
 #include "heimdall/git.hpp"
 #include "heimdall/heimdall.hpp"
 #include "heimdall/report.hpp"
+#include "heimdall/tasks.hpp"
 
 #include <libnxs/tty.hpp>
 
@@ -34,12 +35,15 @@ namespace {
 
 constexpr std::string_view Usage = R"(usage: heimdall [-f] [--repos N] [--width N] [--color WHEN]
        heimdall git [-f] [-b] [--check] [--exclude-from-roots GLOB]... [-j N] [--color WHEN] [PATH...]
+       heimdall tasks [--width N] [--color WHEN] [ID | PREFIX]
 
-The dashboard, or with `git`, the report of the tracked repositories.
+The dashboard; with `git`, the report of the tracked repositories; with `tasks`,
+the open tasks of norn per project, as trees of what unblocks what, or one task
+in full.
 
   -f, --fetch                  fetch every repository first
   --repos N                    dashboard: repositories listed at most (default 8)
-  --width N                    dashboard: columns (default: the terminal's, at most 100)
+  --width N                    dashboard, tasks: columns (default: the terminal's, at most 100)
   -b, --brief                  git: one line per repository that needs attention
   --check                      git: exit status 1 if anything needs attention
   --exclude-from-roots GLOB    git: leave out repositories of the roots; repeatable
@@ -60,7 +64,7 @@ struct options_t {
     std::size_t repos = 8;
     std::optional<std::size_t> width;
     heimdall::color_mode color = heimdall::color_mode::automatic;
-    std::vector<std::string> paths;
+    std::vector<std::string> paths;         ///< git: repositories; tasks: an id or a prefix
     std::vector<std::string> exclude_from_roots;
 };
 
@@ -84,7 +88,7 @@ template <typename T>
     std::size_t index = 0;
     if (not args.empty() and not args.front().starts_with('-')) {
         options.command = args.front();
-        if (options.command != "git") {
+        if (options.command != "git" and options.command != "tasks") {
             throw usage_error { fmt::format("unknown command: {}", options.command) };
         }
         ++index;
@@ -96,13 +100,18 @@ template <typename T>
         return args[index];
     };
     const auto git_only = [&](std::string_view option) {
-        if (options.command != "git") {
+        if (options.command != "git" and options.command != "tasks") {
             throw usage_error { fmt::format("{} is an option of `heimdall git`", option) };
         }
     };
     const auto dashboard_only = [&](std::string_view option) {
         if (not options.command.empty()) {
             throw usage_error { fmt::format("{} is an option of the dashboard", option) };
+        }
+    };
+    const auto not_tasks = [&](std::string_view option) {
+        if (options.command == "tasks") {
+            throw usage_error { fmt::format("{} is not an option of `heimdall tasks`", option) };
         }
     };
 
@@ -115,6 +124,7 @@ template <typename T>
             fmt::println("heimdall {}", heimdall::version());
             return std::nullopt;
         } else if (arg == "-f" or arg == "--fetch") {
+            not_tasks(arg);
             options.fetch = true;
         } else if (arg == "-b" or arg == "--brief") {
             git_only(arg);
@@ -126,12 +136,15 @@ template <typename T>
             git_only(arg);
             options.exclude_from_roots.emplace_back(value(arg));
         } else if (arg == "-j" or arg == "--jobs") {
+            not_tasks(arg);
             options.jobs = number<int>(arg, value(arg));
         } else if (arg == "--repos") {
             dashboard_only(arg);
             options.repos = number<std::size_t>(arg, value(arg));
         } else if (arg == "--width") {
-            dashboard_only(arg);
+            if (options.command == "git") {
+                throw usage_error { fmt::format("{} is not an option of `heimdall git`", arg) };
+            }
             options.width = number<std::size_t>(arg, value(arg));
         } else if (arg == "--color") {
             const auto when = value(arg);
@@ -146,12 +159,46 @@ template <typename T>
             }
         } else if (arg.starts_with('-')) {
             throw usage_error { fmt::format("unknown option: {}", arg) };
+        } else if (options.command == "tasks") {
+            if (not options.paths.empty()) {
+                throw usage_error { "tasks takes one id or prefix" };
+            }
+            options.paths.emplace_back(arg);
         } else {
             git_only("PATH");
             options.paths.emplace_back(arg);
         }
     }
     return options;
+}
+
+/// `heimdall tasks`: one task in full when `pattern` is its id, else the open tasks under it.
+[[nodiscard]] auto tasks(const heimdall::style_t& style, const heimdall::config_t& config, const std::string& pattern,
+                         std::size_t width) -> int
+{
+    const auto plan = heimdall::load_plan(config.norn);
+    if (not plan) {
+        fmt::println(stderr, "heimdall: norn: {}", plan.error().detail);
+        return 1;
+    }
+    const auto view = heimdall::tasks_view {
+        .width = width,
+        .repos = heimdall::project_repos(*plan, heimdall::discover(config.roots, config.exclude_from_roots,
+                                                                   config.repositories), config.projects),
+    };
+    if (const auto* task = plan->find(pattern)) {
+        fmt::print("{}", heimdall::render_task(style, *plan, *task, view));
+        return 0;
+    }
+    const bool any = std::ranges::any_of(plan->tasks, [&](const heimdall::task_t& task) {
+        return task.id.starts_with(pattern + "/");
+    });
+    if (not pattern.empty() and not any) {
+        fmt::println(stderr, "heimdall: no task {} and none under it", pattern);
+        return 1;
+    }
+    fmt::print("{}", heimdall::render_tasks(style, *plan, pattern, view));
+    return 0;
 }
 
 [[nodiscard]] auto run(const options_t& options) -> int {
@@ -163,6 +210,14 @@ template <typename T>
     }
 
     const auto style = heimdall::style_t::detect(options.color);
+    static constexpr std::size_t MaxWidth = 100;
+    static constexpr std::size_t Margin = 4;
+    const auto width = options.width.value_or(std::min(MaxWidth, nxs::tty::terminal_width()) - Margin);
+
+    if (options.command == "tasks") {
+        return tasks(style, *config, options.paths.empty() ? std::string() : options.paths.front(), width);
+    }
+
     const auto started = std::chrono::steady_clock::now();
     const auto repos = heimdall::survey(*config, {
         .fetch = options.fetch,
@@ -180,10 +235,8 @@ template <typename T>
         return options.check and attention ? 1 : 0;
     }
 
-    static constexpr std::size_t MaxWidth = 100;
-    static constexpr std::size_t Margin = 4;
     auto input = heimdall::dashboard_input {
-        .width = options.width.value_or(std::min(MaxWidth, nxs::tty::terminal_width()) - Margin),
+        .width = width,
         .now = now,
         .system = heimdall::read_system(),
         .repos = repos,

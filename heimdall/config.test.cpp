@@ -30,17 +30,28 @@ TEST(Config, Defaults) {
     EXPECT_EQ(config->roots, std::vector<std::string>{ "~/repos" });
     EXPECT_TRUE(config->exclude_from_roots.empty());
     EXPECT_TRUE(config->repositories.empty());
+    EXPECT_EQ(config->norn, std::vector<std::string>{ "norn.py" });
+    EXPECT_TRUE(config->projects.empty());
 }
 
 TEST(Config, AllKeys) {
     const auto config = parse(
         "roots = [\"~/repos\", \"~/work\"]\n"
         "exclude-from-roots = [\"zsh-*\"]\n"
-        "repositories = [\"~/src/one\"]\n");
+        "repositories = [\"~/src/one\"]\n"
+        "norn = [\"norn.py\", \"--url\", \"http://host:8080\"]\n"
+        "[projects]\n"
+        "baldr = \"baldr-cpp\"\n");
     ASSERT_TRUE(config.has_value());
     EXPECT_EQ(config->roots.size(), 2);
     EXPECT_EQ(config->exclude_from_roots, std::vector<std::string>{ "zsh-*" });
     EXPECT_EQ(config->repositories, std::vector<std::string>{ "~/src/one" });
+    EXPECT_EQ(config->norn.size(), 3);
+    EXPECT_EQ(config->projects.at("baldr"), "baldr-cpp");
+}
+
+TEST(Config, EmptyNornIsAnError) {
+    EXPECT_FALSE(parse("norn = []\n").has_value());
 }
 
 TEST(Config, WrongTypeIsAnError) {

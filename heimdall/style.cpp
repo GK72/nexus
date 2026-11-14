@@ -113,6 +113,55 @@ auto ellipsize(std::string_view text, std::size_t width) -> std::string {
     return width > 0 ? ret + "…" : ret;
 }
 
+auto spread(const std::string& left, const std::string& right, std::size_t width) -> std::string {
+    const auto used = visible_width(left) + visible_width(right);
+    return left + std::string(std::max<std::size_t>(2, width > used ? width - used : 0), ' ') + right;
+}
+
+auto rule(const style_t& style, std::string_view title, std::size_t width, const std::string& info) -> std::string {
+    const auto left = style("──", "faint") + " " + style(title, "title", true) + " ";
+    const auto right = info.empty() ? std::string() : " " + info;
+    const auto used = visible_width(left) + visible_width(right);
+    std::string fill;
+    for (auto count = std::max<std::size_t>(2, width > used ? width - used : 0); count > 0; --count) {
+        fill += "─";
+    }
+    return left + style(fill, "faint") + right;
+}
+
+auto wrap(std::string_view text, std::size_t width) -> std::vector<std::string> {
+    std::vector<std::string> lines;
+    while (true) {
+        const auto end = text.find('\n');
+        const auto paragraph = text.substr(0, end);
+        std::string line;
+        std::size_t used = 0;
+        std::size_t start = 0;
+        while (start < paragraph.size()) {
+            const auto stop = std::min(paragraph.find(' ', start), paragraph.size());
+            const auto word = paragraph.substr(start, stop - start);
+            start = stop + 1;
+            if (word.empty()) {
+                continue;
+            }
+            const auto size = visible_width(word);
+            if (used > 0 and used + 1 + size > width) {
+                lines.push_back(std::move(line));
+                line.clear();
+                used = 0;
+            }
+            line += (used > 0 ? " " : "") + std::string(word);
+            used += (used > 0 ? 1 : 0) + size;
+        }
+        lines.push_back(std::move(line));
+        if (end == std::string_view::npos) {
+            break;
+        }
+        text.remove_prefix(end + 1);
+    }
+    return lines;
+}
+
 auto join(std::span<const std::string> items, std::string_view separator) -> std::string {
     std::string ret;
     for (const auto& item : items) {
