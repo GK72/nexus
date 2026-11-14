@@ -86,7 +86,15 @@ fpath=(/home/gkpro/.local/share/zsh/site-functions $fpath)
 
 autoload -U compinit
 autoload -U bashcompinit
-compinit
+# The sandbox (tools/sandbox.sh) sees a different fpath and cannot replace
+# ~/.zcompdump (compdump writes a temporary file next to it and moves it over),
+# so it keeps its own dump in the writable cache.
+if [[ -n "${NEXUS_SANDBOX:-}" ]]; then
+    mkdir -p ~/.cache/zsh
+    compinit -d ~/.cache/zsh/compdump-sandbox
+else
+    compinit
+fi
 bashcompinit
 
 # Inline vim editor
@@ -119,6 +127,5 @@ bindkey "\e[3~"   delete-char
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
-source ~/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 source ~/nxs/env/load.zsh
 source ~/.cenv  # custom env

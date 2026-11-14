@@ -40,6 +40,7 @@
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
     # =========================[ Line #1 ]=========================
     # os_icon               # os identifier
+    sandbox                 # inside tools/sandbox.sh or on the host
     dir                     # current directory
     vcs                     # git status
     # =========================[ Line #2 ]=========================
@@ -1443,6 +1444,19 @@
   # Type `p10k help segment` for documentation and a more sophisticated example.
   function prompt_example() {
     p10k segment -f 208 -i '⭐' -t 'hello, %n'
+  }
+
+  # NEXUS_SANDBOX is set by tools/sandbox.sh inside its bubblewrap sandbox.
+  function prompt_sandbox() {
+      if [[ -n "${NEXUS_SANDBOX:-}" ]]; then
+          p10k segment -s INSIDE -f 070 -t 'sandbox'
+      else
+          p10k segment -s OUTSIDE -f 214 -t 'host'
+      fi
+  }
+
+  function instant_prompt_sandbox() {
+      prompt_sandbox
   }
 
   function prompt_usrmsg() {
