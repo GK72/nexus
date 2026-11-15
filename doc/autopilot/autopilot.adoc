@@ -1,0 +1,17 @@
+= Autopilot
+:doctype: book
+:toc: left
+:toclevels: 2
+:sectnums:
+:experimental:
+
+Autopilot works through approved norn tasks while the author is away, keeps
+the repositories in line with the project template and Nova, and stops at a
+budget line on the plan's usage. It is `tools/autopilot/autopilot.py` in
+Nexus.
+
+link:running.html[Running It] shows how to start it and read what it did,
+link:design.html[Design] how it decides and why it is built this way.
+
+include::pages/running.adoc[leveloffset=+1]
+include::pages/design.adoc[leveloffset=+1]

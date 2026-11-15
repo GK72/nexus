@@ -1,0 +1,121 @@
+= Running It
+
+== Starting
+
+Start it by hand when stepping away, best in its own tmux window:
+
+[source,shell]
+----
+tools/autopilot/autopilot.py --dry-run     # budget, line, next unit; no tokens
+tools/autopilot/autopilot.py               # until the budget line or no work
+tools/autopilot/autopilot.py --max-runs 1  # one unit, then stop
+----
+
+`--survey <project>` starts with a survey of that project, `--retry <id>`
+allows a task an earlier run left behind. Only one run is active at a time.
+
+For an unattended run inside the bubblewrap sandbox:
+
+[source,shell]
+----
+tools/sandbox.sh tools/autopilot/autopilot.py
+----
+
+The agents are `tools/autopilot/agents/ap-worker.md` and `ap-surveyor.md`,
+linked into `~/.claude/agents`.
+
+== What It Leaves Behind
+
+`autopilot.py report` prints the last report: one line per unit, why it
+stopped, which projects build on the unreviewed Nova autopilot build, and the
+tasks waiting for approval. Approve the ones worth doing with
+`norn.py task approve <id>`; autopilot only takes `ready` tasks.
+
+A task lands as commits fast-forwarded onto the project's base branch, local
+and not pushed, and its norn task is closed with the commit. Every commit
+carries an `Autopilot-Task:` trailer, so `git log --grep Autopilot-Task`
+lists them. A task that does not land keeps its work on `auto/<task id>`, and
+the report says why:
+
+[cols="1,3"]
+|===
+| Outcome | Meaning
+
+| gate failed | The project's gate was red; its log is in the report.
+| conflicts | The branch does not rebase onto the base branch.
+| checked out with uncommitted changes | The base checkout was dirty, so it was not touched; the branch is green.
+| cut | A token, wall-clock or budget cap stopped the session.
+| no commits | The agent stopped blocked or failed; its result line says why.
+|===
+
+Such a task is not taken again until `--retry` names it.
+
+== Files
+
+[cols="1,2"]
+|===
+| Path | Holds
+
+| `~/.config/nexus/autopilot.toml` | The projects, and overrides of the defaults.
+| `~/.local/state/autopilot/` | `state.json` (surveys, attempts), `runs.jsonl`, `report.md`.
+| `~/.cache/autopilot/logs/` | Each session's raw stream and each gate's output.
+| `~/.cache/autopilot/wt/` | Worktrees of the running task.
+|===
+
+== Configuration
+
+The configuration lives outside the repository, in
+`~/.config/nexus/autopilot.toml` (`--config` names another file), because its
+projects describe one machine. Autopilot refuses to start without it, and
+refuses unknown keys, so a typo does not silently fall back to a default.
+
+Each `[projects.<id>]` maps a norn project to its repository and base branch;
+only these projects are surveyed and worked on:
+
+[source,toml]
+----
+exclude = ["freyja/gpu/*"]      # task id globs never taken
+
+[budget]
+seven_day = 70                  # overrides one default, keeps the rest
+
+[projects.cora]
+repo = "~/repos/cora"
+branch = "main"
+
+[projects.nexus]
+repo = "~/repos/nexus"
+branch = "master"
+survey = false                  # not a template project
+
+[projects.nova]                 # optional; lands on `branch`, never main
+repo = "~/repos/nova-cpp"
+branch = "autopilot"
+from = "main"                   # where `branch` starts
+worktree = "~/repos/nova-cpp/.claude/worktrees/autopilot"
+gate = "ci/build.sh && ci/unit-test.sh"
+----
+
+`gate` replaces the default gate: `ci/pipeline.sh --changed --base <branch>`
+when the repository has an nci pipeline, otherwise `baldr build` and `ctest`.
+`worktree` keeps `branch` checked out there and needs `from`.
+
+The other sections have built-in defaults; override any key on its own:
+
+[cols="1,1,3"]
+|===
+| Key | Default | Meaning
+
+| `budget.five_hour_start` | 50 | Percent of the 5-hour window allowed at its start.
+| `budget.five_hour_end` | 90 | Percent allowed at its reset; the line rises linearly.
+| `budget.seven_day` | 80 | Percent of the weekly window.
+| `budget.debt_share` | 0.4 | Target share of debt among the tasks taken.
+| `budget.survey_interval_days` | 7 | Resurvey a project after this long.
+| `budget.tasks_per_survey` | 3 | A due survey waits until this many tasks ran.
+| `models.feature`, `.debt`, `.survey` | opus, sonnet, sonnet | Model per unit.
+| `tokens.feature`, `.debt`, `.survey` | 300000, 150000, 120000 | Estimate when the task has none; a session is cut at twice it.
+| `claude.permission_mode` | auto | Permission mode of the sessions.
+| `claude.max_turns` | 200 | Turns per session.
+| `claude.wall_minutes` | 90 | Wall-clock cap per session.
+| `claude.gate_minutes` | 45 | Time limit of a gate.
+|===

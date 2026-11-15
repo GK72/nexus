@@ -54,6 +54,7 @@ nci::init nexus
 nci::stage  lint-shell    --paths "${LINT_PATHS}" -- lint_shell
 nci::stage  file-headers  --paths "${HEADER_CHECKER_PATHS}" --allow-failure   -- python3 tools/file_headers.py --check
 nci::stage  tools-test    --paths 'tools/*.py'                                -- python3 tools/file_headers_test.py
+nci::stage  autopilot-test --paths 'tools/autopilot/'                         -- python3 -m unittest discover -s tools/autopilot -p '*_test.py'
 nci::stage  build         --paths "${CPP_PATHS}"                              -- baldr build -b Debug
 nci::stage  unit-test     --paths "${CPP_PATHS}"               --needs build  -- unit_test
 nci::stages function-test --paths "${CPP_PATHS} ${TEST_PATHS}" --needs build  -- tests/function/*.sh

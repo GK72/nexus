@@ -81,13 +81,15 @@ author the `task_line` norn printed, and say which ones wait for approval.
 ## Projects
 
 `norn.py project list`; `project shelve|unshelve <id>` keeps a paused project out of `ready`. A
-project appears with its first task.
+project appears with its first task. `project owner <id> author|autopilot` sets who decides its
+work: in an autopilot project the tasks Claude adds are `ready` at once, with no approval (handing
+it back makes them `proposed` again). Ownership is the author's call, like shelving.
 
 ## Rules
 
 - When norn refuses a change (an hour that is not a quarter, a cycle, an original estimate, a
   closed task), report its reason; don't work around it.
-- Never log time, approve a task, or shelve a project on your own.
+- Never log time, approve a task, shelve a project or change its owner on your own.
 - `norn.py export ~/repos/plans/norn.sql` writes a copy on request; a daily export already goes
   to `/mnt/data/backup/norn`.
 - Service down (`cannot reach`): `systemctl --user status norn`; restart it only if the author

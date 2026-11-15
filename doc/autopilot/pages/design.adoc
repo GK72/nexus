@@ -1,0 +1,85 @@
+= Design
+
+== A Script Drives, Sessions Work
+
+The loop is a Python script, not a model. Reading the budget, choosing the
+next unit, preparing worktrees, running gates and landing commits are
+deterministic and cost no tokens. Each unit of work is one fresh headless
+Claude session (`claude -p --agent ...`) that gets everything it needs in its
+prompt: the task's note and refs, its worktree and its gate. No context piles
+up across tasks, and no session spends tokens finding its task.
+
+The agents are narrow: the worker has `Bash`, `Read`, `Edit`, `Write` and
+`Skill`, the surveyor only `Bash` and `Read`; neither loads MCP servers or
+starts subagents. Features run on Opus, debt and surveys on Sonnet.
+
+== Units of Work
+
+Survey:: The surveyor reads one repository. `consistency.py` first checks it
+against `templates/cpp-project` without tokens: missing and legacy files,
+pre-nci CI scripts, files that drifted from the template, the Nova version.
+The surveyor groups those findings into tasks, looks for helpers that Nova
+already has or that belong in it, and files at most five debt tasks as
+Claude's own. They wait for the author's approval.
+
+Task:: The worker implements one `ready` task on `auto/<task id>` and
+commits. The script then rebases the branch onto the base branch, runs the
+gate, fast-forwards the base branch without touching a dirty checkout, and
+closes the task.
+
+== Choosing
+
+Before every unit the budget is checked (below). A survey runs when a project
+has not been surveyed for `survey_interval_days` and either the run just
+started, three tasks ran since the last survey, or no task is left.
+Otherwise the highest-scoring ready task of a configured project is taken:
+
+* priority 1, 2, 3 score 30, 20, 10;
+* each open task waiting on it adds 4, up to three;
+* the kind that brings the recent mix closer to `debt_share` (40 percent
+  debt) adds 8;
+* a debt task adds one per template error of its project, up to five;
+* when less than 10 points are left under the budget line, each estimated
+  hour costs 3, so small tasks fill the end of a window.
+
+Review and buffer tasks, tasks of unconfigured projects, excluded tasks and
+tasks an earlier run left behind are never taken.
+
+== Projects
+
+A project is worked on when it is in the configuration (which knows its
+repository, branch and gate) and not shelved in norn. Its norn owner decides
+how free autopilot is there:
+
+[cols="1,3"]
+|===
+| Owner | Autopilot
+
+| `author` | Takes only tasks the author approved; surveys file debt, which waits as `proposed`.
+| `autopilot` | Claude's tasks are `ready` at once; surveys also file features toward the project's README and roadmap.
+|===
+
+`norn.py project owner <id> autopilot` hands a project over; `author` takes it
+back, and its unapproved tasks wait for approval again. Shelving pauses a
+project whoever owns it: no tasks, no surveys.
+
+== Budget
+
+Plan usage comes from the `rate_limit_event` every headless session reports;
+at the start a fresh `~/.claude/usage.json` or a one-turn Haiku probe gives
+it. A unit starts only while the 5-hour use is under a line that rises from
+50 percent at the window's start to 90 percent at its reset, since unused
+quota near the reset is lost anyway, and the weekly use is under 80 percent.
+A running session is cut at the line plus 10, at twice its token estimate, or
+after 90 minutes.
+
+== Nova
+
+Code reused across projects belongs in Nova. Nova tasks land on Nova's
+`autopilot` branch, never on main, checked out in
+`~/repos/nova-cpp/.claude/worktrees/autopilot`: the author reviews that branch
+before merging it. Each landing exports `nova/<version>@chris/autopilot` to
+the local Conan cache, and projects may build on that tagged version; the
+report lists the ones that do.
+Moving a helper is two tasks: the Nova task, and the project's switch-over
+task that waits on it.
